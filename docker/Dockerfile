@@ -1,12 +1,6 @@
 #FROM python:3.7-alpine
 FROM python:3-alpine3.13
 
-# Version to use
-ARG TESLA_CE_VERSION
-
-# Define the TeSLA CE package to install
-ARG TESLA_CE_PACKAGE="tesla_ce[all]==$TESLA_CE_VERSION"
-
 # Install build deps, then run `pip install`, then remove unneeded build deps all in a single step.
 RUN set -ex \
     && apk add --no-cache --virtual .build-deps \
@@ -26,9 +20,10 @@ RUN set -ex \
 	        freetype-dev \
             git \
             python3-dev \
+            sqlite-dev \
     && python3 -m venv /venv \
     && /venv/bin/pip install -U pip \
-    && LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install --no-cache-dir $TESLA_CE_PACKAGE uwsgi --upgrade" \
+    && LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install --no-cache-dir uwsgi tesla-ce --upgrade" \
     && runDeps="$( \
             scanelf --needed --nobanner --recursive /venv \
                     | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
@@ -55,7 +50,8 @@ RUN set -ex \
             supervisor \
             uwsgi \
             uwsgi-python3 \
-            mariadb-connector-c
+            mariadb-connector-c \
+            sqlite
 
 # Copy your application code to the container (make sure you create a .dockerignore file if any large files or directories should be excluded)
 RUN mkdir /tesla/
@@ -69,9 +65,7 @@ RUN dos2unix /bin/docker-entrypoint.sh && chmod +x /bin/docker-entrypoint.sh
 EXPOSE 5000
 
 # Add any custom, static environment variables needed by Django or your settings file here:
-ENV DJANGO_SETTINGS_MODULE=tesla_ce.settings
-ENV DJANGO_SETTINGS_ENV=Production
-ENV DJANGO_CONFIGURATION=Production
+ENV DJANGO_SETTINGS_MODULE=tesla_ce_supervisor.settings
 
 # Create a user and group for uWSGI and Celery
 RUN addgroup -g 2000 -S web_group && \
@@ -79,9 +73,6 @@ RUN addgroup -g 2000 -S web_group && \
 
 # Give permisions to root folder for this user
 RUN chown -R web_user:web_group /tesla
-
-# Call collectstatic (customize the following line with the minimal environment variables needed for manage.py to run):
-RUN DJANGO_CONFIGURATION=Dev /venv/bin/tesla_ce collectstatic --noinput && ln -s /venv/lib/python3.7/site-packages/tesla_ce/static /tesla/static
 
 # Copy the Nginx global conf
 COPY docker/nginx.conf /etc/nginx/

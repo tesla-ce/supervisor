@@ -43,7 +43,7 @@ jobs:
   docker_tag:
     needs: publish
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    # if: github.event_name == 'release'
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
