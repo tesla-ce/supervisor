@@ -1,8 +1,6 @@
 #FROM python:3.7-alpine
 FROM python:3-alpine3.13
 
-ADD requirements
-
 # Install build deps, then run `pip install`, then remove unneeded build deps all in a single step.
 RUN set -ex \
     && apk add --no-cache --virtual .build-deps \
