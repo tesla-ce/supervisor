@@ -127,11 +127,11 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CATALOG SERVICE
-CATALOG_SERVICE = 'CONSUL'
+CATALOG_SERVICE = os.environ.get('CATALOG_SERVICE', 'CONSUL')
 
 # CONSUL Configuration
-CONSUL_HOST = 'consul.nomad.demo.tesla-ce.eu'
-CONSUL_PORT = 443
-CONSUL_SCHEME = 'https'
-CONSUL_VERIFY = True
-CONSUL_CERT = None
+CONSUL_HOST = os.environ.get('CONSUL_HOST', 'localhost')
+CONSUL_PORT = os.environ.get('CONSUL_PORT', 8500)
+CONSUL_SCHEME = os.environ.get('CONSUL_SCHEME', 'http')
+CONSUL_VERIFY = os.environ.get('CONSUL_VERIFY', True)
+CONSUL_CERT = os.environ.get('CONSUL_CERT')
