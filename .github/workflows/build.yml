@@ -32,15 +32,7 @@ jobs:
           expected: ${{ steps.vars.outputs.tag }}
           actual: ${{ steps.vars.outputs.version }}
           comparison: exact
-  publish:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    steps: 
-      - uses: actions/checkout@v2
-      - name: Store version
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-  docker_tag:
+  docker:
     needs: publish
     runs-on: ubuntu-latest
     # if: github.event_name == 'release'
