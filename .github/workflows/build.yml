@@ -66,8 +66,6 @@ jobs:
             registry: registry.tesla-ce.eu
       - name: Push to TeSLA CE registry
         run: |
-          docker pull teslace/supervisor:${{ steps.vars.outputs.tag }}
-          docker tag teslace/supervisor:${{ steps.vars.outputs.tag }} registry.tesla-ce.eu/tesla-ce/supervisor:${{ steps.vars.outputs.tag }}
-          docker push registry.tesla-ce.eu/tesla-ce/supervisor:${{ steps.vars.outputs.tag }}
+          docker pull teslace/supervisor:${{ steps.vars.outputs.tag }}                    
           docker tag teslace/supervisor:${{ steps.vars.outputs.tag }} registry.tesla-ce.eu/tesla-ce/supervisor:latest
           docker push registry.tesla-ce.eu/tesla-ce/supervisor:latest

@@ -1,6 +1,8 @@
 #FROM python:3.7-alpine
 FROM python:3-alpine3.13
 
+ADD requirements
+
 # Install build deps, then run `pip install`, then remove unneeded build deps all in a single step.
 RUN set -ex \
     && apk add --no-cache --virtual .build-deps \
@@ -23,7 +25,7 @@ RUN set -ex \
             sqlite-dev \
     && python3 -m venv /venv \
     && /venv/bin/pip install -U pip \
-    && LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install --no-cache-dir uwsgi tesla-ce --upgrade" \
+    && LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install --no-cache-dir wheel uwsgi tesla-ce mysqlclient psycopg2 --upgrade" \
     && runDeps="$( \
             scanelf --needed --nobanner --recursive /venv \
                     | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
@@ -57,6 +59,10 @@ RUN set -ex \
 RUN mkdir /tesla/
 WORKDIR /tesla/
 
+# Install requirements
+ADD requirements.txt requirements.txt
+RUN /venv/bin/pip install -r requirements.txt
+
 # Copy and prepare the entrypoint script for front-end
 ADD docker/docker-entrypoint.sh /bin
 RUN dos2unix /bin/docker-entrypoint.sh && chmod +x /bin/docker-entrypoint.sh
@@ -66,6 +72,10 @@ EXPOSE 5000
 
 # Add any custom, static environment variables needed by Django or your settings file here:
 ENV DJANGO_SETTINGS_MODULE=tesla_ce_supervisor.settings
+
+# Copy the code
+ADD src/tesla_ce_supervisor /tesla/tesla_ce_supervisor
+RUN cp /tesla/tesla_ce_supervisor/manage.py /tesla/manage.py
 
 # Create a user and group for uWSGI and Celery
 RUN addgroup -g 2000 -S web_group && \
