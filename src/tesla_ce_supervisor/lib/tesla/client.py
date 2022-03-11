@@ -94,10 +94,10 @@ class TeslaClient:
         if self._config.get('STORAGE_SECRET_KEY') is None:
             errors['error_missing'].append('STORAGE_SECRET_KEY')
         # RabbitMQ
-        if self._config.get('RABBITMQ_ERLANG_COOKIE') is None:
-            errors['error_missing'].append('RABBITMQ_ERLANG_COOKIE')
         if self._config.get('RABBITMQ_ADMIN_USER') is None:
             errors['error_missing'].append('RABBITMQ_ADMIN_USER')
+        if self._config.get('RABBITMQ_ADMIN_PASSWORD') is None:
+            errors['error_missing'].append('RABBITMQ_ADMIN_PASSWORD')
         # DJango
         if self._config.get('DJANGO_SECRET_KEY') is None:
             errors['error_missing'].append('DJANGO_SECRET_KEY')
