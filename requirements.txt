@@ -3,3 +3,5 @@ apscheduler
 python-consul
 
 tesla-ce
+
+django-apscheduler

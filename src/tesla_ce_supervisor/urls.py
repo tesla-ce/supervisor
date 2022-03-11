@@ -23,4 +23,4 @@ urlpatterns = [
 ]
 
 # Start background jobs
-start_jobs()
+# start_jobs()
