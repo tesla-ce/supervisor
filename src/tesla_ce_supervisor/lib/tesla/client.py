@@ -84,15 +84,6 @@ class TeslaClient:
             errors['warning_missing'].append('VAULT_TOKEN')
         if self._config.get('VAULT_KEYS') is None:
             errors['warning_missing'].append('VAULT_KEYS')
-        if self._config.get('VAULT_BACKEND') == 'database':
-            if self._config.get('VAULT_DB_HOST') is None:
-                errors['error_missing'].append('VAULT_DB_HOST')
-            if self._config.get('VAULT_DB_NAME') is None:
-                errors['error_missing'].append('VAULT_DB_NAME')
-            if self._config.get('VAULT_DB_USER') is None:
-                errors['error_missing'].append('VAULT_DB_USER')
-            if self._config.get('VAULT_DB_PASSWORD') is None:
-                errors['error_missing'].append('VAULT_DB_PASSWORD')
         # Redis
         if self._config.get('REDIS_PASSWORD') is None:
             errors['error_missing'].append('REDIS_PASSWORD')
