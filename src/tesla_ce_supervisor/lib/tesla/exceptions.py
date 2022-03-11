@@ -1,0 +1,2 @@
+class TeslaConfigException(Exception):
+    pass
