@@ -6,10 +6,11 @@ import logging
 from django.core.management import call_command
 from tesla_ce_supervisor.lib.client import SupervisorClient
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('background_tasks')
 
 
 def update_deploy_status():
+    print('UPDATE_DEPLOY_STATUS')
     logger.debug('Update deploy status')
     client = SupervisorClient()
 
@@ -23,6 +24,7 @@ def update_deploy_status():
     errors = client.check_configuration()
     if not errors['valid']:
         logger.error('Configuration file not valid. Stop process. \n{}'.format('\n'.join(errors['errors'])))
+        print('Configuration file not valid. Stop process. \n{}'.format('\n'.join(errors['errors'])))
         return
     if len(errors['warnings']) > 0:
         logger.warning('The following warnings were found checking configuration:\n{}'.format(

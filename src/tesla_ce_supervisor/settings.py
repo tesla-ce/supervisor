@@ -24,6 +24,10 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'WARNING',
     },
+    'background_tasks': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
 }
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
