@@ -21,8 +21,9 @@ class TeslaClient:
         # Check if value is provided as environment variable
         if key in os.environ:
             return os.environ[key]
-        if os.path.join(self._secrets_path, key):
-            with open(os.path.join(self._secrets_path, key), 'r') as secret_file:
+        secret_path = os.path.join(self._secrets_path, key)
+        if os.path.exists(secret_path):
+            with open(secret_path, 'r') as secret_file:
                 return secret_file.read()
         return self._config.get(key, default)
 
