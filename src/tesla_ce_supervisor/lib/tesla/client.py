@@ -2,6 +2,7 @@ import os
 import configparser
 from django.conf import settings
 from .conf import Config
+from .vault import VaultManager
 
 
 class TeslaClient:
@@ -145,3 +146,7 @@ class TeslaClient:
             :return: Configuration file path
         """
         return self._config_file
+
+    def get_vault_policies(self):
+        policies = VaultManager(self._config).get_policies()
+        return policies
