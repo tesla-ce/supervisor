@@ -43,7 +43,7 @@ SECRET_KEY = 'django-insecure-9fnp#tvehe=49wr&*td-draz18+3c(-)p$6%k08p88av0(5bvw
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Setup data directory
 DATA_DIRECTORY = Path(os.environ.get('SUPERVISOR_DATA', os.path.join(BASE_DIR, '_data', ''))).resolve()
@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_apscheduler',
     'tesla_ce_supervisor',
+    'apps.web'
 ]
 
 MIDDLEWARE = [
@@ -77,7 +78,10 @@ ROOT_URLCONF = 'tesla_ce_supervisor.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(os.path.dirname(__file__), 'apps', 'web', 'templates'),
+            os.path.join(os.path.dirname(__file__), 'templates')
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -137,8 +141,9 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
-
 STATIC_URL = 'static/'
+STATIC_ROOT = ''
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -154,3 +159,14 @@ CONSUL_PORT = os.environ.get('CONSUL_PORT', 8500)
 CONSUL_SCHEME = os.environ.get('CONSUL_SCHEME', 'http')
 CONSUL_VERIFY = os.environ.get('CONSUL_VERIFY', True)
 CONSUL_CERT = os.environ.get('CONSUL_CERT')
+
+# AUTO, None, SETUP, CONFIG (in service mode, force update all variables and exit())
+SETUP_MODE = os.environ.get('SETUP_MODE', None)
+# todo: define catalog service swarm
+
+# supervisor service secrets:
+# vault token
+# vault keys[optional]  [ only privileged mode ]
+# django secret
+# admin password
+# tesla.config.cfg [ only privileged mode ]

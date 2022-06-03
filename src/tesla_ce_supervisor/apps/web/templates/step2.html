@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    {% include "header_steps.html" with step=2 %}
+    <form method="post" action="{% url 'setup_step2' %}">
+    {% for section in service_sections %}
+        <div class="service-step service-step{{ forloop.counter }}">
+            <h2>{{ section.1 }} [<span class="">{{ forloop.counter }}/{{service_sections|length}}</span>]</h2>
+
+            <div class="row">
+                <div class="col col-xs-12">
+                    {% for section_conf in section.2 %}
+                        {% if section_conf.5 == True %}
+                            {% include "field.html" with section_conf=section_conf %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <div class="controls">
+        <div class="row">
+            <div class="col col-6">
+                <button type="button" class="btn btn-secondary" onclick="previous_step();">Previous</button>
+            </div>
+            <div class="col col-6 text-right">
+                {% csrf_token %}
+                <button type="button" class="btn btn-primary" onclick="next_step();">Next</button>
+            </div>
+        </div>
+    </div>
+    </form>
+</div>
+
+{% endblock %}
+{% block js %}
+<script>
+    let active_step = 1;
+    let max_steps = {{ service_sections|length }};
+
+
+    const elements = document.getElementsByClassName('show-password');
+    for (let el of elements) {
+        el.addEventListener("mousedown", function(e) {
+            for (let subel of e.currentTarget.parentElement.childNodes) {
+                if (subel.nodeType == 1 && subel.getAttribute('type') == 'password') {
+                    subel.type = 'text';
+                }
+            }
+        });
+
+        el.addEventListener("mouseup", function(e) {
+            for (let subel of e.currentTarget.parentElement.childNodes) {
+                if (subel.nodeType == 1 && subel.getAttribute('type') == 'text') {
+                    subel.type = 'password';
+                }
+            }
+        });
+    }
+
+    function show_step() {
+        if (active_step < 1) {
+            window.location.href = '{%url "setup_step1" %}';
+            active_step = 1;
+        }
+
+        if (active_step > max_steps) {
+            active_step = max_steps;
+            document.getElementsByTagName('form')[0].submit();
+            return;
+        }
+
+        var steps = document.getElementsByClassName("service-step");
+
+        for (let i = 0; i < steps.length; i++) {
+            steps[i].style='display:none;';
+        }
+
+        var active_steps = document.getElementsByClassName("service-step"+active_step);
+        active_steps[0].style='display:block;';
+
+        var label_steps = document.getElementsByClassName("service-label-step");
+
+        for (let i = 0; i < label_steps.length; i++) {
+            label_steps[i].classList.remove("active");
+        }
+    }
+
+    function previous_step() {
+        active_step--;
+        show_step();
+    }
+
+    function next_step() {
+        active_step++;
+        show_step();
+    }
+
+    function show_filters() {
+        const filter_fields = document.getElementsByClassName('filter_field');
+        for(let i=0; i < filter_fields.length; i++) {
+            const filter_name = filter_fields[i].id;
+            const filter_value = filter_fields[i].value;
+
+            // hide all elements
+            const all_fields = document.querySelectorAll('[class*="filter_field_'+filter_name+'"]');
+            for(let j=0; j < all_fields.length; j++) {
+                all_fields[j].style.display='none';
+            }
+
+            // show selected elements
+            const fields = document.querySelectorAll('[class*="filter_field_'+filter_name+'"][data-filter="'+filter_value+'"]');
+            for(let j=0; j < fields.length; j++) {
+                fields[j].style.display='block';
+            }
+        }
+    }
+
+    function configure_filters() {
+        const filter_fields = document.getElementsByClassName('filter_field');
+        for(let i=0; i < filter_fields.length; i++) {
+            filter_fields[i].addEventListener("change", function(e) {
+                console.log('hey');
+                show_filters();
+            });
+        }
+    }
+
+    (function() {
+        show_step();
+        configure_filters();
+        show_filters();
+    })();
+</script>
+{% endblock %}

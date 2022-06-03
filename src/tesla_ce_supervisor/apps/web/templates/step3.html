@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    {% include "header_steps.html" with step=3 %}
+
+    <form method="post" action="{% url 'setup_step3' %}">
+
+    <div class="step">
+        <br/><br/>
+        <h2>Service status</h2>
+        <table class="table table-stripped">
+            <thead>
+            <th>Service</th>
+            <th>Status</th>
+            </thead>
+            <tbody>
+            {% for service in services %}
+                <tr>
+                    <td>
+                        {{ service.name }}
+                    </td>
+                    <td>
+
+                        {% if service.status == 'success' %}
+                            <div class="alert alert-success">
+                                Ok
+                            </div>
+                        {% else %}
+                            <div class="alert alert-danger">
+                                {{ service.error_message }}
+                            </div>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+        <div class="step">
+            <button class="btn btn-primary">Download tesla config file</button>
+
+            <button class="btn btn-secondary">Download services files</button>
+            <button class="btn btn-primary">Autodeploy services now</button>
+        </div>
+
+        <div class="step">
+            <br/><br/>
+            <h2>TeSLA system status</h2>
+            <table class="table table-stripped">
+                <thead>
+                <th>Service</th>
+                <th>Status</th>
+                </thead>
+                <tbody>
+                {% for service in tesla_core %}
+                <tr>
+                    <td>
+                        {{ service.name }}
+                    </td>
+                    <td>
+
+                        {% if service.status == 'success' %}
+                        <div class="alert alert-success">
+                            Ok
+                        </div>
+                        {% else %}
+                        <div class="alert alert-danger">
+                            {{ service.error_message }}
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="step">
+            <button class="btn btn-secondary">Download core files</button>
+            <button class="btn btn-primary">Autodeploy core now</button>
+        </div>
+    <div class="controls">
+        <div class="row">
+            <div class="col col-6">
+                <a href="{%url 'setup_step2' %}" class="btn btn-secondary">Previous</a>
+            </div>
+            <div class="col col-6 text-right">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Finish</button>
+            </div>
+        </div>
+    </div>
+    </form>
+</div>
+
+{% endblock %}
+{% block js %}
+
+{% endblock %}

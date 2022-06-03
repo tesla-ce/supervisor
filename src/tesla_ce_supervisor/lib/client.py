@@ -27,5 +27,27 @@ class SupervisorClient:
     def get_config_path(self):
         return self._tesla.get_config_path()
 
+    def check_services(self):
+        # TODO: return hardcoded data
 
+        # check services in catalog (if deploy=True)
+        self._catalog.check_database('abc')
+        # foreach services check if can connect
+        pass
+
+    def auto_deploy(self):
+        # load config from env
+        # write config file
+        # deploy LB?
+        # deploy services?
+        # deploy core
+        # deploy dashboard
+
+        # deploy VLE?
+
+        # deploy providers? info in env variable.
+
+        # todo: implement this with exit()
+        # todo: write file log
+        pass
 

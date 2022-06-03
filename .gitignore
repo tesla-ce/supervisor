@@ -1,2 +1,4 @@
 /src/_data/
 /venv
+*.pyc
+.idea

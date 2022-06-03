@@ -1,0 +1,20 @@
+<div class="mb-3 {%if section_conf.6 and section_conf.7 %}filter_field_{{ section_conf.6 }}{% endif %}" {%if section_conf.6 and section_conf.7 %}data-filter="{{section_conf.7}}"{% endif %}>
+    {% if section_conf.2 == 'str' or section_conf.2 == 'list' or section_conf.2 == 'int' %}
+    <label for="{{section.0}}__{{section_conf.0}}" class="form-label">{{section_conf.1}}</label>
+    <input type="text" class="form-control" name="{{section.0}}__{{section_conf.0}}" id="{{section.0}}__{{section_conf.0}}" aria-describedby="{{section.0}}__{{section_conf.0}}_help" value="{%if section_conf.3 != None %}{{section_conf.3}}{% endif %}">
+    <div id="{{section.0}}__{{section_conf.0}}_help" class="form-text"></div>
+    {% elif section_conf.2 == 'enum' %}
+    <label for="{{section.0}}__{{section_conf.0}}" class="form-label">{{section_conf.1}}</label>
+    <select class="form-select {%if section_conf.6 and section_conf.6 == 'filter_field' %}filter_field{% endif %}" id="{{section.0}}__{{section_conf.0}}" name="{{section.0}}__{{section_conf.0}}" aria-describedby="{{section.0}}__{{section_conf.0}}_help">
+        {% for option in section_conf.4 %}
+        <option value="{{ option }}" {% if section_conf.3 == option %}selected {% endif %}>{{ option }}</option>
+        {% endfor %}
+    </select>
+    <div id="{{section.0}}__{{section_conf.0}}_help" class="form-text"></div>
+    {% elif section_conf.2 == 'bool' %}
+    <input type="hidden" name="{{section.0}}__{{section_conf.0}}" value="0" />
+    <input type="checkbox" class="form-check-input" id="{{section.0}}__{{section_conf.0}}" name="{{section.0}}__{{section_conf.0}}" value="1" {% if section_conf.3 == True %} checked="checked"{% endif %}>
+    <label class="form-check-label" for="{{section.0}}__{{section_conf.0}}"> {{section_conf.1}}</label>
+
+    {% endif %}
+</div>

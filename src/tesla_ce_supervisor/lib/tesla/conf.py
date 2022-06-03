@@ -111,9 +111,10 @@ class Config:
             ('allowed_hosts', 'Allowed hosts', 'list', [], None, True),
         )),
         ('deployment', 'Deployment configuration', (
-            ('orchestrator', 'Docker orchestrator', 'enum', 'swarm', ['swarm', ], True),
+            ('catalog_system', 'Catalog system', 'enum', 'swarm', ['consult', 'swarm'], True),
+            ('orchestrator', 'Docker orchestrator', 'enum', 'swarm', ['swarm', 'normad'], True),
             ('services', 'Deploy external services', 'bool', False, None, True),
-            ('lb', 'Load balancer', 'enum', 'traefik', ['traefik', ], True),
+            ('lb', 'Load balancer', 'enum', 'traefik', ['traefik', 'other'], True),
             ('image', 'Docker image used for deployment', 'str',
              'teslace/core', None, True),
             ('version', 'Docker image version used for deployment', 'str', 'latest', None, True),
@@ -185,6 +186,7 @@ class Config:
         field_desc = self._get_config_field(parts[0], parts[1])
 
         value = field_desc[3]
+
         if value is not None:
             return value
 
@@ -440,3 +442,28 @@ class Config:
             file_handler.write('{}={}\n'.format(key[0], value))
         else:
             file_handler.write('# {}={}\n'.format(key[0], default_value))
+
+    def load_env(self):
+        # todo: review this method
+        """
+            Load configuration options from Docker Secrets and Environment variables
+        """
+        # Read values in secrets
+        if os.path.exists(self.secrets_path):
+            for secret in list(os.scandir(self.secrets_path)):
+                if self.config.is_valid_key(secret.name):
+                    with open(secret.path, 'r') as f_secret:
+                        value = f_secret.read()
+                        self.config.set(secret.name, value)
+
+        # Read options from environment variables
+        for k in os.environ.keys():
+            if self.config.is_valid_key(k):
+                self.config.set(k, os.getenv(k))
+            elif k.upper().endswith('_FILE'):
+                # Try to read from file
+                key = k.upper().split('_FILE')[0]
+                if os.path.exists(os.getenv(k)) and self.config.is_valid_key(key):
+                    with open(os.getenv(k), 'r') as f_secret:
+                        value = f_secret.read()
+                        self.config.set(key, value)
