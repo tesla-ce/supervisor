@@ -80,6 +80,7 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
             os.path.join(os.path.dirname(__file__), 'apps', 'web', 'templates'),
+            os.path.join(os.path.dirname(__file__), 'lib', 'deploy', 'templates'),
             os.path.join(os.path.dirname(__file__), 'templates')
         ],
         'APP_DIRS': True,
