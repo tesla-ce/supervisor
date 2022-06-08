@@ -574,3 +574,8 @@ class VaultManager:
             'errors': 0,
             'info': {}
         }
+
+    def get_policies_file(self):
+        # Create the setup object
+        setup = VaultSetup(self._client, self._config)
+        return setup.get_policies_file()

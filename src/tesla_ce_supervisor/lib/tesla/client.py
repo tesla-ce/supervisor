@@ -148,7 +148,7 @@ class TeslaClient:
         return self._config_file
 
     def get_vault_policies(self):
-        policies = VaultManager(self._config).get_policies()
+        policies = VaultManager(self._config).get_policies_file()
         return policies
 
     def get_config(self):

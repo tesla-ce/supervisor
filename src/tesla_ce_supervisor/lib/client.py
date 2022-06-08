@@ -40,6 +40,7 @@ class SupervisorClient:
         # write config file
         # deploy LB?
         # deploy services?
+        # setup vault
         # deploy core
         # deploy dashboard
 
@@ -51,3 +52,17 @@ class SupervisorClient:
         # todo: write file log
         pass
 
+    def get_vault_configuration(self) -> dict:
+        """
+            Get the list of Vault configuration files to be exported or executed
+            :return: Dictionary with all required files and content for each file
+        """
+        return {
+            'tesla-ce-policies.hcl': self._tesla.get_vault_policies(),
+        }
+
+    def setup_vault(self) -> None:
+        """
+            Run Vault configuration
+        """
+        pass

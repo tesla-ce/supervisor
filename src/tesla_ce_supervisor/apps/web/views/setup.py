@@ -1,9 +1,27 @@
 import os
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.http import Http404
 from django.shortcuts import render, redirect
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from tesla_ce_supervisor.lib.client import SupervisorClient
 from tesla_ce_supervisor.lib.tesla import TeslaClient
 from tesla_ce_supervisor.lib.utils import to_list, to_tuple, utils_get_config
-from tesla_ce_supervisor.lib.client import SupervisorClient
+
+# Create your views here.
+
+
+class VaultConfigurationAPIView(APIView):
+    """
+    List all snippets, or create a new snippet.
+    """
+    def get(self, request, format=None):
+        client = SupervisorClient()
+        data = client.get_vault_configuration()
+        return JsonResponse(data)
+
 
 def step1(request):
     config = utils_get_config()
