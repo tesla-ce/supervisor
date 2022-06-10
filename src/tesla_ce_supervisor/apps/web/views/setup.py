@@ -190,11 +190,6 @@ def step3(request):
             "error_message": ""
         },
         {
-            "name": "vault",
-            "status": "danger",
-            "error_message": "Lorem ipsum vault"
-        },
-        {
             "name": "redis",
             "status": "danger",
             "error_message": "Lorem ipsum redis"
@@ -208,7 +203,12 @@ def step3(request):
             "name": "storage",
             "status": "danger",
             "error_message": "Lorem ipsum"
-        }
+        },
+        {
+            "name": "vault",
+            "status": "danger",
+            "error_message": "Lorem ipsum vault"
+        },
     ]
 
     tesla_supervisor = [

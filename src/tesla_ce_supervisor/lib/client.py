@@ -3,12 +3,12 @@ import typing
 from .catalog import CatalogClient
 from .tesla import TeslaClient
 from .deploy import DeployClient
+from .setup import Setup
 
 
 class SupervisorClient:
 
     def __init__(self):
-
         self._catalog = CatalogClient()
         self._tesla = TeslaClient()
 
@@ -80,3 +80,10 @@ class SupervisorClient:
             :return: Deployer instance
         """
         return DeployClient(self._tesla.get_config(), target)
+
+    def get_setup(self):
+        """
+            Create a setup instance using current configuration
+            :return: SetupClient instance
+        """
+        return SetupClient(self._tesla.get_config())
