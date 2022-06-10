@@ -1,5 +1,8 @@
+import typing
+
 from .catalog import CatalogClient
 from .tesla import TeslaClient
+from .deploy import DeployClient
 
 
 class SupervisorClient:
@@ -57,6 +60,7 @@ class SupervisorClient:
             Get the list of Vault configuration files to be exported or executed
             :return: Dictionary with all required files and content for each file
         """
+        self.get_deployer().deploy_lb()
         return {
             'tesla-ce-policies.hcl': self._tesla.get_vault_policies(),
         }
@@ -66,3 +70,13 @@ class SupervisorClient:
             Run Vault configuration
         """
         pass
+
+    def get_deployer(self,
+                     target: typing.Optional[typing.Union[typing.Literal["NOMAD"], typing.Literal["SWARM"]]] = None
+                     ) -> DeployClient:
+        """
+            Create a deployer instance using current configuration
+            :param target: The target system (Nomad or Swarm)
+            :return: Deployer instance
+        """
+        return DeployClient(self._tesla.get_config(), target)

@@ -169,21 +169,22 @@ class VaultSetup:
                 policy=policies[policy],
             )
 
-    def get_policies_file(self):
+    def get_policies_definition(self) -> dict:
         """
-            Creates the policies file to grant access to services
+            Creates a dictionary with the definition of all required policies to grant access to services
         """
         # Create generic policies
         policies = self._adapt_policies_path(get_policies())
-        policies_file = ''
+        policies_files = {}
         for policy in policies:
-            policies_file += '# TeSLA CE "{}" policy\n'.format(policy)
+            policy_name = '{}{}'.format(self._policy_prefix, policy)
+            policies_file = '# TeSLA CE "{}" policy\n'.format(policy_name)
             for policy_path in policies[policy]['path']:
                 policies_file += 'path "{}" '.format(policy_path) + '{\n'
                 policies_file += ('  capabilities = {}\n'.format(policies[policy]['path'][policy_path]['capabilities']).replace("'", '"'))
                 policies_file += '}\n'
-            policies_file += '\n'
-        return policies_file
+            policies_files[policy_name] = policies_file
+        return policies_files
 
     def _create_jwt_key(self, key):
         """

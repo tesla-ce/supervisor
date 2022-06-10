@@ -575,7 +575,7 @@ class VaultManager:
             'info': {}
         }
 
-    def get_policies_file(self):
+    def get_policies_definition(self):
         # Create the setup object
         setup = VaultSetup(self._client, self._config)
-        return setup.get_policies_file()
+        return setup.get_policies_definition()
