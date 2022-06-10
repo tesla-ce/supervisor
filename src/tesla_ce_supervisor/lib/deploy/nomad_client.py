@@ -145,6 +145,21 @@ class NomadDeploy(BaseDeploy):
                 verify=self.nomad_conf.nomad_skip_verify
             )
 
+    def _crete_nomad_job(self, name: str, template: str, context: dict) -> dict:
+        task_def = self._remove_empty_lines(render_to_string(template, context))
+
+        try:
+            job_def = self._client.jobs.parse(task_def)
+        except nomad.api.exceptions.BadRequestNomadException as err:
+            raise TeslaDeployNomadTemplateException(err.nomad_resp.reason)
+
+        try:
+            response = self._client.job.register_job(name, {'Job': job_def})
+        except nomad.api.exceptions.BadRequestNomadException as err:
+            raise TeslaDeployNomadException(err.nomad_resp.reason)
+
+        return response
+
     def write_scripts(self) -> None:
         """
             Write deployment scripts
@@ -155,38 +170,22 @@ class NomadDeploy(BaseDeploy):
         """
             Deploy Load Balancer
         """
-
         context = {
             'count': 1,
             'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
             'nomad_region': self.nomad_conf.nomad_region,
             'traefik_image': 'traefik:v2.5',
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
-            #'consul_address': '',
-            #'consul_scheme': '',
             'TESLA_ADMIN_MAIL': self._config.get('TESLA_ADMIN_MAIL')
         }
 
-        task_def = self._remove_empty_lines(render_to_string('lb/traefik/nomad/traefik.nomad', context))
-
-        try:
-            job_def = self._client.jobs.parse(task_def)
-        except nomad.api.exceptions.BadRequestNomadException as err:
-            raise TeslaDeployNomadTemplateException(err.nomad_resp.reason)
-
-        try:
-            response = self._client.job.register_job("traefik", {'Job': job_def})
-        except nomad.api.exceptions.BadRequestNomadException as err:
-            raise TeslaDeployNomadException(err.nomad_resp.reason)
-
-        return response
+        return self._crete_nomad_job('traefik', 'lb/traefik/nomad/traefik.nomad', context)
 
     def remove_lb(self) -> dict:
         """
             Remove deployed Load Balancer
         """
-        response = self._client.job.deregister_job('traefik', True)
-        return response
+        return self._client.job.deregister_job('traefik', True)
 
     def get_lb_script(self) -> SetupOptions:
         """
@@ -198,8 +197,6 @@ class NomadDeploy(BaseDeploy):
             'nomad_region': self.nomad_conf.nomad_region,
             'traefik_image': 'traefik:v2.5',
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
-            #'consul_address': '',
-            #'consul_scheme': '',
             'TESLA_ADMIN_MAIL': self._config.get('TESLA_ADMIN_MAIL')
         }
 
@@ -223,20 +220,75 @@ class NomadDeploy(BaseDeploy):
         """
             Deploy Hashicorp Vault
         """
-        return {}
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'vault_image': 'vault',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN')
+        }
+
+        return self._crete_nomad_job('vault', 'services/vault/nomad/vault.nomad', context)
+
+    def remove_vault(self) -> dict:
+        """
+            Remove deployed Vault
+        """
+        return self._client.job.deregister_job('vault', True)
 
     def get_vault_script(self) -> SetupOptions:
         """
             Get the script to deploy Hashicorp Vault
         """
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'vault_image': 'vault',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN')
+        }
+
+        task_def = self._remove_empty_lines(render_to_string('services/vault/nomad/vault.nomad', context))
+
         script = SetupOptions()
+        script.add_command(
+            command='nomad job run tesla-ce-vault.nomad',
+            description='Create new Nomad job for Vault'
+        )
+        script.add_file(
+            filename='tesla-ce-vault.nomad',
+            description='Job description for Vault',
+            content=task_def,
+            mimetype='application/hcl'
+        )
+
         return script
 
     def deploy_minio(self) -> dict:
         """
             Deploy MinIO
         """
-        return {}
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'minio_image': 'minio/minio',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'STORAGE_REGION': self._config.get('STORAGE_REGION'),
+            'STORAGE_ACCESS_KEY': self._config.get('STORAGE_ACCESS_KEY'),
+            'STORAGE_SECRET_KEY': self._config.get('STORAGE_SECRET_KEY'),
+        }
+
+        return self._crete_nomad_job('minio', 'services/minio/nomad/minio.nomad', context)
+
+    def remove_minio(self) -> dict:
+        """
+            Remove deployed MinIO
+        """
+        return self._client.job.deregister_job('minio', True)
 
     def get_minio_script(self) -> SetupOptions:
         """
@@ -249,7 +301,22 @@ class NomadDeploy(BaseDeploy):
         """
             Deploy Redis
         """
-        return {}
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'redis_image': 'redis:alpine',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'REDIS_PASSWORD': self._config.get('REDIS_PASSWORD'),
+        }
+
+        return self._crete_nomad_job('redis', 'services/redis/nomad/redis.nomad', context)
+
+    def remove_redis(self) -> dict:
+        """
+            Remove deployed Redis
+        """
+        return self._client.job.deregister_job('redis', True)
 
     def get_redis_script(self) -> SetupOptions:
         """
@@ -262,7 +329,50 @@ class NomadDeploy(BaseDeploy):
         """
             Deploy Database
         """
-        return {}
+        if self._config.get('DB_ENGINE') == 'mysql':
+            db_image = 'mariadb'
+            name = 'mysql'
+            template = 'services/database/mysql/nomad/mysql.nomad'
+        elif self._config.get('DB_ENGINE') == 'postgresql':
+            db_image = None
+            name = None
+            template = None
+        else:
+            db_image = None
+            name = None
+            template = None
+
+        if db_image is None:
+            raise TeslaDeployNomadException('Invalid database engine')
+
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'db_image': db_image,
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'DB_ROOT_PASSWORD': self._config.get('DB_ROOT_PASSWORD'),
+            'DB_PASSWORD': self._config.get('DB_PASSWORD'),
+            'DB_USER': self._config.get('DB_USER'),
+            'DB_NAME': self._config.get('DB_NAME'),
+        }
+
+        return self._crete_nomad_job(name, template, context)
+
+    def remove_database(self) -> dict:
+        """
+            Remove deployed Database
+        """
+        if self._config.get('DB_ENGINE') == 'mysql':
+            name = 'mysql'
+        elif self._config.get('DB_ENGINE') == 'postgresql':
+            name = None
+        else:
+            name = None
+
+        if name is None:
+            raise TeslaDeployNomadException('Invalid database engine')
+        return self._client.job.deregister_job(name, True)
 
     def get_database_script(self) -> SetupOptions:
         """
@@ -271,13 +381,31 @@ class NomadDeploy(BaseDeploy):
         script = SetupOptions()
         return script
 
-    def deploy_rabbit(self) -> dict:
+    def deploy_rabbitmq(self) -> dict:
         """
             Deploy RabbitMQ
         """
-        return {}
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'rabbitmq_image': 'rabbitmq:3.8-management-alpine',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'RABBITMQ_ADMIN_USER': self._config.get('RABBITMQ_ADMIN_USER'),
+            'RABBITMQ_ADMIN_PASSWORD': self._config.get('RABBITMQ_ADMIN_PASSWORD'),
+            'RABBITMQ_ERLANG_COOKIE': self._config.get('RABBITMQ_ERLANG_COOKIE'),
+        }
 
-    def get_rabbit_script(self) -> SetupOptions:
+        return self._crete_nomad_job('rabbitmq', 'services/rabbitmq/nomad/rabbitmq.nomad', context)
+
+    def remove_rabbitmq(self) -> dict:
+        """
+            Remove deployed RabbitMQ
+        """
+        return self._client.job.deregister_job('rabbitmq', True)
+
+    def get_rabbitmq_script(self) -> SetupOptions:
         """
             Get the script to deploy RabbitMQ
         """

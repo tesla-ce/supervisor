@@ -52,6 +52,13 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
+    def remove_vault(self) -> dict:
+        """
+            Remove deployed Vault
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
     def get_vault_script(self) -> SetupOptions:
         """
             Get the script to deploy Hashicorp Vault
@@ -62,6 +69,13 @@ class BaseDeploy(abc.ABC):
     def deploy_minio(self) -> dict:
         """
             Deploy MinIO
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def remove_minio(self) -> dict:
+        """
+            Remove deployed MinIO
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
@@ -80,6 +94,13 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
+    def remove_redis(self) -> dict:
+        """
+            Remove deployed Redis
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
     def get_redis_script(self) -> SetupOptions:
         """
             Get the script to deploy Redis
@@ -94,6 +115,13 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
+    def remove_database(self) -> dict:
+        """
+            Remove deployed Database
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
     def get_database_script(self) -> SetupOptions:
         """
             Get the script to deploy Database
@@ -101,14 +129,21 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def deploy_rabbit(self) -> dict:
+    def deploy_rabbitmq(self) -> dict:
         """
             Deploy RabbitMQ
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def get_rabbit_script(self) -> SetupOptions:
+    def remove_rabbitmq(self) -> dict:
+        """
+            Remove deployed RabbitMQ
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def get_rabbitmq_script(self) -> SetupOptions:
         """
             Get the script to deploy RabbitMQ
         """

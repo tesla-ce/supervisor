@@ -30,3 +30,33 @@ class DeployClient:
 
     def remove_lb(self) -> dict:
         return self._client.remove_lb()
+
+    def deploy_vault(self) -> dict:
+        return self._client.deploy_vault()
+
+    def remove_vault(self) -> dict:
+        return self._client.remove_vault()
+
+    def deploy_minio(self) -> dict:
+        return self._client.deploy_minio()
+
+    def remove_minio(self) -> dict:
+        return self._client.remove_minio()
+
+    def deploy_database(self) -> dict:
+        return self._client.deploy_database()
+
+    def remove_database(self) -> dict:
+        return self._client.remove_database()
+
+    def deploy_rabbitmq(self) -> dict:
+        return self._client.deploy_rabbitmq()
+
+    def remove_rabbitmq(self) -> dict:
+        return self._client.remove_rabbitmq()
+
+    def deploy_redis(self) -> dict:
+        return self._client.deploy_redis()
+
+    def remove_redis(self) -> dict:
+        return self._client.remove_redis()
