@@ -7,4 +7,3 @@ tesla-ce
 django-apscheduler
 
 python-nomad
-# nomad-lab[parsing]

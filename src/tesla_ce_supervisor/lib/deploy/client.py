@@ -25,5 +25,8 @@ class DeployClient:
 
         assert self._client is not None
 
-    def deploy_lb(self):
-        self._client.deploy_lb()
+    def deploy_lb(self) -> dict:
+        return self._client.deploy_lb()
+
+    def remove_lb(self) -> dict:
+        return self._client.remove_lb()

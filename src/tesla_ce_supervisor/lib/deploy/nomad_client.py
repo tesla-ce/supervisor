@@ -4,7 +4,9 @@ import nomad
 from urllib.parse import urlparse
 from django.template.loader import render_to_string
 from .base import BaseDeploy
+from .exceptions import TeslaDeployNomadTemplateException, TeslaDeployNomadException
 from ..tesla.conf import Config
+from ..setup_options import SetupOptions
 
 
 class NomadConfig:
@@ -47,8 +49,8 @@ class NomadConfig:
     # The server name to use as the SNI host when connecting via TLS.
     nomad_tls_server_name: typing.Optional[str] = None
 
-    def __init__(self, nomad_addr: typing.Optional[str] = 'http://127.0.0.1:4646',
-                 nomad_region: typing.Optional[str] = 'global',
+    def __init__(self, config, nomad_addr: typing.Optional[str] = None,
+                 nomad_region: typing.Optional[str] = None,
                  nomad_datacenters: typing.Optional[typing.List[str]] = None,
                  nomad_auth: typing.Optional[typing.Union[typing.Literal["ACL"], typing.Literal["CERT"]]] = None,
                  nomad_token: typing.Optional[str] = None,
@@ -59,12 +61,15 @@ class NomadConfig:
                  nomad_skip_verify: typing.Optional[bool] = False,
                  nomad_tls_server_name: typing.Optional[str] = None,
                  ) -> None:
-        self.nomad_datacenters = nomad_datacenters
-        if self.nomad_datacenters is None:
-            self.nomad_datacenters = []
-        self.nomad_auth = nomad_auth
 
-        # Check default environment variables
+        # Nomad configuration
+        self.nomad_datacenters = self._set_value(
+            config, nomad_datacenters, 'NOMAD_DATACENTERS', 'NOMAD_DATACENTERS', []
+        )
+        self.nomad_auth = self._set_value(
+            config, nomad_auth
+        )
+        nomad_addr = self._set_value(config, nomad_addr, 'NOMAD_ADDR', 'NOMAD_ADDR')
         if nomad_addr is not None:
             parsed = urlparse(nomad_addr)
             self.nomad_url = ''
@@ -72,15 +77,39 @@ class NomadConfig:
                 self.nomad_url += '{}://'.format(parsed.scheme)
             self.nomad_url += '{}'.format(parsed.hostname)
             self.nomad_port = parsed.port
+        self.nomad_region = self._set_value(config, nomad_region, 'NOMAD_REGION', 'NOMAD_REGION')
 
-        self.nomad_region = os.getenv('NOMAD_REGION', nomad_region)
-        self.nomad_token = os.getenv('NOMAD_TOKEN', nomad_token)
-        self.nomad_client_cert = os.getenv('NOMAD_CLIENT_CERT', nomad_client_cert)
-        self.nomad_client_key = os.getenv('NOMAD_CLIENT_KEY', nomad_client_key)
+        # Verification
+        self.nomad_skip_verify = self._set_value(
+            config, nomad_skip_verify, 'NOMAD_SKIP_VERIFY', 'NOMAD_SKIP_VERIFY'
+        )
+        self.nomad_tls_server_name = self._set_value(
+            config, nomad_tls_server_name, 'NOMAD_TLS_SERVER_NAME', 'NOMAD_TLS_SERVER_NAME'
+        )
         self.nomad_cacert = os.getenv('NOMAD_CACERT', nomad_cacert)
         self.nomad_capath = os.getenv('NOMAD_CAPATH', nomad_capath)
-        self.nomad_skip_verify = os.getenv('NOMAD_SKIP_VERIFY', nomad_skip_verify)
-        self.nomad_tls_server_name = os.getenv('NOMAD_TLS_SERVER_NAME', nomad_tls_server_name)
+
+        # Authentication configuration
+        if self.nomad_auth == "ACL":
+            self.nomad_token = self._set_value(nomad_token, 'NOMAD_TOKEN', 'NOMAD_TOKEN')
+        elif self.nomad_auth == "CERT":
+            self.nomad_token = self._set_value(nomad_client_cert, 'NOMAD_CLIENT_CERT', 'NOMAD_CLIENT_CERT')
+            self.nomad_token = self._set_value(nomad_client_key, 'NOMAD_CLIENT_KEY', 'NOMAD_CLIENT_KEY')
+
+    @staticmethod
+    def _set_value(config, parameter, env_key=None, conf_key=None, default=None):
+        if parameter is not None:
+            return parameter
+        default_value = None
+        if conf_key is not None:
+            default_value = config.get(conf_key)
+        if env_key is not None:
+            ret_val = os.getenv(env_key, default_value)
+        else:
+            ret_val = default_value
+        if ret_val is None:
+            ret_val = default
+        return ret_val
 
 
 class NomadDeploy(BaseDeploy):
@@ -94,85 +123,163 @@ class NomadDeploy(BaseDeploy):
         super().__init__(config)
         self.nomad_conf = nomad_conf
         if self.nomad_conf is None:
-            self.nomad_conf = NomadConfig()
-        self._client = nomad.Nomad()
+            self.nomad_conf = NomadConfig(config)
+        if self.nomad_conf.nomad_auth is None:
+            self._client = nomad.Nomad(
+                host=self.nomad_conf.nomad_url,
+                port=self.nomad_conf.nomad_port,
+                verify=self.nomad_conf.nomad_skip_verify
+            )
+        elif self.nomad_conf.nomad_auth == "ACL":
+            self._client = nomad.Nomad(
+                host=self.nomad_conf.nomad_url,
+                port=self.nomad_conf.nomad_port,
+                token=self.nomad_conf.nomad_token,
+                verify=self.nomad_conf.nomad_skip_verify
+            )
+        elif self.nomad_conf.nomad_auth == "CERT":
+            self._client = nomad.Nomad(
+                host=self.nomad_conf.nomad_url,
+                port=self.nomad_conf.nomad_port,
+                cert=(self.nomad_conf.nomad_client_cert,self.nomad_conf.nomad_client_key),
+                verify=self.nomad_conf.nomad_skip_verify
+            )
 
     def write_scripts(self) -> None:
+        """
+            Write deployment scripts
+        """
         pass
 
-    def deploy_lb(self) -> None:
+    def deploy_lb(self) -> dict:
         """
             Deploy Load Balancer
         """
 
-        context = {}
-        script = self._remove_empty_lines(render_to_string('lb/traefik/nomad/traefik.nomad', context))
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'traefik_image': 'traefik:v2.5',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            #'consul_address': '',
+            #'consul_scheme': '',
+            'TESLA_ADMIN_MAIL': self._config.get('TESLA_ADMIN_MAIL')
+        }
 
+        task_def = self._remove_empty_lines(render_to_string('lb/traefik/nomad/traefik.nomad', context))
 
-        pass
+        try:
+            job_def = self._client.jobs.parse(task_def)
+        except nomad.api.exceptions.BadRequestNomadException as err:
+            raise TeslaDeployNomadTemplateException(err.nomad_resp.reason)
 
-    def get_lb_script(self) -> dict:
+        try:
+            response = self._client.job.register_job("traefik", {'Job': job_def})
+        except nomad.api.exceptions.BadRequestNomadException as err:
+            raise TeslaDeployNomadException(err.nomad_resp.reason)
+
+        return response
+
+    def remove_lb(self) -> dict:
+        """
+            Remove deployed Load Balancer
+        """
+        response = self._client.job.deregister_job('traefik', True)
+        return response
+
+    def get_lb_script(self) -> SetupOptions:
         """
             Get the script to deploy Load Balancer
         """
-        pass
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'traefik_image': 'traefik:v2.5',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            #'consul_address': '',
+            #'consul_scheme': '',
+            'TESLA_ADMIN_MAIL': self._config.get('TESLA_ADMIN_MAIL')
+        }
 
-    def deploy_vault(self) -> None:
+        task_def = self._remove_empty_lines(render_to_string('lb/traefik/nomad/traefik.nomad', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='nomad job run tesla-ce-lb-traefik.nomad',
+            description='Create new Nomad job for Traefik Load Balancer'
+        )
+        script.add_file(
+            filename='tesla-ce-lb-traefik.nomad',
+            description='Job description for Traefik Load Balancer',
+            content=task_def,
+            mimetype='application/hcl'
+        )
+
+        return script
+
+    def deploy_vault(self) -> dict:
         """
             Deploy Hashicorp Vault
         """
-        pass
+        return {}
 
-    def get_vault_script(self) -> dict:
+    def get_vault_script(self) -> SetupOptions:
         """
             Get the script to deploy Hashicorp Vault
         """
-        return {}
+        script = SetupOptions()
+        return script
 
-    def deploy_minio(self) -> None:
+    def deploy_minio(self) -> dict:
         """
             Deploy MinIO
         """
-        pass
+        return {}
 
-    def get_minio_script(self) -> dict:
+    def get_minio_script(self) -> SetupOptions:
         """
             Get the script to deploy MinIO
         """
-        return {}
+        script = SetupOptions()
+        return script
 
-    def deploy_redis(self) -> None:
+    def deploy_redis(self) -> dict:
         """
             Deploy Redis
         """
-        pass
+        return {}
 
-    def get_redis_script(self) -> dict:
+    def get_redis_script(self) -> SetupOptions:
         """
             Get the script to deploy Redis
         """
-        return {}
+        script = SetupOptions()
+        return script
 
-    def deploy_database(self) -> None:
+    def deploy_database(self) -> dict:
         """
             Deploy Database
         """
-        pass
+        return {}
 
-    def get_database_script(self) -> dict:
+    def get_database_script(self) -> SetupOptions:
         """
             Get the script to deploy Database
         """
-        return {}
+        script = SetupOptions()
+        return script
 
-    def deploy_rabbit(self) -> None:
+    def deploy_rabbit(self) -> dict:
         """
             Deploy RabbitMQ
         """
-        pass
+        return {}
 
-    def get_rabbit_script(self) -> dict:
+    def get_rabbit_script(self) -> SetupOptions:
         """
             Get the script to deploy RabbitMQ
         """
-        return {}
+        script = SetupOptions()
+        return script

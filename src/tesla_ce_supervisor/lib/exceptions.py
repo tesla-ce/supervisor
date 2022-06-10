@@ -1,0 +1,3 @@
+class TeslaException(Exception):
+    pass
+

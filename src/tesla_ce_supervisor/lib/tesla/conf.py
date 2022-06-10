@@ -124,10 +124,10 @@ class Config:
         )),
         ('moodle', 'Moodle configuration. Only required if Moodle is deployed by TeSLA', (
             ('deploy', 'Deploy Moodle', 'bool', False, None, True),
-            ('name', 'Unique VLE name in TeSLA', 'str', 'default_moodle', True),
-            ('admin_user', 'Administrator user for Moodle', 'str', 'moodle', True),
-            ('admin_password', 'Administrator password for Moodle', 'str', None, True),
-            ('admin_email', 'Administrator email for Moodle', 'str', None, True),
+            ('name', 'Unique VLE name in TeSLA', 'str', 'default_moodle', None, True),
+            ('admin_user', 'Administrator user for Moodle', 'str', 'moodle', None, True),
+            ('admin_password', 'Administrator password for Moodle', 'str', None, None, True),
+            ('admin_email', 'Administrator email for Moodle', 'str', None, None, True),
             ('db_host', 'Host for Moodle database', 'str', None, None, True),
             ('db_port', 'Port for Moodle database', 'int', 3306, None, True),
             ('db_name', 'Database name for Moodle database', 'str', 'moodle', None, True),
@@ -138,6 +138,13 @@ class Config:
             ('full_name', 'Full name for Moodle instance', 'str', 'TeSLA CE Moodle', None, True),
             ('short_name', 'Short name for Moodle instance', 'str', 'TeSLA CE', None, True),
             ('summary', 'Summary for Moodle instance', 'str', 'TeSLA CE Moodle Instance', None, True),
+        )),
+        ('nomad', 'Nomad configuration. Only required if Nomad is used as Orchestrator.', (
+            ('addr', 'Nomad Address', 'str', 'http://127.0.0.1:4646', None, True),
+            ('region', 'Nomad Region', 'str', None, None, True),
+            ('datacenters', 'Nomad Datacenters', 'list', None, None, True),
+            ('skip_verify', 'Skip TLS verification for Nomad server', 'bool', False, None, True),
+            ('tls_server_name', 'Nomad server name for TLS verification', 'str', None, None, True),
         ))
     )
 

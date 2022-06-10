@@ -1,21 +1,9 @@
 import typing
 from .deploy import DeployClient
+from .setup_options import SetupOptions
 
 
-class SetupOptions:
-    require_files: bool = False
-    command: typing.List[str] = []
-    files: dict = {}
-
-    def get_zip(self):
-        # zip files
-        pass
-
-    def to_json(self):
-        pass
-
-
-class Setup:
+class SetupClient:
     config = None
 
     def __init__(self, config):

@@ -1,39 +1,45 @@
 variable "count" {
   type = number
-  default = 1
+  default = {{ count }}
 }
 
 variable "datacenters" {
   type = list(string)
+  default = {{ nomad_datacenters|safe }}
 }
 
 variable "region" {
   type = string
+  default = "{{ nomad_region }}"
 }
 
 variable "image" {
   type    = string
-  default = "traefik:v2.5"
+  default = "{{ traefik_image }}"
 }
 
 variable "storage_path" {
   type = string
+  default = "{{ DEPLOYMENT_DATA_PATH }}/traefik"
 }
 
 variable "consul_address" {
   type = string
+  default = ""
 }
 
 variable "consul_scheme" {
   type = string
+  default = ""
 }
 
 variable "tesla_admin_mail" {
   type = string
+  default = "{{ TESLA_ADMIN_MAIL }}"
 }
 
 job "traefik" {
-  region      = var.region
+  region      = "${var.region}"
   datacenters = var.datacenters
   type        = "service"
 
@@ -97,7 +103,7 @@ job "traefik" {
       driver = "docker"
 
       config {
-        image        = var.image
+        image        = "${var.image}"
         volumes = [
           "${var.storage_path}:/letsencrypt/",
           "local/traefik.toml:/etc/traefik/traefik.toml"

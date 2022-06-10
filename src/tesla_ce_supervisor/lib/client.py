@@ -3,7 +3,7 @@ import typing
 from .catalog import CatalogClient
 from .tesla import TeslaClient
 from .deploy import DeployClient
-from .setup import Setup
+from .setup import SetupClient
 
 
 class SupervisorClient:
@@ -60,8 +60,20 @@ class SupervisorClient:
             Get the list of Vault configuration files to be exported or executed
             :return: Dictionary with all required files and content for each file
         """
-        self.get_deployer().deploy_lb()
+        # TODO: Remove after testing (configuration should be in configuration file or environment)
+        self._tesla.get_config().set('NOMAD_ADDR', 'https://console.nomad.demo.tesla-ce.eu')
+        self._tesla.get_config().set('NOMAD_REGION', 'global')
+        self._tesla.get_config().set('NOMAD_DATACENTERS', ['dc1'])
+
+        # TODO: Remove code after testing
+        # Deploy Traefik
+        job_data = self.get_deployer().deploy_lb()
+
+        # Remove Traefik
+        # job_data = self.get_deployer().remove_lb()
+
         return {
+            'job_data': job_data,
             'tesla-ce-policies.hcl': self._tesla.get_vault_policies(),
         }
 
