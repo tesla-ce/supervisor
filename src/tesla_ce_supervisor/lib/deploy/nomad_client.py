@@ -1,5 +1,6 @@
 import os
 import typing
+import nomad
 from urllib.parse import urlparse
 from django.template.loader import render_to_string
 from .base import BaseDeploy
