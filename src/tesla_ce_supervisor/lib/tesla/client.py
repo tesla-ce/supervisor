@@ -147,6 +147,13 @@ class TeslaClient:
         """
         return self._config_file
 
+    def persist_configuration(self):
+        """
+            Write configuration data to disk
+        """
+        with open(os.path.join(self.get_config_path()), 'w') as config_file:
+            self._config.write(config_file)
+
     def get_vault_policies(self):
         policies = VaultManager(self._config).get_policies_definition()
         return policies

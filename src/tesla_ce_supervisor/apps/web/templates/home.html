@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% load static %}
+{% block extra_css %}
+<style>
+    .active {
+      border-color: #28a745 !important;
+      background-color: #f2f2f2;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.18), 0 3px 6px rgba(0, 0, 0, 0.23);
+    }
+    .logo {
+        max-width: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_head_scripts %}
+
+{% endblock %}
+{% block content %}
+    <div class="container">
+    {% if options.setup_status > 0 %}
+        <!-- Modal -->
+        <div class="modal fade" id="modal_dialog" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <p>You already started the deployment procedure. Plese select an option:</p>
+                        <ul>
+                            <li><strong>Continue:</strong> Continue deployment from the last stored step.</li>
+                            <li><strong>Start:</strong> Continue deployment from the first step. Stored options will remain.</li>
+                            <li><strong>Reset:</strong> Start the deployment again discarding any stored option.</li>
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-action="continue" class="btn btn-success action-btn">Continue</button>
+                        <button type="button" data-action="start" class="btn btn-primary action-btn" data-bs-dismiss="modal">Start</button>
+                        <button type="button" data-action="reset" class="btn btn-danger action-btn">Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+        <div id="deployment_environment" class="mt-4">
+            <h3 class="text-muted text-center">Deployment Environment</h3>
+            <div class="row">
+                <div class="col-sm-6">
+                    <div id="dep_env_nomad_consul" class="card h-100 deployment_env">
+                        <div class="card-body row">
+                            <div class="col-md-4 align-content-center">
+                                <img src="{% static 'img/nomad-2-logo-png-transparent.png' %}" class="img-fluid rounded-start" alt="Nomad logo">
+                            </div>
+                            <div class="col-md-8">
+                                <h5 class="card-title">Nomad and Consul</h5>
+                                <p class="card-text">
+                                    HashiCorp Nomad is using as orchestrator, and HashiCorp Consul as catalog provider.
+                                    Communications between modules are performed using Consul Connect mesh service.
+                                </p>
+                                <a href="#" data-value="nomad_consul" class="stretched-link deployment_dev_action"></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div id="dep_env_swarm" class="card h-100 deployment_env">
+                        <div class="card-body row">
+                            <div class="col-md-4 align-content-center">
+                                <img src="{% static 'img/docker-logo-png-transparent.png' %}" class="img-fluid rounded-start" alt="Docker logo">
+                            </div>
+                            <div class="col-md-8">
+                                <h5 class="card-title">Docker Swarm</h5>
+                                <p class="card-text">
+                                    Deploy to a Docker Swarm cluster, using the orchestration and communication mechanisms
+                                    provided by Docker.
+                                </p>
+                                <a href="#" data-value="swarm" class="stretched-link deployment_dev_action"></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="deployment_mode" class="mt-4">
+            <h3 class="text-muted text-center">Deployment Mode</h3>
+            <div class="row">
+                <div class="col-sm-6">
+                    <div id="dep_mode_development" class="card h-100 deployment_mode">
+                        <div class="card-body row">
+                            <div class="col-md-12">
+                                <h5 class="card-title">Development</h5>
+                                <p class="card-text">
+                                    A wizard will collect the minimum required information and will deploy
+                                    the full environment, including database and the rest of the services.
+                                    Use this mode only for development or testing purposes.
+                                </p>
+                                <a href="#" data-value="development" class="stretched-link deployment_mode_action"></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div id="dep_mode_production" class="card h-100 deployment_mode">
+                        <div class="card-body row">
+                            <div class="col-md-12">
+                                <h5 class="card-title">Production</h5>
+                                <p class="card-text">
+                                    In this mode database and the rest of required services are expected to be deployed
+                                    and ready to use. A wizard will request the information to connect those services and
+                                    will guide you for the rest of the installation.
+                                </p>
+                                <a href="#" data-value="production" class="stretched-link deployment_mode_action"></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="actions" class="mt-4 text-center">
+            <a href="#" data-action="start" class="btn btn-success action-btn">Start</a>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+{% csrf_token %}
+<script>
+    // CSRF value
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    // Selected deployment environment
+    let deploy_environment = {% if options.environment %}'{{ options.environment }}'{% else %}null{% endif %};
+    // Selected deployment mode
+    let deploy_mode = {% if options.mode %}'{{ options.mode }}'{% else %}null{% endif %};
+
+    // Select deployment environment
+    function select_deployment_mode() {
+        let selection = false;
+        // Remove selection
+        $(".deployment_mode").removeClass('active');
+        // Set active selection
+        if (deploy_mode === 'development') {
+            $("#dep_mode_development").addClass('active');
+            selection = true;
+        } else if (deploy_mode === 'production') {
+            $("#dep_mode_production").addClass('active');
+            selection = true;
+        }
+        // Manage options
+        if (selection) {
+            // Show actions
+            $("#actions").show();
+        } else {
+            // Hide actions
+            $("#actions").hide();
+        }
+    }
+
+    // Select deployment environment
+    function select_deployment_environment() {
+        let selection = false;
+        // Remove selection
+        $(".deployment_env").removeClass('active');
+        // Set active selection
+        if (deploy_environment === 'nomad_consul') {
+            $("#dep_env_nomad_consul").addClass('active');
+            selection = true;
+        } else if (deploy_environment === 'swarm') {
+            $("#dep_env_swarm").addClass('active');
+            selection = true;
+        }
+        // Manage options
+        if (selection) {
+            // Show options
+            $("#deployment_mode").show();
+        } else {
+            // Hide options
+            $("#deployment_mode").hide();
+            deploy_mode = null;
+        }
+        select_deployment_mode();
+    }
+
+    $(function() {
+        {% if options.setup_status > 0 %}
+            $("#modal_dialog").modal('show');
+        {% endif %}
+        $(".deployment_dev_action").click(function (env) {
+           const current_val = deploy_environment;
+           deploy_environment = this.dataset['value'];
+           if (deploy_environment != current_val) {
+               deploy_mode = null;
+               select_deployment_mode();
+           }
+           select_deployment_environment();
+        });
+        $(".deployment_mode_action").click(function (env) {
+           deploy_mode = this.dataset['value'];
+           select_deployment_mode();
+        });
+        $(".action-btn").click(function (env) {
+           const action = this.dataset['action'];
+           $.ajax({
+               url: '',
+               method: 'POST',
+               headers: {'X-CSRFToken': csrftoken},
+               data: {
+                   'action': action,
+                   'environment': deploy_environment,
+                   'mode': deploy_mode,
+               },
+               success: function(data) {
+                   $(location).attr("href", data['redirect_url']);
+               }
+           });
+        });
+        // Initialize the visualization
+        select_deployment_environment();
+    });
+</script>
+{% endblock %}

@@ -3,6 +3,7 @@ from typing import Optional, Union, Literal
 from .nomad_client import NomadDeploy
 from .swarm_client import SwarmDeploy
 from ..tesla.conf import Config
+from ..setup_options import SetupOptions
 
 
 class DeployClient:
@@ -31,11 +32,17 @@ class DeployClient:
     def remove_lb(self) -> dict:
         return self._client.remove_lb()
 
+    def get_lb_script(self) -> SetupOptions:
+        return self._client.get_lb_script()
+
     def deploy_vault(self) -> dict:
         return self._client.deploy_vault()
 
     def remove_vault(self) -> dict:
         return self._client.remove_vault()
+
+    def get_vault_script(self) -> SetupOptions:
+        return self._client.get_vault_script()
 
     def deploy_minio(self) -> dict:
         return self._client.deploy_minio()
@@ -43,8 +50,14 @@ class DeployClient:
     def remove_minio(self) -> dict:
         return self._client.remove_minio()
 
+    def get_minio_script(self) -> SetupOptions:
+        return self._client.get_minio_script()
+
     def deploy_database(self) -> dict:
         return self._client.deploy_database()
+
+    def get_database_script(self) -> SetupOptions:
+        return self._client.get_database_script()
 
     def remove_database(self) -> dict:
         return self._client.remove_database()
@@ -55,8 +68,14 @@ class DeployClient:
     def remove_rabbitmq(self) -> dict:
         return self._client.remove_rabbitmq()
 
+    def get_rabbitmq_script(self) -> SetupOptions:
+        return self._client.get_rabbitmq_script()
+
     def deploy_redis(self) -> dict:
         return self._client.deploy_redis()
 
     def remove_redis(self) -> dict:
         return self._client.remove_redis()
+
+    def get_redis_script(self) -> SetupOptions:
+        return self._client.get_redis_script()

@@ -1,6 +1,7 @@
 import os
 from django.http import HttpResponse, JsonResponse
 from django.http import Http404
+from django.urls import reverse
 from django.shortcuts import render, redirect
 
 from rest_framework.views import APIView
@@ -11,6 +12,21 @@ from tesla_ce_supervisor.lib.tesla import TeslaClient
 from tesla_ce_supervisor.lib.utils import to_list, to_tuple, utils_get_config
 
 # Create your views here.
+def get_url_from_status(status: int = 0) -> str:
+    """
+        Return the url to continue with the deployment process
+        :param status: Current development status
+        :return: New url
+    """
+    if status == 0: # START
+        new_url = reverse('setup_home')
+    elif status == 1:  # DEPLOYMENT ENVIRONMENT CONFIGURATION
+        new_url = reverse('setup_environment')
+    elif status == 2:  # Configuration wizard 1
+        new_url = reverse('setup_step1')
+    else:
+        new_url = reverse('setup_home')
+    return new_url
 
 
 class VaultConfigurationAPIView(APIView):
@@ -22,6 +38,74 @@ class VaultConfigurationAPIView(APIView):
         data = client.get_vault_configuration()
         return JsonResponse(data)
 
+
+def home(request):
+    client = TeslaClient()
+    client.get_config_path()
+    client.load_configuration()
+    options_env = None
+    if client.get("DEPLOYMENT_CATALOG_SYSTEM") == 'consul' and client.get("DEPLOYMENT_ORCHESTRATOR") == 'nomad':
+        options_env = 'nomad_consul'
+    elif client.get("DEPLOYMENT_CATALOG_SYSTEM") == 'swarm' and client.get("DEPLOYMENT_ORCHESTRATOR") == 'swarm':
+        options_env = 'swarm'
+    if client.get("DEPLOYMENT_SERVICES"):
+        options_mode = 'development'
+    else:
+        options_mode = 'production'
+    context = {
+        'options': {
+            'environment': options_env,
+            'mode': options_mode,
+            'setup_status': client.get("DEPLOYMENT_STATUS")
+        }
+    }
+    if request.method == 'POST':
+        if request.POST['action'] == 'start':
+            if request.POST['environment'] == 'nomad_consul':
+                client.get_config().set("DEPLOYMENT_CATALOG_SYSTEM", 'consul')
+                client.get_config().set("DEPLOYMENT_ORCHESTRATOR", 'nomad')
+            elif request.POST['environment'] == 'swarm':
+                client.get_config().set("DEPLOYMENT_CATALOG_SYSTEM", 'swarm')
+                client.get_config().set("DEPLOYMENT_ORCHESTRATOR", 'swarm')
+            if request.POST['mode'] == 'development':
+                client.get_config().set("DEPLOYMENT_SERVICES", True)
+            elif request.POST['mode'] == 'production':
+                client.get_config().set("DEPLOYMENT_SERVICES", False)
+            client.get_config().set("DEPLOYMENT_STATUS", 1)
+        elif request.POST['action'] == 'reset':
+            client.get_config().set("DEPLOYMENT_STATUS", 0)
+        elif request.POST['action'] == 'continue':
+            # No additional action is required
+            pass
+        client.persist_configuration()
+        return JsonResponse({'redirect_url': get_url_from_status(client.get("DEPLOYMENT_STATUS"))})
+    return render(request, 'home.html', context)
+
+
+def environment(request):
+    client = TeslaClient()
+    client.get_config_path()
+    client.load_configuration()
+    options_env = None
+    if client.get("DEPLOYMENT_CATALOG_SYSTEM") == 'consul' and client.get("DEPLOYMENT_ORCHESTRATOR") == 'nomad':
+        options_env = 'nomad_consul'
+    elif client.get("DEPLOYMENT_CATALOG_SYSTEM") == 'swarm' and client.get("DEPLOYMENT_ORCHESTRATOR") == 'swarm':
+        options_env = 'swarm'
+    if client.get("DEPLOYMENT_SERVICES"):
+        options_mode = 'development'
+    else:
+        options_mode = 'production'
+    context = {
+        'options': {
+            'environment': options_env,
+            'mode': options_mode,
+            'setup_status': client.get("DEPLOYMENT_STATUS")
+        }
+    }
+    if request.method == 'POST':
+        client.persist_configuration()
+        return JsonResponse({'redirect_url': get_url_from_status(client.get("DEPLOYMENT_STATUS"))})
+    return render(request, 'environment.html', context)
 
 def step1(request):
     config = utils_get_config()

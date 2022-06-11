@@ -151,12 +151,14 @@ class NomadDeploy(BaseDeploy):
         try:
             job_def = self._client.jobs.parse(task_def)
         except nomad.api.exceptions.BadRequestNomadException as err:
-            raise TeslaDeployNomadTemplateException(err.nomad_resp.reason)
+            raise TeslaDeployNomadTemplateException(err.nomad_resp.text) from err
 
         try:
             response = self._client.job.register_job(name, {'Job': job_def})
         except nomad.api.exceptions.BadRequestNomadException as err:
-            raise TeslaDeployNomadException(err.nomad_resp.reason)
+            raise TeslaDeployNomadException(err.nomad_resp.text) from err
+        except nomad.api.exceptions.BaseNomadException as err:
+            raise TeslaDeployNomadException(err.nomad_resp.text) from err
 
         return response
 
@@ -294,7 +296,31 @@ class NomadDeploy(BaseDeploy):
         """
             Get the script to deploy MinIO
         """
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'minio_image': 'minio/minio',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'STORAGE_REGION': self._config.get('STORAGE_REGION'),
+            'STORAGE_ACCESS_KEY': self._config.get('STORAGE_ACCESS_KEY'),
+            'STORAGE_SECRET_KEY': self._config.get('STORAGE_SECRET_KEY'),
+        }
+        task_def = self._remove_empty_lines(render_to_string('services/minio/nomad/minio.nomad', context))
+
         script = SetupOptions()
+        script.add_command(
+            command='nomad job run tesla-ce-minio.nomad',
+            description='Create new Nomad job for MinIO'
+        )
+        script.add_file(
+            filename='tesla-ce-minio.nomad',
+            description='Job description for MinIO',
+            content=task_def,
+            mimetype='application/hcl'
+        )
+
         return script
 
     def deploy_redis(self) -> dict:
@@ -322,7 +348,28 @@ class NomadDeploy(BaseDeploy):
         """
             Get the script to deploy Redis
         """
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'redis_image': 'redis:alpine',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'REDIS_PASSWORD': self._config.get('REDIS_PASSWORD'),
+        }
+        task_def = self._remove_empty_lines(render_to_string('services/redis/nomad/redis.nomad', context))
+
         script = SetupOptions()
+        script.add_command(
+            command='nomad job run tesla-ce-redis.nomad',
+            description='Create new Nomad job for Redis'
+        )
+        script.add_file(
+            filename='tesla-ce-redis.nomad',
+            description='Job description for Redis',
+            content=task_def,
+            mimetype='application/hcl'
+        )
+
         return script
 
     def deploy_database(self) -> dict:
@@ -378,7 +425,47 @@ class NomadDeploy(BaseDeploy):
         """
             Get the script to deploy Database
         """
+        if self._config.get('DB_ENGINE') == 'mysql':
+            db_image = 'mariadb'
+            name = 'mysql'
+            template = 'services/database/mysql/nomad/mysql.nomad'
+        elif self._config.get('DB_ENGINE') == 'postgresql':
+            db_image = None
+            name = None
+            template = None
+        else:
+            db_image = None
+            name = None
+            template = None
+
+        if db_image is None:
+            raise TeslaDeployNomadException('Invalid database engine')
+
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'db_image': db_image,
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'DB_ROOT_PASSWORD': self._config.get('DB_ROOT_PASSWORD'),
+            'DB_PASSWORD': self._config.get('DB_PASSWORD'),
+            'DB_USER': self._config.get('DB_USER'),
+            'DB_NAME': self._config.get('DB_NAME'),
+        }
+        task_def = self._remove_empty_lines(render_to_string(template, context))
+
         script = SetupOptions()
+        script.add_command(
+            command='nomad job run tesla-ce-database.nomad',
+            description='Create new Nomad job for {} database'.format(name)
+        )
+        script.add_file(
+            filename='tesla-ce-database.nomad',
+            description='Job description for {} database'.format(name),
+            content=task_def,
+            mimetype='application/hcl'
+        )
+
         return script
 
     def deploy_rabbitmq(self) -> dict:
@@ -409,5 +496,29 @@ class NomadDeploy(BaseDeploy):
         """
             Get the script to deploy RabbitMQ
         """
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'rabbitmq_image': 'rabbitmq:3.8-management-alpine',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'RABBITMQ_ADMIN_USER': self._config.get('RABBITMQ_ADMIN_USER'),
+            'RABBITMQ_ADMIN_PASSWORD': self._config.get('RABBITMQ_ADMIN_PASSWORD'),
+            'RABBITMQ_ERLANG_COOKIE': self._config.get('RABBITMQ_ERLANG_COOKIE'),
+        }
+        task_def = self._remove_empty_lines(render_to_string('services/rabbitmq/nomad/rabbitmq.nomad', context))
+
         script = SetupOptions()
+        script.add_command(
+            command='nomad job run tesla-ce-rabbitmq.nomad',
+            description='Create new Nomad job for RabbitMQ'
+        )
+        script.add_file(
+            filename='tesla-ce-rabbitmq.nomad',
+            description='Job description for RabbitMQ',
+            content=task_def,
+            mimetype='application/hcl'
+        )
+
         return script

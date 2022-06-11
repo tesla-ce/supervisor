@@ -111,8 +111,9 @@ class Config:
             ('allowed_hosts', 'Allowed hosts', 'list', [], None, True),
         )),
         ('deployment', 'Deployment configuration', (
-            ('catalog_system', 'Catalog system', 'enum', 'swarm', ['consult', 'swarm'], True),
-            ('orchestrator', 'Docker orchestrator', 'enum', 'swarm', ['swarm', 'normad'], True),
+            ('status', 'Deployment status', 'int', 0, None, True),
+            ('catalog_system', 'Catalog system', 'enum', 'swarm', ['consul', 'swarm'], True),
+            ('orchestrator', 'Docker orchestrator', 'enum', 'swarm', ['swarm', 'nomad'], True),
             ('services', 'Deploy external services', 'bool', False, None, True),
             ('lb', 'Load balancer', 'enum', 'traefik', ['traefik', 'other'], True),
             ('image', 'Docker image used for deployment', 'str',

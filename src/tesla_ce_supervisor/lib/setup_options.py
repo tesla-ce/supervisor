@@ -1,4 +1,6 @@
 import typing
+import zipfile
+from io import BytesIO
 
 
 class SetupOptionsCommand:
@@ -53,14 +55,24 @@ class SetupOptions:
         file.description = description
         file.content = content
         file.mimetype = mimetype
+        self.files.append(file)
+        self.require_files = True
 
     def get_zip(self):
-        # zip files
-        pass
+        buffer = BytesIO()
+        with zipfile.ZipFile(buffer, mode='w', compression=zipfile.ZIP_DEFLATED) as zip:
+            cmd_list = ''
+            for cmd in self.commands:
+                cmd_list += '# {}\n'.format(cmd.description)
+                cmd_list += '{}\n\n'.format(cmd.command)
+            zip.writestr('commands.txt', cmd_list)
+            for file in self.files:
+                zip.writestr(file.filename, file.content)
+        return buffer.getvalue()
 
     def to_json(self) -> dict:
-        commands = [cmd.to_json for cmd in self.commands]
-        files = [file.to_json for file in self.files]
+        commands = [cmd.to_json() for cmd in self.commands]
+        files = [file.to_json() for file in self.files]
         return {
             'require_files': self.require_files,
             'commands': commands,
