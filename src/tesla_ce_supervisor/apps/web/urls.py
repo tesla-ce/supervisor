@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.setup.home_view,  name='setup_home'),
     path('environment', views.setup.env_view,  name='setup_environment'),
     path('tesla_info', views.setup.tesla_basic_info,  name='setup_tesla_basic_info'),
+    path('load_balancer', views.setup.lb_view,  name='setup_load_balancer'),
     path('services/deploy', views.setup.services.service_deployment,  name='setup_services_deploy'),
     path('services/config', views.setup.services.service_configuration,  name='setup_services_config'),
     path('services/status', views.setup.services.service_status,  name='setup_services_status'),

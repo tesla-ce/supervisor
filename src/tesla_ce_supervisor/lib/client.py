@@ -1,4 +1,5 @@
 import typing
+import socket
 
 from .catalog import CatalogClient
 from .tesla import TeslaClient
@@ -11,6 +12,8 @@ class SupervisorClient:
     def __init__(self):
         self._catalog = CatalogClient()
         self._tesla = TeslaClient()
+        self._tesla.get_config_path()
+        self._tesla.load_configuration()
 
     def get_services(self):
         return self._catalog.get_services()
@@ -114,3 +117,49 @@ class SupervisorClient:
             :return: SetupClient instance
         """
         return SetupClient(self._tesla.get_config())
+
+    def check_dns(self, hostname: typing.Optional[str] = None) -> dict:
+        """
+            Check if a hostname is registered can be resolved.
+            :param hostname: The hostname to test. If not provided, all required hostnames are checked.
+            :return: Resolution information
+        """
+        if hostname is None:
+            # Get domain
+            base_domain = self._tesla.get_config().get('TESLA_DOMAIN')
+            if base_domain is None:
+                return {}
+            # Return values for all required hostnames
+            ret_val = {
+                base_domain: self.check_dns(hostname=base_domain),
+            }
+            # If services are deployed, check services domains
+            if self._tesla.get_config().get('DEPLOYMENT_SERVICES'):
+                ret_val[f'vault.{base_domain}'] = self.check_dns(hostname=f'vault.{base_domain}')
+                ret_val[f'storage.{base_domain}'] = self.check_dns(hostname=f'storage.{base_domain}')
+                ret_val[f'rabbitmq.{base_domain}'] = self.check_dns(hostname=f'rabbitmq.{base_domain}')
+        else:
+            try:
+                ip = socket.gethostbyname(hostname)
+                ret_val = {
+                    'valid': True,
+                    'hostname': hostname,
+                    'ip': ip,
+                    'error': None
+                }
+            except socket.gaierror as err:
+                ret_val = {
+                    'valid': False,
+                    'hostname': hostname,
+                    'ip': None,
+                    'error': err.__str__()
+                }
+
+        return ret_val
+
+    def check_lb(self) -> dict:
+        """
+            Check deployment status of the load balancer
+            :return: Status information
+        """
+        return {}

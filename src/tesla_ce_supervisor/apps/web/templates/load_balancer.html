@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% block extra_css %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css" />
+<style>
+    .logo {
+        max-width: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_head_scripts %}
+
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <form id="swarm" method="post" class="mt-4" autocomplete="off">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-sm-12">
+                    <div id="dep_env_swarm" class="card h-100">
+                        <div class="card-body row">
+                            <div class="col-md-4 align-content-center text-center">
+                                <img src="{% static 'img/traefik.logo_.png' %}" class="img-fluid rounded-start logo" alt="Traefik logo">
+                            </div>
+                            <div class="col-md-8">
+                                <h5 class="card-title">Traefik Load Balancer</h5>
+                                <p class="text-justify">
+                                    Traefik is used both as ingress controller for mapping urls to services and as
+                                    load balancer between multiple instances of a service. It also manages certificates
+                                    using Letsencrypt service.
+                                </p>
+                                <strong>DNS configuration</strong>
+                                <p class="text-justify">
+                                    In order to properly deploy TeSLA CE, the base domain
+                                    <span class="text-muted"><strong>{{ options.base_domain }}</strong></span>
+                                    must be registered and point to a public IP address of the target deployment server.
+                                </p>
+                                {% if options.mode == 'development' %}
+                                    <p class="text-justify">
+                                        Apart of TeSLA itself, some of the deployed services will also require to be
+                                        managed by Traefik. The subdomains:
+                                        <ul>
+                                            <li>vault.{{ options.base_domain }}</li>
+                                            <li>storage.{{ options.base_domain }}</li>
+                                            <li>rabbitmq.{{ options.base_domain }}</li>
+                                        </ul>
+                                        Must also be registered and pointing to a public IP address of the target deployment server.
+                                    </p>
+                                {% endif %}
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div id="actions" class="mt-4 text-center">
+            <button type="submit" class="btn btn-success action-btn">Next</button>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+{% csrf_token %}
+<script>
+    // CSRF value
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    $(function() {
+        $(".action-btn").click(function (env) {
+           const action = this.dataset['action'];
+           let data = $('form').serializeArray();
+           $.ajax({
+               url: '',
+               method: 'POST',
+               headers: {'X-CSRFToken': csrftoken},
+               data: data,
+               success: function(data) {
+                   if (data.hasOwnProperty('redirect_url')) {
+                       $(location).attr("href", data['redirect_url']);
+                   } else {
+                       console.log(data['errors'])
+                   }
+               }
+           });
+        });
+    });
+</script>
+{% endblock %}
