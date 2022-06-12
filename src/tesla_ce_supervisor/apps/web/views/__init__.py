@@ -1,7 +1,5 @@
-from .setup import step1
-from .setup import VaultConfigurationAPIView
+from . import setup
 
 __all__ = [
-    'step1',
-    'VaultConfigurationAPIView'
+    'setup'
 ]

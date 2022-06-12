@@ -19,6 +19,8 @@ class NomadConsulForm(ConfigForm):
     consul_addr = forms.CharField(label='Address', max_length=100)
     consul_authOptions = forms.TypedChoiceField(choices=AUTH_CHOICES, widget=forms.RadioSelect, coerce=str, initial='none')
     consul_acl_token = forms.CharField(label='Token', max_length=100, required=False)
+    # consul_skip_verify = forms.BooleanField(label='Skip TLS verification', initial=False, required=False)
+    # consul_tls_servername = forms.CharField(label='TLS server name', max_length=100, required=False),
 
     _field_correspondence = [
         ('nomad_addr', 'NOMAD_ADDR'),
