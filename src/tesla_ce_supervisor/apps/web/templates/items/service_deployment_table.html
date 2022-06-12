@@ -1,0 +1,37 @@
+<table class="table table-stripped">
+    <thead>
+        <th>Service</th>
+        <th>Jobs</th>
+        <th>Instances</th>
+        <th>Status</th>
+        <th></th>
+    </thead>
+    <tbody>
+        {% for service in services %}
+        <tr class="service-deploy-row" data-service="{{ service }}">
+            <td class="service-deploy-name" data-service="{{ service }}">{{ service }}</td>
+            <td class="service-deploy-jobs" data-service="{{ service }}"></td>
+            <td class="service-deploy-instances" data-service="{{ service }}"></td>
+            <td class="service-deploy-status" data-service="{{ service }}"></td>
+            <td class="service-deploy-actions text-right" data-service="{{ service }}">
+                <button type="button" class="btn btn-sm btn-secondary service-action" data-service="{{ service }}" data-action="refresh">
+                    <i class="bi bi-arrow-repeat"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary service-action" data-service="{{ service }}" data-action="download">
+                    <i class="bi bi-cloud-download"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary service-action" data-service="{{ service }}" data-action="remove">
+                    <i class="bi bi-trash2-fill"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary service-action" data-service="{{ service }}" data-action="deploy">
+                    <i class="bi bi-stars"></i>
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<span class="m-2"><i class="bi bi-arrow-repeat"></i> Refresh status</span>
+<span class="m-2"><i class="bi bi-cloud-download"></i> Download scripts</span>
+<span class="m-2"><i class="bi bi-trash2-fill"></i> Remove service</span>
+<span class="m-2"><i class="bi bi-stars"></i> Automatic deployment</span>

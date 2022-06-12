@@ -92,6 +92,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'libraries': {
+               'web_filters': 'tesla_ce_supervisor.apps.web.templatetags.filter',
+            }
         },
     },
 ]
