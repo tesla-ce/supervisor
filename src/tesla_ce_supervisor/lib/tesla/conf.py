@@ -146,6 +146,15 @@ class Config:
             ('datacenters', 'Nomad Datacenters', 'list', None, None, True),
             ('skip_verify', 'Skip TLS verification for Nomad server', 'bool', False, None, True),
             ('tls_server_name', 'Nomad server name for TLS verification', 'str', None, None, True),
+            ('auth_type', 'Nomad authentication mechanism', 'enum', 'none', ['none', 'acl_token', 'client_cert'], True),
+            ('acl_token', 'Nomad ACL token', 'str', None, None, True),
+        )),
+        ('consul', 'Consul configuration. Only required if Consul is used as Catalog.', (
+            ('addr', 'Nomad Address', 'str', 'http://127.0.0.1:8500', None, True),
+            ('skip_verify', 'Skip TLS verification for Consul server', 'bool', False, None, True),
+            ('tls_server_name', 'Consul server name for TLS verification', 'str', None, None, True),
+            ('auth_type', 'Consul authentication mechanism', 'enum', 'none', ['none', 'acl_token', 'client_cert'], True),
+            ('acl_token', 'Consul ACL token', 'str', None, None, True),
         ))
     )
 

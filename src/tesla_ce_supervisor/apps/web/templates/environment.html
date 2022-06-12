@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load widget_tweaks %}
 {% block extra_css %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css" />
 <style>
@@ -15,55 +16,49 @@
 {% block content %}
     <div class="container">
     {% if options.environment == 'nomad_consul' %}
-        <form id="nomad_consul" method="post" class="mt-4">
+        <form id="nomad_consul" method="post" class="mt-4" autocomplete="off">
             {% csrf_token %}
             <div class="row">
                 <div class="col-sm-12">
-                    <div id="dep_env_nomad_consul" class="card h-100 deployment_env">
+                    <div class="card h-100">
                         <div class="card-body row">
                             <div class="col-md-4 align-content-center text-center">
-                                <img src="{% static 'img/nomad-2-logo-png-transparent.png' %}" class="img-fluid rounded-start logo" alt="Nomad logo">
+                                <img src="{% static 'img/Nomad_VerticalLogo_Color_RGB.png' %}" class="img-fluid rounded-start logo" alt="Nomad logo">
                             </div>
                             <div class="col-md-8">
                                 <h5 class="card-title">Nomad configuration</h5>
                                 <div class="form-group mb-2">
                                     <label for="nomad_addr">Address</label>
-                                    <input type="url" class="form-control" id="nomad_addr" aria-describedby="nomad_addrHelp" placeholder="Address">
+                                    {{ form.nomad_addr|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: nomad_addrHelp"|attr:"placeholder: Address"}}
                                     <small id="nomad_addrHelp" class="form-text text-muted">Full address with schema and port to connect with Nomad Client</small>
                                 </div>
                                 <div class="form-group mb-2">
                                     <label for="nomad_datacenters">Datacenters</label>
-                                    <input type="text" class="form-control" id="nomad_datacenters" aria-describedby="nomad_addrHelp" placeholder="Datacenters">
+                                    {{ form.nomad_datacenters|add_class:"form-control"|attr:"aria-describedby: nomad_datacentersHelp"|attr:"placeholder: Datacenters"}}
                                     <small id="nomad_datacentersHelp" class="form-text text-muted">Comma-separated list of datacenters for deployment</small>
                                 </div>
                                 <div class="form-group mb-2">
                                     <label for="nomad_region">Region</label>
-                                    <input type="text" class="form-control" id="nomad_region" aria-describedby="nomad_regionHelp" placeholder="Region">
+                                    {{ form.nomad_region|add_class:"form-control"|attr:"aria-describedby: nomad_regionHelp"|attr:"placeholder: Region"}}
                                     <small id="nomad_regionHelp" class="form-text text-muted">Region</small>
                                 </div>
                                 <div class="form-group mb-2">
                                     <label>Authentication</label>
                                     <br>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="nomad_authOptions" id="nomad_auth_none" value="none">
-                                        <label class="form-check-label" for="nomad_auth_none">None</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="nomad_authOptions" id="nomad_auth_acl_token" value="acl_token">
-                                        <label class="form-check-label" for="nomad_auth_acl_token">ACL token</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="nomad_authOptions" id="nomad_auth_client_cert" value="client_cert" disabled>
-                                        <label class="form-check-label" for="nomad_auth_client_cert">Client Certificate</label>
-                                    </div>
+                                    {% for radio in form.nomad_authOptions %}
+                                        <div class="form-check form-check-inline">
+                                            {{ radio.tag }}
+                                            <label class="form-check-label" for="id_nomad_authOptions_{{ forloop.counter0 }}">{{ radio.choice_label }}</label>
+                                        </div>
+                                    {% endfor %}
                                 </div>
-                                <div class="form-group mb-2" id="nomad_acl_token_div">
+                                <div class="form-group mb-2 ml-2" id="nomad_acl_token_div">
                                     <label for="nomad_acl_token">ACL Token</label>
                                     <div class="input-group">
-                                        <input type="password" class="form-control" id="nomad_acl_token" aria-describedby="nomad_acl_tokenHelp" placeholder="Token">
+                                        {{ form.nomad_acl_token|add_class:"form-control"|attr:"aria-describedby: nomad_acl_tokenHelp"|attr:"placeholder: Token"}}
                                         <div class="input-group-prepend">
-                                            <div class="input-group-text">
-                                                <i class="bi bi-eye-slash" id="togglePassword_nomad_acl_token"></i>
+                                            <div class="input-group-text toggle-password">
+                                                <i class="bi bi-eye bi-eye-slash"></i>
                                             </div>
                                         </div>
                                     </div>
@@ -75,7 +70,7 @@
                     </div>
                 </div>
                 <div class="col-sm-12 mt-2">
-                    <div id="dep_env_swarm" class="card h-100 deployment_env">
+                    <div class="card h-100">
                         <div class="card-body row">
                             <div class="col-md-4 align-content-center text-center">
                                 <img src="{% static 'img/Consul_VerticalLogo_Color_RGB.png' %}" class="img-fluid rounded-start logo" alt="Consul logo">
@@ -84,32 +79,26 @@
                                 <h5 class="card-title">Consul Configuration</h5>
                                 <div class="form-group mb-2">
                                     <label for="consul_addr">Address</label>
-                                    <input type="url" class="form-control" id="consul_addr" aria-describedby="consul_addrHelp" placeholder="Address">
+                                    {{ form.consul_addr|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: consul_addrHelp"|attr:"placeholder: Address"}}
                                     <small id="consul_addrHelp" class="form-text text-muted">Full address with schema and port to connect with Consul Client</small>
                                 </div>
                                 <div class="form-group mb-2">
                                     <label>Authentication</label>
                                     <br>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="consul_authOptions" id="consul_auth_none" value="none">
-                                        <label class="form-check-label" for="consul_auth_none">None</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="consul_authOptions" id="consul_auth_acl_token" value="acl_token">
-                                        <label class="form-check-label" for="consul_auth_acl_token">ACL token</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="consul_authOptions" id="consul_auth_client_cert" value="client_cert" disabled>
-                                        <label class="form-check-label" for="consul_auth_client_cert">Client Certificate</label>
-                                    </div>
+                                    {% for radio in form.consul_authOptions %}
+                                        <div class="form-check form-check-inline">
+                                            {{ radio.tag }}
+                                            <label class="form-check-label" for="id_consul_authOptions_{{ forloop.counter0 }}">{{ radio.choice_label }}</label>
+                                        </div>
+                                    {% endfor %}
                                 </div>
                                 <div class="form-group mb-2" id="consul_acl_token_div">
                                     <label for="consul_acl_token">ACL Token</label>
                                     <div class="input-group">
-                                        <input type="password" class="form-control" id="consul_acl_token" aria-describedby="consul_acl_tokenHelp" placeholder="Token">
+                                        {{ form.consul_acl_token|add_class:"form-control"|attr:"aria-describedby: consul_acl_tokenHelp"|attr:"placeholder: Token"}}
                                         <div class="input-group-prepend">
-                                            <div class="input-group-text">
-                                                <i class="bi bi-eye-slash" id="togglePassword_consul_acl_token"></i>
+                                            <div class="input-group-text toggle-password">
+                                                <i class="bi bi-eye bi-eye-slash"></i>
                                             </div>
                                         </div>
                                     </div>
@@ -121,12 +110,9 @@
                     </div>
                 </div>
             </div>
-            <div id="actions" class="mt-4 text-center">
-                <button type="submit" class="btn btn-success">Next</button>
-            </div>
         </form>
     {% elif options.environment == 'swarm' %}
-        <form id="swarm" method="post" class="mt-4">
+        <form id="swarm" method="post" class="mt-4" autocomplete="off">
             {% csrf_token %}
             <div class="row">
                 <div class="col-sm-12">
@@ -145,13 +131,13 @@
                     </div>
                 </div>
             </div>
-            <div id="actions" class="mt-4 text-center">
-                <button type="submit" class="btn btn-success">Next</button>
-            </div>
         </form>
     {% else %}
         Invalid options
     {% endif %}
+        <div id="actions" class="mt-4 text-center">
+            <button type="submit" class="btn btn-success action-btn">Next</button>
+        </div>
     </div>
 {% endblock %}
 {% block js %}
@@ -164,7 +150,7 @@
         const selected = $("input[name='nomad_authOptions']:checked");
         let option = null;
         if (selected.length > 0) {
-            option = selected[0].id;
+            option = selected[0].value;
         }
         return option;
     }
@@ -173,7 +159,7 @@
         const selected = $("input[name='consul_authOptions']:checked");
         let option = null;
         if (selected.length > 0) {
-            option = selected[0].id;
+            option = selected[0].value;
         }
         return option;
     }
@@ -181,11 +167,11 @@
     function manage_nomad_auth() {
         const option = get_nomad_auth();
         $('#nomad_acl_token_div').hide();
-        if (option === 'nomad_auth_none') {
+        if (option === 'none') {
 
-        } else if (option === 'nomad_auth_acl_token') {
+        } else if (option === 'acl_token') {
             $('#nomad_acl_token_div').show();
-        } else if (option === 'nomad_auth_client_cert') {
+        } else if (option === 'client_cert') {
 
         }
     }
@@ -193,30 +179,31 @@
     function manage_consul_auth() {
         const option = get_consul_auth();
         $('#consul_acl_token_div').hide();
-        if (option === 'consul_auth_none') {
+        if (option === 'none') {
 
-        } else if (option === 'consul_auth_acl_token') {
+        } else if (option === 'acl_token') {
             $('#consul_acl_token_div').show();
-        } else if (option === 'consul_auth_client_cert') {
+        } else if (option === 'client_cert') {
 
         }
     }
 
     $(function() {
-        $("#togglePassword_nomad_acl_token").click(function (env) {
-            const type = $("#nomad_acl_token").attr("type") === "password" ? "text" : "password";
-            $("#nomad_acl_token").attr("type", type);
+        // Set all passwords as hidden
+        $(".toggle-password").each(function () {
+            $(this).parents('.input-group').children('input').attr("type", "password")
+            $(this).children('i').addClass("bi-eye");
+        });
+
+        $(".toggle-password").click(function (env) {
+            const input_element = $(this).parents('.input-group').children('input');
+            const type = input_element.attr("type") === "password" ? "text" : "password";
+            input_element.attr("type", type);
 
             // toggle the icon
-            $("#togglePassword_nomad_acl_token").toggleClass("bi-eye");
+            $(this).children('i').toggleClass("bi-eye");
         });
-        $("#togglePassword_consul_acl_token").click(function (env) {
-            const type = $("#consul_acl_token").attr("type") === "password" ? "text" : "password";
-            $("#consul_acl_token").attr("type", type);
 
-            // toggle the icon
-            $("#togglePassword_consul_acl_token").toggleClass("bi-eye");
-        });
         $("input[name='nomad_authOptions']").click(function (env) {
            manage_nomad_auth();
         });
@@ -225,17 +212,18 @@
         });
         $(".action-btn").click(function (env) {
            const action = this.dataset['action'];
+           let data = $('form').serializeArray();
            $.ajax({
                url: '',
                method: 'POST',
                headers: {'X-CSRFToken': csrftoken},
-               data: {
-                   'action': action,
-                   'mode': '{{ options.mode }}',
-                   'configuration': $('form').serializeObject(),
-               },
+               data: data,
                success: function(data) {
-                   $(location).attr("href", data['redirect_url']);
+                   if (data.hasOwnProperty('redirect_url')) {
+                       $(location).attr("href", data['redirect_url']);
+                   } else {
+                       console.log(data['errors'])
+                   }
                }
            });
         });

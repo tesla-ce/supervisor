@@ -11,6 +11,9 @@ from tesla_ce_supervisor.lib.client import SupervisorClient
 from tesla_ce_supervisor.lib.tesla import TeslaClient
 from tesla_ce_supervisor.lib.utils import to_list, to_tuple, utils_get_config
 
+from ..forms.base import ConfigForm
+from ..forms.environment import NomadConsulForm, SwarmForm
+
 # Create your views here.
 def get_url_from_status(status: int = 0) -> str:
     """
@@ -95,16 +98,31 @@ def environment(request):
         options_mode = 'development'
     else:
         options_mode = 'production'
+    form: ConfigForm = None
+    if options_env == 'nomad_consul':
+        form = NomadConsulForm()
+    elif options_env == 'swarm':
+        form = SwarmForm()
+    form.load_config(client.get_config())
     context = {
         'options': {
             'environment': options_env,
             'mode': options_mode,
-            'setup_status': client.get("DEPLOYMENT_STATUS")
-        }
+            'setup_status': client.get("DEPLOYMENT_STATUS"),
+        },
+        'form': form,
     }
     if request.method == 'POST':
-        client.persist_configuration()
-        return JsonResponse({'redirect_url': get_url_from_status(client.get("DEPLOYMENT_STATUS"))})
+        if options_env == 'nomad_consul':
+            form = NomadConsulForm(request.POST)
+        elif options_env == 'swarm':
+            form = SwarmForm(request.POST)
+        if form.is_valid():
+            form.update_config(client.get_config())
+            client.get_config().set('DEPLOYMENT_STATUS', 2)
+            client.persist_configuration()
+            return JsonResponse({'redirect_url': get_url_from_status(client.get("DEPLOYMENT_STATUS"))})
+        return JsonResponse({'errors': form.errors})
     return render(request, 'environment.html', context)
 
 def step1(request):
