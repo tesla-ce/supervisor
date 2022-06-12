@@ -60,25 +60,6 @@ class SupervisorClient:
             Get the list of Vault configuration files to be exported or executed
             :return: Dictionary with all required files and content for each file
         """
-        # TODO: Remove after testing (configuration should be in configuration file or environment)
-        self._tesla.get_config().set('NOMAD_ADDR', 'https://console.nomad.demo.tesla-ce.eu')
-        self._tesla.get_config().set('NOMAD_REGION', 'global')
-        self._tesla.get_config().set('NOMAD_DATACENTERS', ['dc1'])
-        self._tesla.get_config().set('TESLA_DOMAIN', 'nomad.demo.tesla-ce.eu')
-        self._tesla.get_config().set('TESLA_ADMIN_MAIL', 'admin@nomad.demo.tesla-ce.eu')
-        self._tesla.get_config().set('STORAGE_REGION', 'eu-west-1')
-        self._tesla.get_config().set('STORAGE_ACCESS_KEY', 'AKIAIOSFODNN7EXAMPLE')
-        self._tesla.get_config().set('STORAGE_SECRET_KEY', 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')
-        self._tesla.get_config().set('DB_ENGINE', 'mysql')
-        self._tesla.get_config().set('DB_ROOT_PASSWORD', '.-.-#!/MyVerySecurePassword')
-        self._tesla.get_config().set('DB_PASSWORD', 'MyVerySecurePasswordForUser321!--..-')
-        self._tesla.get_config().set('DB_USER', 'tesla')
-        self._tesla.get_config().set('DB_NAME', 'tesla')
-        self._tesla.get_config().set('RABBITMQ_ADMIN_USER', 'ebbe970e-46f0-4654-bd2d-7e8c0724aacc')
-        self._tesla.get_config().set('RABBITMQ_ADMIN_PASSWORD', 'b52a7ba8-9cd3-4e69-a11e-4d0f66465937')
-        self._tesla.get_config().set('RABBITMQ_ERLANG_COOKIE', 'ee77b359-57c0-4037-ae70-a688f178f35f')
-        self._tesla.get_config().set('REDIS_PASSWORD', '.-.-#!/MyVerySecurePassword')
-
         # TODO: Remove code after testing (Set True for deploy and False for removing)
         if True:
             # Deploy Traefik
