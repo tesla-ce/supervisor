@@ -1,5 +1,4 @@
 {% load static %}
-<link href="{% static 'prism/prism.css' %}" rel="stylesheet" />
 <!-- Service Information Download Modal -->
 <div class="modal fade" id="service_modal_dialog" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -13,7 +12,7 @@
 
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" data-prismjs-copy-timeout="500">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
             </div>
         </div>
@@ -67,5 +66,3 @@
 <span class="m-2"><i class="bi bi-cloud-download"></i> Download scripts</span>
 <span class="m-2"><i class="bi bi-trash2-fill"></i> Remove service</span>
 <span class="m-2"><i class="bi bi-stars"></i> Automatic deployment</span>
-
-<script src="{% static 'prism/prism.js' %}"></script>

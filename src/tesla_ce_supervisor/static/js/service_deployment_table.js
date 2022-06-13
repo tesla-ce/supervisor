@@ -54,9 +54,11 @@ function download_service(service) {
             let commands = '';
             for(let cmd in data['commands']) {
                 commands += '<p class="text-muted"><strong>' + data['commands'][cmd]['description'] + '</strong></p>';
-                commands += '<pre><code className="language-bash">' + data['commands'][cmd]['command'] + '</code></pre><br/>';
+                commands += '<pre><code class="language-bash" data-prismjs-copy="Copy">' + data['commands'][cmd]['command'] + '</code></pre><br/>';
             }
             $('#service_modal_commands').html(commands);
+            // Highlight code
+            Prism.highlightAll();
             // Show information in modal dialog
             $("#service_modal_dialog").modal('show');
         }
