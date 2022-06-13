@@ -14,7 +14,7 @@ class NomadConfig:
         Nomad configuration
     """
     # Nomad server URL
-    nomad_url: str = 'http://127.0.0.1'
+    nomad_addr: str = 'http://127.0.0.1'
 
     # Nomad server port
     nomad_port: int = 4646
@@ -69,14 +69,7 @@ class NomadConfig:
         self.nomad_auth = self._set_value(
             config, nomad_auth
         )
-        nomad_addr = self._set_value(config, nomad_addr, 'NOMAD_ADDR', 'NOMAD_ADDR')
-        if nomad_addr is not None:
-            parsed = urlparse(nomad_addr)
-            self.nomad_url = ''
-            if parsed.scheme is not None and len(parsed.scheme) > 0:
-                self.nomad_url += '{}://'.format(parsed.scheme)
-            self.nomad_url += '{}'.format(parsed.hostname)
-            self.nomad_port = parsed.port
+        self.nomad_addr = self._set_value(config, nomad_addr, 'NOMAD_ADDR', 'NOMAD_ADDR')
         self.nomad_region = self._set_value(config, nomad_region, 'NOMAD_REGION', 'NOMAD_REGION')
 
         # Verification
@@ -126,21 +119,18 @@ class NomadDeploy(BaseDeploy):
             self.nomad_conf = NomadConfig(config)
         if self.nomad_conf.nomad_auth is None:
             self._client = nomad.Nomad(
-                host=self.nomad_conf.nomad_url,
-                port=self.nomad_conf.nomad_port,
+                address=self.nomad_conf.nomad_addr,
                 verify=self.nomad_conf.nomad_skip_verify
             )
         elif self.nomad_conf.nomad_auth == "ACL":
             self._client = nomad.Nomad(
-                host=self.nomad_conf.nomad_url,
-                port=self.nomad_conf.nomad_port,
+                address=self.nomad_conf.nomad_addr,
                 token=self.nomad_conf.nomad_token,
                 verify=self.nomad_conf.nomad_skip_verify
             )
         elif self.nomad_conf.nomad_auth == "CERT":
             self._client = nomad.Nomad(
-                host=self.nomad_conf.nomad_url,
-                port=self.nomad_conf.nomad_port,
+                address=self.nomad_conf.nomad_addr,
                 cert=(self.nomad_conf.nomad_client_cert,self.nomad_conf.nomad_client_key),
                 verify=self.nomad_conf.nomad_skip_verify
             )

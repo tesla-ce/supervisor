@@ -6,6 +6,8 @@ from .tesla import TeslaClient
 from .deploy import DeployClient
 from .setup import SetupClient
 
+from .models.check import ServiceStatus
+
 
 class SupervisorClient:
 
@@ -157,9 +159,50 @@ class SupervisorClient:
 
         return ret_val
 
-    def check_lb(self) -> dict:
+    def check_lb(self) -> ServiceStatus:
         """
             Check deployment status of the load balancer
             :return: Status information
         """
-        return {}
+        status = ServiceStatus()
+        return status
+
+    def check_database(self) -> ServiceStatus:
+        """
+            Check deployment status of the database
+            :return: Status information
+        """
+        status = ServiceStatus()
+        return status
+
+    def check_minio(self) -> ServiceStatus:
+        """
+            Check deployment status of MinIO
+            :return: Status information
+        """
+        status = ServiceStatus()
+        return status
+
+    def check_redis(self) -> ServiceStatus:
+        """
+            Check deployment status of Redis
+            :return: Status information
+        """
+        status = ServiceStatus()
+        return status
+
+    def check_rabbitmq(self) -> ServiceStatus:
+        """
+            Check deployment status of RabbitMQ
+            :return: Status information
+        """
+        status = ServiceStatus()
+        return status
+
+    def check_vault(self) -> ServiceStatus:
+        """
+            Check deployment status of Vault
+            :return: Status information
+        """
+        status = ServiceStatus()
+        return status

@@ -39,9 +39,11 @@ class SetupOptions:
     """
         Deployment options
     """
-    require_files: bool = False
-    commands: typing.List[SetupOptionsCommand] = []
-    files: typing.List[SetupOptionsFile] = []
+    def __init__(self) -> None:
+        super().__init__()
+        self.require_files: bool = False
+        self.commands: typing.List[SetupOptionsCommand] = []
+        self.files: typing.List[SetupOptionsFile] = []
 
     def add_command(self, command: str, description: str):
         cmd = SetupOptionsCommand()

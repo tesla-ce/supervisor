@@ -16,6 +16,11 @@ urlpatterns = [
     # Check
     path('check/dns', check.APICheckDNS.as_view(), name='setup_api_check_dns'),
     path('check/lb', check.APICheckLoadBalancer.as_view(), name='setup_api_check_lb'),
+    path('check/database', check.APICheckDatabase.as_view(), name='setup_api_check_database'),
+    path('check/minio', check.APICheckMinio.as_view(), name='setup_api_check_minio'),
+    path('check/rabbitmq', check.APICheckRabbitMQ.as_view(), name='setup_api_check_rabbitmq'),
+    path('check/redis', check.APICheckRedis.as_view(), name='setup_api_check_redis'),
+    path('check/vault', check.APICheckVault.as_view(), name='setup_api_check_vault'),
     # Vault Configuration
     path('vault/kv', vault.APIVaultInitKV.as_view(), name='setup_api_vault_kv'),
 ]
