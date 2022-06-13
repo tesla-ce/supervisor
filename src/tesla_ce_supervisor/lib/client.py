@@ -12,10 +12,10 @@ from .models.check import ServiceStatus
 class SupervisorClient:
 
     def __init__(self):
-        self._catalog = CatalogClient()
         self._tesla = TeslaClient()
         self._tesla.get_config_path()
         self._tesla.load_configuration()
+        self._catalog = CatalogClient(self._tesla.get_config())
 
     def get_services(self):
         return self._catalog.get_services()
@@ -176,7 +176,11 @@ class SupervisorClient:
             Check deployment status of the database
             :return: Status information
         """
-        status = ServiceStatus()
+        status = ServiceStatus(
+            self.get_deployer().get_database_status(),
+            self._catalog.get_database_status()
+        )
+
         return status
 
     def check_minio(self) -> ServiceStatus:
@@ -184,7 +188,11 @@ class SupervisorClient:
             Check deployment status of MinIO
             :return: Status information
         """
-        status = ServiceStatus()
+        status = ServiceStatus(
+            self.get_deployer().get_minio_status(),
+            self._catalog.get_minio_status()
+        )
+
         return status
 
     def check_redis(self) -> ServiceStatus:
@@ -192,7 +200,11 @@ class SupervisorClient:
             Check deployment status of Redis
             :return: Status information
         """
-        status = ServiceStatus()
+        status = ServiceStatus(
+            self.get_deployer().get_redis_status(),
+            self._catalog.get_redis_status()
+        )
+
         return status
 
     def check_rabbitmq(self) -> ServiceStatus:
@@ -200,7 +212,11 @@ class SupervisorClient:
             Check deployment status of RabbitMQ
             :return: Status information
         """
-        status = ServiceStatus()
+        status = ServiceStatus(
+            self.get_deployer().get_rabbitmq_status(),
+            self._catalog.get_rabbitmq_status()
+        )
+
         return status
 
     def check_vault(self) -> ServiceStatus:
@@ -208,5 +224,9 @@ class SupervisorClient:
             Check deployment status of Vault
             :return: Status information
         """
-        status = ServiceStatus()
+        status = ServiceStatus(
+            self.get_deployer().get_vault_status(),
+            self._catalog.get_vault_status()
+        )
+
         return status

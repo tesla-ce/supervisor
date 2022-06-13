@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 
 from tesla_ce_supervisor.lib.tesla import TeslaClient
+from tesla_ce_supervisor.lib.client import SupervisorClient
 from tesla_ce_supervisor.apps.web.views.setup.utils import get_url_from_status
 
 
@@ -33,7 +34,15 @@ def lb_view(request):
         }
     }
     if request.method == 'POST':
-        # TODO: Check if load balancer is deployed
-
-        return JsonResponse({'redirect_url': get_url_from_status(client)})
+        s_client = SupervisorClient()
+        lb_status = s_client.check_lb()
+        if lb_status.is_valid():
+            if client.get("DEPLOYMENT_SERVICES"):
+                # Configuration will be generated as part of the deployment
+                client.get_config().set('DEPLOYMENT_STATUS', 5)
+            else:
+                client.get_config().set('DEPLOYMENT_STATUS', 4)
+            client.persist_configuration()
+            return JsonResponse({'redirect_url': get_url_from_status(client)})
+        return JsonResponse({'errors': lb_status.to_json()})
     return render(request, 'load_balancer.html', context)

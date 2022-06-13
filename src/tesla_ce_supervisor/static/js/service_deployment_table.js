@@ -2,37 +2,48 @@ const base_url = '/setup/api/';
 
 const service_desc = {
     'lb': {name: 'Load Balancer', deploy: base_url + 'deploy/lb', status: base_url + 'check/lb'},
-    'database': {name: 'Database', path: base_url + 'deploy/database', status: base_url + 'check/database'},
-    'rabbitmq': {name: 'RabbitMQ', path: base_url + 'deploy/rabbitmq', status: base_url + 'check/rabbitmq'},
-    'minio': {name: 'MinIO', path: base_url + 'deploy/minio', status: base_url + 'check/minio'},
-    'redis': {name: 'Redis', path: base_url + 'deploy/redis', status: base_url + 'check/redis'},
-    'vault': {name: 'HashiCorp Vault', path: base_url + 'deploy/vault', status: base_url + 'check/vault'},
+    'database': {name: 'Database', deploy: base_url + 'deploy/database', status: base_url + 'check/database'},
+    'rabbitmq': {name: 'RabbitMQ', deploy: base_url + 'deploy/rabbitmq', status: base_url + 'check/rabbitmq'},
+    'minio': {name: 'MinIO', deploy: base_url + 'deploy/minio', status: base_url + 'check/minio'},
+    'redis': {name: 'Redis', deploy: base_url + 'deploy/redis', status: base_url + 'check/redis'},
+    'vault': {name: 'HashiCorp Vault', deploy: base_url + 'deploy/vault', status: base_url + 'check/vault'},
 }
 
 function set_instances(service, instances) {
     const cell = $('td.service-deploy-instances[data-service="' + service + '"]');
-
-    if (cell.data()['catalog'] === 'consul') {
-        let services = '<ul class="list-unstyled">';
-        for (let srv in instances['services']) {
-            if (instances['services'][srv]['healthy_instances'] === instances['services'][srv]['total_instances'] && instances['services'][srv]['total_instances'] > 0) {
-                services += '<li class="text-success">' + instances['services'][srv]['name'] + ' (' + instances['services'][srv]['healthy_instances'] + '/' + instances['services'][srv]['total_instances'] + ')</li>';
-            } else {
-                services += '<li class="text-danger">' + instances['services'][srv]['name'] + ' (' + instances['services'][srv]['healthy_instances'] + '/' + instances['services'][srv]['total_instances'] + ')</li>';
+    if (instances) {
+        if (cell.data()['catalog'] === 'consul') {
+            let services = '<ul class="list-unstyled">';
+            for (let srv in instances['services']) {
+                if (instances['services'][srv]['healthy_instances'] === instances['services'][srv]['total_instances'] && instances['services'][srv]['total_instances'] > 0) {
+                    services += '<li class="text-success">' + instances['services'][srv]['name'] + ' (' + instances['services'][srv]['healthy_instances'] + '/' + instances['services'][srv]['total_instances'] + ')</li>';
+                } else {
+                    services += '<li class="text-danger">' + instances['services'][srv]['name'] + ' (' + instances['services'][srv]['healthy_instances'] + '/' + instances['services'][srv]['total_instances'] + ')</li>';
+                }
             }
+            services += '</ul>';
+            cell.html(services);
+        } else {
+            cell.html(
+                instances['healthy'] + '/' + instances['total']
+            );
         }
-        services += '</ul>';
-        cell.html(services);
     } else {
         cell.html(
-            instances['healthy'] + '/' + instances['total']
+            '0/0'
         );
     }
 }
 function set_jobs(service, jobs) {
-    $('td.service-deploy-jobs[data-service="' + service + '"]').html(
-        '' + jobs['running'] + '/' + jobs['expected'] + ' (' + jobs['healthy'] + ' healthy)'
-    );
+    if (jobs) {
+        $('td.service-deploy-jobs[data-service="' + service + '"]').html(
+            '' + jobs['running'] + '/' + jobs['expected'] + ' (' + jobs['healthy'] + ' healthy)'
+        );
+    } else {
+        $('td.service-deploy-jobs[data-service="' + service + '"]').html(
+            '0/0 (0 healthy)'
+        );
+    }
 }
 function set_status(service, status) {
     if (status) {
@@ -139,7 +150,7 @@ $('.service-action').click(function() {
    const action = $(this).data()['action'];
 
    if (action === 'refresh') {
-       refresh_all();
+       refresh_service(service);
    } else if (action === 'download') {
        download_service(service);
    } else if (action === 'remove') {

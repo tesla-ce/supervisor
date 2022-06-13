@@ -18,7 +18,11 @@ def get_url_from_status(client: TeslaClient) -> str:
         new_url = reverse('setup_tesla_basic_info')
     elif status == 3:  # Load Balancer deployment
         new_url = reverse('setup_load_balancer')
-    elif status == 4:  # Configuration wizard 1
+    elif status == 4:  # Setup external services
+        new_url = reverse('setup_services_config')
+    elif status == 5:  # Deploy services
+        new_url = reverse('setup_services_deploy')
+    elif status == 6:  # Configuration wizard 1
         new_url = reverse('setup_step1')
     else:
         new_url = reverse('setup_home')

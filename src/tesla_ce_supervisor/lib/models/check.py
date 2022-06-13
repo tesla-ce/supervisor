@@ -85,7 +85,7 @@ class ServiceStatus:
         self.catalog_info: typing.Optional[ServiceCatalogInformation] = catalog
 
     def is_valid(self) -> bool:
-        if self.deploy_info.is_valid() is None or self.catalog_info.is_healthy() is None:
+        if self.deploy_info is None or self.catalog_info is None:
             return False
         return self.deploy_info.is_valid() and self.catalog_info.is_healthy()
 

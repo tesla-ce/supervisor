@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% block extra_css %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css" />
+<style>
+    .logo {
+        max-width: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_head_scripts %}
+
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <form id="nomad_consul" method="post" class="mt-4" autocomplete="off">
+            {% csrf_token %}
+            <div class="row">
+                {% include 'services/config_blocs/database.html' %}
+                {% include 'services/config_blocs/vault.html' %}
+            </div>
+        </form>
+
+        <div id="actions" class="mt-4 text-center">
+            <button type="submit" class="btn btn-success action-btn">Next</button>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+{% csrf_token %}
+<script>
+    // CSRF value
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+
+    $(function() {
+        // Set all passwords as hidden
+        $(".toggle-password").each(function () {
+            $(this).parents('.input-group').children('input').attr("type", "password")
+            $(this).children('i').addClass("bi-eye");
+        });
+
+        $(".toggle-password").click(function (env) {
+            const input_element = $(this).parents('.input-group').children('input');
+            const type = input_element.attr("type") === "password" ? "text" : "password";
+            input_element.attr("type", type);
+
+            // toggle the icon
+            $(this).children('i').toggleClass("bi-eye");
+        });
+
+        $(".action-btn").click(function (env) {
+           const action = this.dataset['action'];
+           let data = $('form').serializeArray();
+           $.ajax({
+               url: '',
+               method: 'POST',
+               headers: {'X-CSRFToken': csrftoken},
+               data: data,
+               success: function(data) {
+                   if (data.hasOwnProperty('redirect_url')) {
+                       $(location).attr("href", data['redirect_url']);
+                   } else {
+                       console.log(data['errors'])
+                   }
+               }
+           });
+        });
+    });
+</script>
+{% endblock %}

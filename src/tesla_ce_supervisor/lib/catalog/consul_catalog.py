@@ -3,13 +3,13 @@ import typing
 
 from django.conf import settings
 
-from .base import BaseCatalog, ServiceCatalogInformation
+from .base import BaseCatalog, ServiceCatalogInformation, Config
 
 
 class ConsulCatalog(BaseCatalog):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, config: typing.Optional[Config] = None) -> None:
+        super().__init__(config)
 
         self._client = consul.Consul(host=settings.CONSUL_HOST,
                                      port=settings.CONSUL_PORT,
@@ -67,4 +67,24 @@ class ConsulCatalog(BaseCatalog):
         return self._merge_status_data('traefik',
                                        [self.get_service_status('traefik-http'),
                                        self.get_service_status('traefik-https')])
+
+    def get_database_status(self) -> ServiceCatalogInformation:
+        return self._merge_status_data('database',
+                                       [self.get_service_status('{}-server'.format(self._config.get('DB_ENGINE')))])
+
+    def get_vault_status(self) -> ServiceCatalogInformation:
+        pass
+
+    def get_redis_status(self) -> ServiceCatalogInformation:
+        pass
+
+    def get_rabbitmq_status(self) -> ServiceCatalogInformation:
+        return self._merge_status_data('rabbitmq',
+                                       [self.get_service_status('rabbitmq'),
+                                        self.get_service_status('rabbitmq-management')])
+
+    def get_minio_status(self) -> ServiceCatalogInformation:
+        pass
+
+
 

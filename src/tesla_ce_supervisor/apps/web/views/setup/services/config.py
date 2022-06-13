@@ -12,4 +12,13 @@ def service_configuration(request):
     client.get_config_path()
     client.load_configuration()
 
-    pass
+    context = {
+        'options': {
+            'setup_status': client.get("DEPLOYMENT_STATUS"),
+        },
+    }
+
+    if request.method == 'POST':
+
+        return JsonResponse({'errors': {}})
+    return render(request, 'services/config_services.html', context)

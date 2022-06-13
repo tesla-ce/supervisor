@@ -282,6 +282,13 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
+
+    def get_vault_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for Vault
+        """
+        return self._create_status_obj('vault')
+
     def deploy_minio(self) -> dict:
         """
             Deploy MinIO
@@ -337,6 +344,12 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
+    def get_minio_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for MinIO
+        """
+        return self._create_status_obj('minio')
+
     def deploy_redis(self) -> dict:
         """
             Deploy Redis
@@ -385,6 +398,12 @@ class NomadDeploy(BaseDeploy):
         )
 
         return script
+
+    def get_redis_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for Redis
+        """
+        return self._create_status_obj('redis')
 
     def deploy_database(self) -> dict:
         """
@@ -482,6 +501,12 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
+    def get_database_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for Database
+        """
+        return self._create_status_obj(self._config.get('DB_ENGINE'))
+
     def deploy_rabbitmq(self) -> dict:
         """
             Deploy RabbitMQ
@@ -536,3 +561,9 @@ class NomadDeploy(BaseDeploy):
         )
 
         return script
+
+    def get_rabbitmq_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for RabbitMQ
+        """
+        return self._create_status_obj('rabbitmq')

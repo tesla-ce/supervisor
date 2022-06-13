@@ -48,6 +48,9 @@ class DeployClient:
     def get_vault_script(self) -> SetupOptions:
         return self._client.get_vault_script()
 
+    def get_vault_status(self) -> ServiceDeploymentInformation:
+        return self._client.get_vault_status()
+
     def deploy_minio(self) -> dict:
         return self._client.deploy_minio()
 
@@ -57,11 +60,17 @@ class DeployClient:
     def get_minio_script(self) -> SetupOptions:
         return self._client.get_minio_script()
 
+    def get_minio_status(self) -> ServiceDeploymentInformation:
+        return self._client.get_minio_status()
+
     def deploy_database(self) -> dict:
         return self._client.deploy_database()
 
     def get_database_script(self) -> SetupOptions:
         return self._client.get_database_script()
+
+    def get_database_status(self) -> ServiceDeploymentInformation:
+        return self._client.get_database_status()
 
     def remove_database(self) -> dict:
         return self._client.remove_database()
@@ -75,6 +84,9 @@ class DeployClient:
     def get_rabbitmq_script(self) -> SetupOptions:
         return self._client.get_rabbitmq_script()
 
+    def get_rabbitmq_status(self) -> ServiceDeploymentInformation:
+        return self._client.get_rabbitmq_status()
+
     def deploy_redis(self) -> dict:
         return self._client.deploy_redis()
 
@@ -83,3 +95,6 @@ class DeployClient:
 
     def get_redis_script(self) -> SetupOptions:
         return self._client.get_redis_script()
+
+    def get_redis_status(self) -> ServiceDeploymentInformation:
+        return self._client.get_redis_status()

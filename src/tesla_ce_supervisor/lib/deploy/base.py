@@ -74,6 +74,13 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
+    def get_vault_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for Vault
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
     def deploy_minio(self) -> dict:
         """
             Deploy MinIO
@@ -91,6 +98,13 @@ class BaseDeploy(abc.ABC):
     def get_minio_script(self) -> SetupOptions:
         """
             Get the script to deploy MinIO
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def get_minio_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for MinIO
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
@@ -116,6 +130,13 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
+    def get_redis_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for Redis
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
     def deploy_database(self) -> dict:
         """
             Deploy Database
@@ -137,6 +158,13 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
+    def get_database_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for Database
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
     def deploy_rabbitmq(self) -> dict:
         """
             Deploy RabbitMQ
@@ -154,6 +182,13 @@ class BaseDeploy(abc.ABC):
     def get_rabbitmq_script(self) -> SetupOptions:
         """
             Get the script to deploy RabbitMQ
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def get_rabbitmq_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for RabbitMQ
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 

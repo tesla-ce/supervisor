@@ -12,22 +12,24 @@ def service_deployment(request):
     client.get_config_path()
     client.load_configuration()
 
-    form = TeslaBasicInfoForm()
-    form.load_config(client.get_config())
+    options_env = None
+    if client.get("DEPLOYMENT_CATALOG_SYSTEM") == 'consul' and client.get("DEPLOYMENT_ORCHESTRATOR") == 'nomad':
+        options_env = 'nomad_consul'
+    elif client.get("DEPLOYMENT_CATALOG_SYSTEM") == 'swarm' and client.get("DEPLOYMENT_ORCHESTRATOR") == 'swarm':
+        options_env = 'swarm'
+    if client.get("DEPLOYMENT_SERVICES"):
+        options_mode = 'development'
+    else:
+        options_mode = 'production'
 
     context = {
         'options': {
-            'setup_status': client.get("DEPLOYMENT_STATUS"),
+            'environment': options_env,
+            'mode': options_mode,
+            'catalog': client.get("DEPLOYMENT_CATALOG_SYSTEM"),
         },
-        'form': form,
     }
 
     if request.method == 'POST':
-        form = TeslaBasicInfoForm(request.POST)
-        if form.is_valid():
-            form.update_config(client.get_config())
-            client.get_config().set('DEPLOYMENT_STATUS', 3)
-            client.persist_configuration()
-            return JsonResponse({'redirect_url': get_url_from_status(client)})
-        return JsonResponse({'errors': form.errors})
-    return render(request, 'basic_info.html', context)
+        return JsonResponse({'errors': {}})
+    return render(request, 'services/deploy_services.html', context)

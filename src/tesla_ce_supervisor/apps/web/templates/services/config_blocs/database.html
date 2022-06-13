@@ -1,0 +1,52 @@
+{% load static %}
+{% load widget_tweaks %}
+<div class="col-sm-12">
+    <div class="card h-100">
+        <div class="card-body row">
+            <div class="col-md-4 align-content-center text-center">
+                <img src="{% static 'img/Server-DB.svg' %}" class="img-fluid rounded-start logo" alt="Database image">
+            </div>
+            <div class="col-md-8">
+                <h5 class="card-title">Database configuration</h5>
+                <div class="form-group mb-2">
+                    <label for="nomad_addr">Address</label>
+                    {{ form.nomad_addr|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: nomad_addrHelp"|attr:"placeholder: Address"}}
+                    <small id="nomad_addrHelp" class="form-text text-muted">Full address with schema and port to connect with Nomad Client</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="nomad_datacenters">Datacenters</label>
+                    {{ form.nomad_datacenters|add_class:"form-control"|attr:"aria-describedby: nomad_datacentersHelp"|attr:"placeholder: Datacenters"}}
+                    <small id="nomad_datacentersHelp" class="form-text text-muted">Comma-separated list of datacenters for deployment</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="nomad_region">Region</label>
+                    {{ form.nomad_region|add_class:"form-control"|attr:"aria-describedby: nomad_regionHelp"|attr:"placeholder: Region"}}
+                    <small id="nomad_regionHelp" class="form-text text-muted">Region</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Authentication</label>
+                    <br>
+                    {% for radio in form.nomad_authOptions %}
+                        <div class="form-check form-check-inline">
+                            {{ radio.tag }}
+                            <label class="form-check-label" for="id_nomad_authOptions_{{ forloop.counter0 }}">{{ radio.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="form-group mb-2 ml-2" id="nomad_acl_token_div">
+                    <label for="nomad_acl_token">ACL Token</label>
+                    <div class="input-group">
+                        {{ form.nomad_acl_token|add_class:"form-control"|attr:"aria-describedby: nomad_acl_tokenHelp"|attr:"placeholder: Token"}}
+                        <div class="input-group-prepend">
+                            <div class="input-group-text toggle-password">
+                                <i class="bi bi-eye bi-eye-slash"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <small id="nomad_acl_tokenHelp" class="form-text text-muted">To use automatic deployment the token should be able to register new jobs.</small>
+                </div>
+                <a href="#" data-action="test_nomad" class="btn btn-success action-btn disabled">Test</a>
+            </div>
+        </div>
+    </div>
+</div>
