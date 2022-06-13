@@ -1,3 +1,5 @@
+import urllib
+
 import consul
 import typing
 
@@ -72,11 +74,50 @@ class ConsulCatalog(BaseCatalog):
         return self._merge_status_data('database',
                                        [self.get_service_status('{}-server'.format(self._config.get('DB_ENGINE')))])
 
+    def register_database(self):
+        self._client.catalog.register(
+            node='mysql-server',
+            address=self._config.get('DB_HOST'),
+            service={
+                "Service": "mysql-server",
+                "Tags": [
+                    "tesla-ce",
+                    "external",
+                    "service",
+                    "mysql",
+                ],
+                "Port": self._config.get('DB_PORT')
+            })
+
+    def deregister_database(self):
+        self._client.catalog.deregister(node='mysql-server')
+
     def get_vault_status(self) -> ServiceCatalogInformation:
-        pass
+        return self._merge_status_data('database',
+                                       [self.get_service_status('vault')])
+
+    def register_vault(self):
+        port = 8200  # TODO: Extract from Vault URL
+        self._client.catalog.register(
+            node='vault',
+            address=self._config.get('VAULT_URL'),
+            service={
+                "Service": "mysql-server",
+                "Tags": [
+                    "tesla-ce",
+                    "external",
+                    "service",
+                    "vault",
+                ],
+                "Port": port
+            })
+
+    def deregister_vault(self):
+        self._client.catalog.deregister(node='vault')
 
     def get_redis_status(self) -> ServiceCatalogInformation:
-        pass
+        return self._merge_status_data('redis',
+                                       [self.get_service_status('redis')])
 
     def get_rabbitmq_status(self) -> ServiceCatalogInformation:
         return self._merge_status_data('rabbitmq',
@@ -84,7 +125,6 @@ class ConsulCatalog(BaseCatalog):
                                         self.get_service_status('rabbitmq-management')])
 
     def get_minio_status(self) -> ServiceCatalogInformation:
-        pass
-
-
-
+        return self._merge_status_data('minio',
+                                       [self.get_service_status('minio-api'),
+                                        self.get_service_status('minio-console')])

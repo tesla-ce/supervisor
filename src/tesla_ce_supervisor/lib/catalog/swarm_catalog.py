@@ -5,6 +5,7 @@ from django.conf import settings
 
 from .base import BaseCatalog, ServiceCatalogInformation
 
+NOT_IMPLEMENTED_MESSAGE = 'Method not implemented'
 
 class SwarmCatalog(BaseCatalog):
 

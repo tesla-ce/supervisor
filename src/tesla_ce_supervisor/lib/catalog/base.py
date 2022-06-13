@@ -33,6 +33,14 @@ class BaseCatalog(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
+    def register_database(self) -> ServiceCatalogInformation:
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def deregister_database(self) -> ServiceCatalogInformation:
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
     def get_vault_status(self) -> ServiceCatalogInformation:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
