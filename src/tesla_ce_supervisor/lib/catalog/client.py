@@ -1,7 +1,9 @@
+from typing import Optional
 from django.conf import settings
 
 from .consul_catalog import ConsulCatalog
-from typing import Optional
+from ..models.check import ServiceCatalogInformation
+
 
 class CatalogClient:
 
@@ -18,10 +20,9 @@ class CatalogClient:
     def get_services(self):
         return self._client.get_services()
 
-    def check_database(self, a: Optional[int] = None) -> bool:
+    def get_db_status(self) -> ServiceCatalogInformation:
         # todo: implement
         pass
 
-    def check_lb(self, a: Optional[int] = None) -> dict:
-        # todo: implement
-        pass
+    def get_lb_status(self) -> ServiceCatalogInformation:
+        return self._client.get_lb_status()

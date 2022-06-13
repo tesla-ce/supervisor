@@ -1,29 +1,23 @@
-import consul
+import docker
+import typing
 
 from django.conf import settings
 
-from .base import BaseCatalog, Service
+from .base import BaseCatalog, ServiceCatalogInformation
 
 
 class SwarmCatalog(BaseCatalog):
 
     def __init__(self):
         super().__init__()
-        # todo: change docker client
-        self._client = consul.Consul(host=settings.CONSUL_HOST,
-                                     port=settings.CONSUL_PORT,
-                                     scheme=settings.CONSUL_SCHEME,
-                                     verify=settings.CONSUL_VERIFY,
-                                     cert=settings.CONSUL_CERT
-                                     )
+        self._client = None
 
-    def get_services(self):
-        # get only tag: tesla-ce services
-        index, services = self._client.catalog.services()
-        srv_list = []
-        for srv in services:
-            new_service = Service()
-            new_service.name = srv
-            srv_list.append(new_service)
-        return srv_list
+    def get_services(self) -> typing.List[ServiceCatalogInformation]:
+        return []
 
+    def get_service_status(self, name: str) -> ServiceCatalogInformation:
+        status = ServiceCatalogInformation(name)
+        return status
+
+    def get_lb_status(self) -> ServiceCatalogInformation:
+        return self.get_service_status('traefik')

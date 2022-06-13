@@ -21,8 +21,13 @@
 <table class="table table-stripped">
     <thead>
         <th>Service</th>
+        {% if options.catalog == 'consul' %}
+        <th>Jobs</th>
+        <th>Services</th>
+        {% else %}
         <th>Jobs</th>
         <th>Instances</th>
+        {% endif %}
         <th>Status</th>
         <th class="global-actions-bloc text-right">
             <button type="button" class="btn btn-sm btn-light global-action" data-action="refresh_all">
@@ -42,7 +47,7 @@
         <tr class="service-deploy-row" data-service="{{ service }}">
             <td class="service-deploy-name" data-service="{{ service }}">{{ service }}</td>
             <td class="service-deploy-jobs" data-service="{{ service }}"></td>
-            <td class="service-deploy-instances" data-service="{{ service }}"></td>
+            <td class="service-deploy-instances" data-catalog="{{ options.catalog }}" data-service="{{ service }}"></td>
             <td class="service-deploy-status" data-service="{{ service }}"></td>
             <td class="service-deploy-actions text-right" data-service="{{ service }}">
                 <button type="button" class="btn btn-sm btn-secondary service-action" data-service="{{ service }}" data-action="refresh">

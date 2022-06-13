@@ -3,7 +3,7 @@ import typing
 import nomad
 from urllib.parse import urlparse
 from django.template.loader import render_to_string
-from .base import BaseDeploy
+from .base import BaseDeploy, ServiceDeploymentInformation
 from .exceptions import TeslaDeployNomadTemplateException, TeslaDeployNomadException
 from ..tesla.conf import Config
 from ..setup_options import SetupOptions
@@ -135,6 +135,24 @@ class NomadDeploy(BaseDeploy):
                 verify=self.nomad_conf.nomad_skip_verify
             )
 
+    def _create_status_obj(self, name: str) -> ServiceDeploymentInformation:
+        # Check if job exists
+        job_info = None
+        if len(self._client.jobs.get_jobs(name)) == 1:
+            job_info = self._client.job.get_deployment(name)
+        status = ServiceDeploymentInformation(name, 'nomad', job_info)
+        if job_info is not None:
+            status.jobs_running = job_info['TaskGroups'][name]['PlacedAllocs']
+            status.jobs_expected = job_info['TaskGroups'][name]['DesiredTotal']
+            status.jobs_healthy = job_info['TaskGroups'][name]['HealthyAllocs']
+            if job_info['Status'] == 'running':
+                status.status = 'waiting'
+            elif job_info['Status'] == 'successful':
+                status.status = 'success'
+            else:
+                status.status = 'error'
+        return status
+
     def _crete_nomad_job(self, name: str, template: str, context: dict) -> dict:
         task_def = self._remove_empty_lines(render_to_string(template, context))
 
@@ -207,6 +225,12 @@ class NomadDeploy(BaseDeploy):
         )
 
         return script
+
+    def get_lb_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for Load Balancer
+        """
+        return self._create_status_obj('traefik')
 
     def deploy_vault(self) -> dict:
         """

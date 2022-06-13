@@ -27,6 +27,7 @@ def lb_view(request):
         'options': {
             'environment': options_env,
             'mode': options_mode,
+            'catalog': client.get("DEPLOYMENT_CATALOG_SYSTEM"),
             'load_balancer': client.get("DEPLOYMENT_LB"),
             'base_domain': client.get("TESLA_DOMAIN"),
         }

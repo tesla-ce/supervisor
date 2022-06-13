@@ -3,6 +3,7 @@ import typing
 
 from ..setup_options import SetupOptions
 from ..tesla.conf import Config
+from ..models.check import ServiceDeploymentInformation
 
 
 NOT_IMPLEMENTED_MESSAGE = 'Method not implemented'
@@ -41,6 +42,13 @@ class BaseDeploy(abc.ABC):
     def get_lb_script(self) -> SetupOptions:
         """
             Get the script to deploy Load Balancer
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def get_lb_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for Load Balancer
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 

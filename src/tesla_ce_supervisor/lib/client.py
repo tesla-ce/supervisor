@@ -164,7 +164,11 @@ class SupervisorClient:
             Check deployment status of the load balancer
             :return: Status information
         """
-        status = ServiceStatus()
+        status = ServiceStatus(
+            self.get_deployer().get_lb_status(),
+            self._catalog.get_lb_status()
+        )
+
         return status
 
     def check_database(self) -> ServiceStatus:

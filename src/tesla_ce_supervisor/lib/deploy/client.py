@@ -4,6 +4,7 @@ from .nomad_client import NomadDeploy
 from .swarm_client import SwarmDeploy
 from ..tesla.conf import Config
 from ..setup_options import SetupOptions
+from ..models.check import ServiceDeploymentInformation
 
 
 class DeployClient:
@@ -34,6 +35,9 @@ class DeployClient:
 
     def get_lb_script(self) -> SetupOptions:
         return self._client.get_lb_script()
+
+    def get_lb_status(self) -> ServiceDeploymentInformation:
+        return self._client.get_lb_status()
 
     def deploy_vault(self) -> dict:
         return self._client.deploy_vault()

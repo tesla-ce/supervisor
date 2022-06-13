@@ -9,11 +9,30 @@ const service_desc = {
     'vault': {name: 'HashiCorp Vault', path: base_url + 'deploy/vault', status: base_url + 'check/vault'},
 }
 
-function set_instances(service, num) {
-    $('td.service-deploy-instances[data-service="' + service + '"]').html(num);
+function set_instances(service, instances) {
+    const cell = $('td.service-deploy-instances[data-service="' + service + '"]');
+
+    if (cell.data()['catalog'] === 'consul') {
+        let services = '<ul class="list-unstyled">';
+        for (let srv in instances['services']) {
+            if (instances['services'][srv]['healthy_instances'] === instances['services'][srv]['total_instances'] && instances['services'][srv]['total_instances'] > 0) {
+                services += '<li class="text-success">' + instances['services'][srv]['name'] + ' (' + instances['services'][srv]['healthy_instances'] + '/' + instances['services'][srv]['total_instances'] + ')</li>';
+            } else {
+                services += '<li class="text-danger">' + instances['services'][srv]['name'] + ' (' + instances['services'][srv]['healthy_instances'] + '/' + instances['services'][srv]['total_instances'] + ')</li>';
+            }
+        }
+        services += '</ul>';
+        cell.html(services);
+    } else {
+        cell.html(
+            instances['healthy'] + '/' + instances['total']
+        );
+    }
 }
-function set_jobs(service, num) {
-    $('td.service-deploy-jobs[data-service="' + service + '"]').html(num);
+function set_jobs(service, jobs) {
+    $('td.service-deploy-jobs[data-service="' + service + '"]').html(
+        '' + jobs['running'] + '/' + jobs['expected'] + ' (' + jobs['healthy'] + ' healthy)'
+    );
 }
 function set_status(service, status) {
     if (status) {

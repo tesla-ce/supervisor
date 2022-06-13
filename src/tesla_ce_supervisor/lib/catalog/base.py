@@ -1,11 +1,9 @@
 import abc
 import typing
 
+from tesla_ce_supervisor.lib.models.check import ServiceCatalogInformation
 
-class Service:
-    name: str
-    instances: int
-    healthy: int
+NOT_IMPLEMENTED_MESSAGE = 'Method not implemented'
 
 
 class BaseCatalog(abc.ABC):
@@ -13,6 +11,16 @@ class BaseCatalog(abc.ABC):
     filter_tag = 'tesla-ce'
 
     @abc.abstractmethod
-    def get_services(self) -> typing.List[Service]:
-        pass
+    def get_services(self) -> typing.List[ServiceCatalogInformation]:
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def get_service_status(self, name: str) -> ServiceCatalogInformation:
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def get_lb_status(self) -> ServiceCatalogInformation:
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+
 
