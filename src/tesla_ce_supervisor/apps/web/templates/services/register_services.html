@@ -19,58 +19,18 @@
         <form id="swarm" method="post" class="mt-4" autocomplete="off">
             {% csrf_token %}
             <div class="row">
-                <div class="col-sm-12">
+                <div class="col-md-4 align-content-center text-center">
+                <img src="{% static 'img/Vault_VerticalLogo_Black_RGB.png' %}" class="img-fluid rounded-start logo" alt="Vault logo">
+            </div>
+            <div class="col-md-8">
                     <div id="dep_env_swarm" class="card h-100">
-                        <div class="card-body row">
-                            <div class="col-md-4 align-content-center text-center">
-                                <img src="{% static 'img/traefik.logo_.png' %}" class="img-fluid rounded-start logo" alt="Traefik logo">
-                            </div>
-                            <div class="col-md-8">
-                                <h5 class="card-title">Traefik Load Balancer</h5>
+                        <div class="card-body">
+                            <h5 class="card-title">External Services Registration</h5>
                                 <p class="text-justify">
-                                    Traefik is used both as ingress controller for mapping urls to services and as
-                                    load balancer between multiple instances of a service. It also manages certificates
-                                    using Letsencrypt service.
+                                    As HashiCorp Consul is used for communications, TeSLA will access each service using the
+                                    Consul Connect mesh. External services can be registered to Consul in order to perform
+                                    health checks and be accessed via Consul. Otherwise, TeSLA modules will connect directly to the services.
                                 </p>
-                                <p>In order all data to be persisted, the following folder needs to exist:
-                                <ul>
-                                    <li>{{ options.data_path }}/traefik</li>
-                                </ul>
-                                <strong>DNS configuration</strong>
-                                <p class="text-justify">
-                                    In order to properly deploy TeSLA CE, the base domain
-                                    <span class="text-muted"><strong>{{ options.base_domain }}</strong></span>
-                                    must be registered and point to a public IP address of the target deployment server.
-                                </p>
-                                {% if options.mode == 'development' %}
-                                    <p class="text-justify">
-                                        Apart of TeSLA itself, some of the deployed services will also require to be
-                                        managed by Traefik. The subdomains:
-                                        <ul>
-                                            <li>vault.{{ options.base_domain }}</li>
-                                            <li>storage.{{ options.base_domain }}</li>
-                                            <li>rabbitmq.{{ options.base_domain }}</li>
-                                        </ul>
-                                        Must also be registered and pointing to a public IP address of the target deployment server.
-                                    </p>
-                                {% endif %}
-                                <table class="table table-stripped">
-                                    <thead>
-                                        <th>Domain</th>
-                                        <th>IP</th>
-                                        <th>Status</th>
-                                    </thead>
-                                    <tbody>
-                                        {% include "items/dns_status_row.html" with hostname=options.base_domain %}
-                                    {% if options.mode == 'development' %}
-                                        {% include "items/dns_status_row.html" with hostname='vault.'|add:options.base_domain %}
-                                        {% include "items/dns_status_row.html" with hostname='storage.'|add:options.base_domain %}
-                                        {% include "items/dns_status_row.html" with hostname='rabbitmq.'|add:options.base_domain %}
-                                    {% endif %}
-                                    </tbody>
-                                </table>
-                                {% include "items/service_deployment_table.html" with services="lb"|split:";" %}
-                            </div>
                         </div>
                     </div>
                 </div>

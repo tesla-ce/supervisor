@@ -9,6 +9,7 @@ urlpatterns = [
     path('load_balancer', views.setup.lb_view,  name='setup_load_balancer'),
     path('services/config', views.setup.services.service_configuration,  name='setup_services_config'),
     path('services/deploy', views.setup.services.service_deployment,  name='setup_services_deploy'),
+    path('services/register', views.setup.services.service_deployment,  name='setup_services_register'),
     
     path('step1', views.setup.steps.step1,  name='setup_step1'),
     path('step2', views.setup.steps.step2,  name='setup_step2'),

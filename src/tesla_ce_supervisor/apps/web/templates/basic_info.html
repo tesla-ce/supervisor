@@ -27,25 +27,32 @@
                             <div class="col-md-8">
                                 <h5 class="card-title">TeSLA CE Basic Information</h5>
                                 <div class="form-group mb-2">
-                                    <label for="institution_name">Institution Name</label>
+                                    <label for="{{ form.institution_name.id_for_label }}">Institution Name</label>
                                     {{ form.institution_name|add_class:"form-control"|attr:"aria-describedby: institution_nameHelp"|attr:"placeholder: Institution name"}}
                                     <small id="institution_nameHelp" class="form-text text-muted">Name of the default institution TeSLA is deployed for.</small>
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label for="institution_acronym">Institution Acronym</label>
+                                    <label for="{{ form.institution_acronym.id_for_label }}">Institution Acronym</label>
                                     {{ form.institution_acronym|add_class:"form-control"|attr:"aria-describedby: institution_acronymHelp"|attr:"placeholder: Institution acronym"}}
                                     <small id="institution_acronymHelp" class="form-text text-muted">Acronym of the default institution TeSLA is deployed for.</small>
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label for="admin_email">Administrator eMail</label>
+                                    <label for="{{ form.admin_email.id_for_label }}">Administrator eMail</label>
                                     {{ form.admin_email|add_class:"form-control"|attr:"type : email"|attr:"aria-describedby: admin_emailHelp"|attr:"placeholder: Administrator email"}}
                                     <small id="admin_emailHelp" class="form-text text-muted">Email of the administrator.</small>
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label for="admin_email">Base domain name</label>
+                                    <label for="{{ form.base_domain.id_for_label }}">Base domain name</label>
                                     {{ form.base_domain|add_class:"form-control"|attr:"aria-describedby: base_domainHelp"|attr:"placeholder: Domain"}}
                                     <small id="base_domainHelp" class="form-text text-muted">Root domain used for TeSLA CE.</small>
                                 </div>
+                                {% if options.mode == 'development' %}
+                                    <div class="form-group mb-2">
+                                        <label for="{{ form.data_path.id_for_label }}">Data Path</label>
+                                        {{ form.data_path|add_class:"form-control"|attr:"aria-describedby: data_pathHelp"|attr:"placeholder: Data Path"}}
+                                        <small id="data_pathHelp" class="form-text text-muted">Root path where data will be persisted. Must be available and shared by all nodes.</small>
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

@@ -1,15 +1,15 @@
 from django.urls import reverse
-from tesla_ce_supervisor.lib.tesla import TeslaClient
+from tesla_ce_supervisor.lib.client import SupervisorClient
 
 
 # Create your views here.
-def get_url_from_status(client: TeslaClient) -> str:
+def get_url_from_status(client: SupervisorClient) -> str:
     """
         Return the url to continue with the deployment process
         :param client: TeSLA CE Client instance
         :return: New url
     """
-    status = client.get("DEPLOYMENT_STATUS")
+    status = client.tesla.get("DEPLOYMENT_STATUS")
     if status == 0: # START
         new_url = reverse('setup_home')
     elif status == 1:  # Deployment environment configuration
@@ -22,7 +22,9 @@ def get_url_from_status(client: TeslaClient) -> str:
         new_url = reverse('setup_services_config')
     elif status == 5:  # Deploy services
         new_url = reverse('setup_services_deploy')
-    elif status == 6:  # Configuration wizard 1
+    elif status == 6:  # Register external services
+        new_url = reverse('setup_services_register')
+    elif status == 7:  # Configuration wizard 1
         new_url = reverse('setup_step1')
     else:
         new_url = reverse('setup_home')

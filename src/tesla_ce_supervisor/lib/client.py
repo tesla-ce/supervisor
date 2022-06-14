@@ -16,6 +16,19 @@ class SupervisorClient:
         self._tesla.get_config_path()
         self._tesla.load_configuration()
         self._catalog = CatalogClient(self._tesla.get_config())
+        self._deploy = DeployClient(self._tesla.get_config())
+
+    @property
+    def tesla(self):
+        return self._tesla
+
+    @property
+    def catalog(self):
+        return self._catalog
+
+    @property
+    def deploy(self):
+        return self._deploy
 
     def get_services(self):
         return self._catalog.get_services()
@@ -36,12 +49,31 @@ class SupervisorClient:
         return self._tesla.get_config_path()
 
     def check_services(self):
-        # TODO: return hardcoded data
 
-        # check services in catalog (if deploy=True)
-        self._catalog.check_database('abc')
-        # foreach services check if can connect
-        pass
+        status = {
+            # Check Database
+            'db': self.check_database(),
+            # Check Vault
+            'vault': self.check_vault(),
+            # Check MinIO
+            'minio': self.check_minio(),
+            # Check Redis
+            'redis': self.check_redis(),
+            # Check RabbitMQ
+            'rabbitmq': self.check_rabbitmq(),
+        }
+        all_ok = True
+        errors = []
+        for srv in status:
+            if not status[srv].is_valid():
+                all_ok = False
+                errors.append(status[srv].to_json())
+
+        return {
+            'valid': all_ok,
+            'status': status,
+            'errors': errors
+        }
 
     def auto_deploy(self):
         # load config from env
@@ -65,34 +97,6 @@ class SupervisorClient:
             Get the list of Vault configuration files to be exported or executed
             :return: Dictionary with all required files and content for each file
         """
-        # TODO: Remove code after testing (Set True for deploy and False for removing)
-        if True:
-            # Deploy Traefik
-            job_data = self.get_deployer().deploy_lb()
-            # Deploy Vault
-            job_data = self.get_deployer().deploy_vault()
-            # Deploy MinIO
-            job_data = self.get_deployer().deploy_minio()
-            # Deploy Database
-            job_data = self.get_deployer().deploy_database()
-            # Deploy RabbitMQ
-            job_data = self.get_deployer().deploy_rabbitmq()
-            # Deploy Redis
-            job_data = self.get_deployer().deploy_redis()
-        else:
-            # Remove Traefik
-            job_data = self.get_deployer().remove_lb()
-            # Remove Vault
-            job_data = self.get_deployer().remove_vault()
-            # Remove MinIO
-            job_data = self.get_deployer().remove_minio()
-            # Remove Database
-            job_data = self.get_deployer().remove_database()
-            # Remove RabbitMQ
-            job_data = self.get_deployer().remove_rabbitmq()
-            # Remove Redis
-            job_data = self.get_deployer().remove_redis()
-
         return {
             'tesla-ce-policies.hcl': self._tesla.get_vault_policies(),
         }

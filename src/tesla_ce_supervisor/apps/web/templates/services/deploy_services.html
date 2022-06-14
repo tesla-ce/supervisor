@@ -23,16 +23,17 @@
                     <div id="dep_env_swarm" class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title">Services Deployment</h5>
-                            {% if options.mode == 'development' %}
-                                <p class="text-justify">
-                                    As part of the development deployment, all required services will be deployed.
-                                </p>
-                            {% else %}
-                                <p class="text-justify">
-                                    As HashiCorp Consul is used for communications, TeSLA will access each service using the
-                                    Consul Connect mesh. Services will be deployed for connection and health check.
-                                </p>
-                            {% endif %}
+                            <p class="text-justify">
+                                In this step, all required services will be deployed. In order all data to be persisted,
+                                the following folders need to exist:
+                                <ul>
+                                    <li>{{ options.data_path }}/db</li>
+                                    <li>{{ options.data_path }}/minio</li>
+                                    <li>{{ options.data_path }}/rabbitmq</li>
+                                    <li>{{ options.data_path }}/vault</li>
+                                    <li>{{ options.data_path }}/redis</li>
+                                </ul>
+                            </p>
                             {% include "items/service_deployment_table.html" with services="database;rabbitmq;minio;redis;vault"|split:";" %}
                         </div>
                     </div>

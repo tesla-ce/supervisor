@@ -7,7 +7,8 @@ from tesla_ce_supervisor.apps.web.forms.base import ConfigForm
 from tesla_ce_supervisor.apps.web.forms.environment import NomadConsulForm, SwarmForm
 from tesla_ce_supervisor.apps.web.forms.tesla_basics import TeslaBasicInfoForm
 
-def service_configuration(request):
+
+def service_registration(request):
     client = SupervisorClient()
 
     context = {
@@ -17,8 +18,8 @@ def service_configuration(request):
     }
 
     if request.method == 'POST':
-        # client.tesla.get_config().set('DEPLOYMENT_STATUS', 6)
+        # client.tesla.get_config().set('DEPLOYMENT_STATUS', 7)
         # client.tesla.persist_configuration()
         # return JsonResponse({'redirect_url': get_url_from_status(client)})
         return JsonResponse({'errors': {}})
-    return render(request, 'services/config_services.html', context)
+    return render(request, 'services/register_services.html', context)
