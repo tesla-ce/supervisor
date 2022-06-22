@@ -3,7 +3,7 @@ import typing
 
 from ..setup_options import SetupOptions
 from ..tesla.conf import Config
-from ..models.check import ServiceDeploymentInformation
+from ..models.check import ServiceDeploymentInformation, ConnectionStatus
 
 
 NOT_IMPLEMENTED_MESSAGE = 'Method not implemented'
@@ -16,6 +16,10 @@ class BaseDeploy(abc.ABC):
     def __init__(self, config: typing.Optional[Config] = None) -> None:
         super().__init__()
         self._config = config
+
+    @abc.abstractmethod
+    def test_connection(self) -> ConnectionStatus:
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
     def write_scripts(self) -> None:

@@ -123,9 +123,55 @@
                             </div>
                             <div class="col-md-8">
                                 <h5 class="card-title">Docker Configuration</h5>
-                                <p class="card-text">
-                                    <strong>TODO: </strong> Request all necessary data for Docker deployment (url, certs, ...)
-                                </p>
+                                <div class="form-group mb-2">
+                                    <label for="consul_addr">Service prefix</label>
+                                    {{ form.swarm_service_prefix|add_class:"form-control"|attr:"aria-describedby: swarm_service_prefixHelp"|attr:"placeholder: Base url"}}
+                                    <small id="swarm_service_prefixHelp" class="form-text text-muted">Prefix to all TeSLA CE services.</small>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label for="consul_addr">Address</label>
+                                    {{ form.swarm_base_url|add_class:"form-control"|attr:"aria-describedby: swarm_base_urlHelp"|attr:"placeholder: Base url"}}
+                                    <small id="swarm_base_urlHelp" class="form-text text-muted">URL to the Docker server. For example, unix:///var/run/docker.sock or tcp://127.0.0.1:1234.</small>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label for="consul_addr">Client key</label>
+                                    {{ form.swarm_client_key|add_class:"form-control"|attr:"aria-describedby: swarm_client_keyHelp"|attr:"placeholder: Client key"}}
+                                    <small id="swarm_client_keyHelp" class="form-text text-muted">Content of client key.</small>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label for="consul_addr">Client certificate</label>
+                                    {{ form.swarm_client_cert|add_class:"form-control"|attr:"aria-describedby: swarm_client_certHelp"|attr:"placeholder: Client certificate"}}
+                                    <small id="swarm_client_certHelp" class="form-text text-muted">Content of client key.</small>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label for="consul_addr">Specific CA certificate</label>
+                                    {{ form.swarm_specific_ca_cert|add_class:"form-control"|attr:"aria-describedby: swarm_client_certHelp"|attr:"placeholder: Specific CA certificate"}}
+                                    <small id="swarm_client_certHelp" class="form-text text-muted">Content specific CA certificate.</small>
+                                </div>
+
+                                <div class="form-group mb-2">
+                                    <label>Authentication</label>
+                                    <br>
+                                    {% for radio in form.consul_authOptions %}
+                                    <div class="form-check form-check-inline">
+                                        {{ radio.tag }}
+                                        <label class="form-check-label" for="id_consul_authOptions_{{ forloop.counter0 }}">{{ radio.choice_label }}</label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-group mb-2" id="consul_acl_token_div">
+                                    <label for="consul_acl_token">ACL Token</label>
+                                    <div class="input-group">
+                                        {{ form.consul_acl_token|add_class:"form-control"|attr:"aria-describedby: consul_acl_tokenHelp"|attr:"placeholder: Token"}}
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text toggle-password">
+                                                <i class="bi bi-eye bi-eye-slash"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <small id="consul_acl_tokenHelp" class="form-text text-muted">Needs permissions to access the status of deployed services.</small>
+                                </div>
+                                <a href="#" data-action="test_consul" class="btn btn-success action-btn disabled">Test</a>
                             </div>
                         </div>
                     </div>

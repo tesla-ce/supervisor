@@ -1,7 +1,7 @@
 import abc
 import typing
 
-from tesla_ce_supervisor.lib.models.check import ServiceCatalogInformation
+from tesla_ce_supervisor.lib.models.check import ServiceCatalogInformation, ConnectionStatus
 
 from ..tesla.conf import Config
 
@@ -15,6 +15,10 @@ class BaseCatalog(abc.ABC):
     def __init__(self, config: typing.Optional[Config] = None) -> None:
         super().__init__()
         self._config = config
+
+    @abc.abstractmethod
+    def test_connection(self) -> ConnectionStatus:
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
     def get_services(self) -> typing.List[ServiceCatalogInformation]:

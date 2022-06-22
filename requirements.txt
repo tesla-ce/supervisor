@@ -8,3 +8,6 @@ django-apscheduler
 django-widget-tweaks
 
 python-nomad
+
+docker
+pyyaml

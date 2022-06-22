@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 from django.template.loader import render_to_string
 from .base import BaseDeploy, ServiceDeploymentInformation
 from .exceptions import TeslaDeployNomadTemplateException, TeslaDeployNomadException
+from ..models.check import ConnectionStatus
 from ..tesla.conf import Config
 from ..setup_options import SetupOptions
 
@@ -567,3 +568,7 @@ class NomadDeploy(BaseDeploy):
             Get the deployment information for RabbitMQ
         """
         return self._create_status_obj('rabbitmq')
+
+    def test_connection(self) -> ConnectionStatus:
+        pass
+

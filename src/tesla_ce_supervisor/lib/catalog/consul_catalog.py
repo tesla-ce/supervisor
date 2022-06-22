@@ -6,6 +6,7 @@ import typing
 from django.conf import settings
 
 from .base import BaseCatalog, ServiceCatalogInformation, Config
+from ..models.check import ConnectionStatus
 
 
 class ConsulCatalog(BaseCatalog):
@@ -128,3 +129,7 @@ class ConsulCatalog(BaseCatalog):
         return self._merge_status_data('minio',
                                        [self.get_service_status('minio-api'),
                                         self.get_service_status('minio-console')])
+
+    def test_connection(self) -> ConnectionStatus:
+        pass
+

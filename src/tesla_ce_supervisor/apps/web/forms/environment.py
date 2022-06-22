@@ -1,3 +1,7 @@
+import base64
+import binascii
+import os
+from django.conf import settings
 from django import forms
 from .base import ConfigForm
 
@@ -53,6 +57,39 @@ class NomadConsulForm(ConfigForm):
 
 
 class SwarmForm(ConfigForm):
-    api_addr = forms.CharField(label='Address', max_length=100)
+    swarm_service_prefix = forms.CharField(label='Service prefix', max_length=512)
+    swarm_base_url = forms.CharField(label='Base url', max_length=512)
 
-    _field_correspondence = []
+    swarm_client_key = forms.CharField(widget=forms.Textarea(attrs={'name':'Client key', 'rows':3, 'cols':5}), required=False)
+    swarm_client_cert = forms.CharField(widget=forms.Textarea(attrs={'name':'Client cert', 'rows':3, 'cols':5}), required=False)
+    swarm_specific_ca_cert = forms.CharField(widget=forms.Textarea(attrs={'name':'Specific CA certificate', 'rows':3, 'cols':5}), required=False)
+
+    _field_correspondence = [
+        ('swarm_service_prefix', 'SWARM_SERVICE_PREFIX'),
+        ('swarm_base_url', 'SWARM_BASE_URL'),
+        ('swarm_client_key', 'SWARM_CLIENT_KEY'),
+        ('swarm_client_cert', 'SWARM_CLIENT_CERT'),
+        ('swarm_specific_ca_cert', 'SWARM_SPECIFIC_CA_CERT'),
+    ]
+
+    def update_config(self, config):
+        for field in self._field_correspondence:
+            if (field[0] == 'swarm_client_key' or field[0] == 'swarm_client_cert' or field[0] == 'swarm_specific_ca_cert') and self.data.get(field[0]) != '':
+                try:
+                    b64value = base64.b64encode(self.data.get(field[0]).encode('utf8'))
+                    config.set(field[1], b64value.decode('utf8'))
+                except (TypeError, binascii.Error) as err:
+                    pass
+            else:
+                config.set(field[1], self.data.get(field[0]))
+
+    def load_config(self, config):
+        for field in self._field_correspondence:
+            if (field[0] == 'swarm_client_key' or field[0] == 'swarm_client_cert' or field[0] == 'swarm_specific_ca_cert') and self.parse_config_value(field[0], config.get(field[1])) != '':
+                try:
+                    self.fields[field[0]].initial = base64.b64decode(self.parse_config_value(field[0], config.get(field[1])).encode('utf8')).decode('utf8')
+                except (TypeError, binascii.Error) as err:
+                    pass
+
+            else:
+                self.fields[field[0]].initial = self.parse_config_value(field[0], config.get(field[1]))

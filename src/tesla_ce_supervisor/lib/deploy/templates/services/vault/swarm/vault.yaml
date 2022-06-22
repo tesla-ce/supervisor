@@ -1,0 +1,58 @@
+version: '3.5'
+services:
+  vault:
+    image: vault
+    command: "server -config /local_config.json"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      replicas: 1
+      {% if DEPLOYMENT_LB == "traefik" %}
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.vault.rule=Host(`vault.{{ TESLA_DOMAIN }}`)"
+        - "traefik.http.routers.vault.entrypoints=https"
+        - "traefik.http.routers.vault.tls.certresolver=tesla-tlschallenge"
+        - "traefik.http.services.vault-service.loadbalancer.server.port=8200"
+        - "traefik.http.routers.vault.service=vault-service"
+      {% endif %}
+    environment:
+      SKIP_SETCAP: 1
+      VAULT_API_ADDR: "https://vault.{{ TESLA_DOMAIN }}"
+    {% if VAULT_BACKEND == 'file' %}
+    volumes:
+      - vault_volume:/vault_data
+    {% endif %}
+    configs:
+      - source: vault_config
+        target: /local_config.json
+    networks:
+      - tesla_public
+      - tesla_private
+
+{% if VAULT_BACKEND == 'file' %}
+volumes:
+  vault_volume:
+    driver_opts:
+      type: none
+      device: {{ DEPLOYMENT_DATA_PATH }}/vault
+      o: bind
+{% endif %}
+
+secrets:
+  {% if VAULT_BACKEND == 'database' %}
+  DB_PASSWORD:
+    file: ./secrets/DB_PASSWORD
+  {% endif %}
+  VAULT_DB_PASSWORD:
+    file: ./secrets/VAULT_DB_PASSWORD
+
+configs:
+  vault_config:
+    file: ./config/vault_config.json
+
+networks:
+  tesla_public:
+    external: true
+  tesla_private:
+    external: true

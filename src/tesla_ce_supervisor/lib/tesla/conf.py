@@ -155,6 +155,16 @@ class Config:
             ('tls_server_name', 'Consul server name for TLS verification', 'str', None, None, True),
             ('auth_type', 'Consul authentication mechanism', 'enum', 'none', ['none', 'acl_token', 'client_cert'], True),
             ('acl_token', 'Consul ACL token', 'str', None, None, True),
+        )),
+        ('swarm', 'Docker Swarm configuration. Only required if Swarm is used as Orchestrator.', (
+            ('service_prefix', 'Service prefix', 'str', 'teslace', None, True),
+            ('base_url', 'Address', 'str', 'unix:///var/run/docker.sock', None, True),
+            ('client_key_path', 'Client key file path', 'str', None, None, False),
+            ('client_cert_path', 'Client certificate file path', 'str', None, None, False),
+            ('specific_ca_cert_path', 'Specific CA certificate file path', 'str', None, None, False),
+            ('client_key', 'Client key', 'str', None, None, True),
+            ('client_cert', 'Client certificate', 'str', None, None, True),
+            ('specific_ca_cert', 'Specific CA certificate', 'str', None, None, True),
         ))
     )
 

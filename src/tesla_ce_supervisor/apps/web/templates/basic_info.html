@@ -46,13 +46,11 @@
                                     {{ form.base_domain|add_class:"form-control"|attr:"aria-describedby: base_domainHelp"|attr:"placeholder: Domain"}}
                                     <small id="base_domainHelp" class="form-text text-muted">Root domain used for TeSLA CE.</small>
                                 </div>
-                                {% if options.mode == 'development' %}
-                                    <div class="form-group mb-2">
-                                        <label for="{{ form.data_path.id_for_label }}">Data Path</label>
-                                        {{ form.data_path|add_class:"form-control"|attr:"aria-describedby: data_pathHelp"|attr:"placeholder: Data Path"}}
-                                        <small id="data_pathHelp" class="form-text text-muted">Root path where data will be persisted. Must be available and shared by all nodes.</small>
-                                    </div>
-                                {% endif %}
+                                <div class="form-group mb-2">
+                                    <label for="{{ form.data_path.id_for_label }}">Data Path</label>
+                                    {{ form.data_path|add_class:"form-control"|attr:"aria-describedby: data_pathHelp"|attr:"placeholder: Data Path"}}
+                                    <small id="data_pathHelp" class="form-text text-muted">Root path where data will be persisted. Must be available and shared by all nodes.</small>
+                                </div>
                             </div>
                         </div>
                     </div>

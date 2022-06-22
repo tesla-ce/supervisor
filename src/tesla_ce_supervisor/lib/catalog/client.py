@@ -2,7 +2,8 @@ import typing
 from django.conf import settings
 
 from .consul_catalog import ConsulCatalog, Config
-from ..models.check import ServiceCatalogInformation
+from .swarm_catalog import SwarmCatalog
+from ..models.check import ServiceCatalogInformation, ConnectionStatus
 
 
 class CatalogClient:
@@ -11,12 +12,17 @@ class CatalogClient:
         self._client = None
         self._config = config
 
-        if settings.CATALOG_SERVICE == "CONSUL":
+        catalog_service = self._config.get('deployment_catalog_system')
+        if catalog_service.upper() == "CONSUL":
             self._client = ConsulCatalog(config)
 
-        # todo: add swarm support
+        if catalog_service.upper() == "SWARM":
+            self._client = SwarmCatalog(config)
 
         assert self._client is not None
+
+    def check_connection(self) -> ConnectionStatus:
+        return self._client.test_connection()
 
     def get_services(self):
         return self._client.get_services()

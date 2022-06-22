@@ -1,0 +1,63 @@
+version: '3.5'
+services:
+  minio:
+    image: minio/minio
+    volumes:
+      - minio_volume:/data
+    deploy:
+      restart_policy:
+        condition: on-failure
+      replicas: 1
+      {% if DEPLOYMENT_LB == "traefik" %}
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.minio.rule=Host(`storage.{{ TESLA_DOMAIN }}`)"
+        - "traefik.http.routers.minio.entrypoints=https"
+        - "traefik.http.routers.minio.tls.certresolver=tesla-tlschallenge"
+        - "traefik.http.services.minio-service.loadbalancer.server.port=9000"
+        - "traefik.http.routers.minio.service=minio-service"
+        - "traefik.http.routers.minio-console.rule=Host(`storage-console.{{ TESLA_DOMAIN }}`)"
+        - "traefik.http.routers.minio-console.entrypoints=https"
+        - "traefik.http.routers.minio-console.tls.certresolver=tesla-tlschallenge"
+        - "traefik.http.services.minio-console-service.loadbalancer.server.port=9001"
+        - "traefik.http.routers.minio-console.service=minio-console-service"
+      {% endif %}
+    environment:
+      MINIO_REGION_NAME: {{ STORAGE_REGION }}
+      MINIO_ROOT_USER_FILE: /var/secrets/STORAGE_ACCESS_KEY
+      MINIO_ROOT_PASSWORD_FILE: /var/secrets/STORAGE_SECRET_KEY
+    command:
+      - "server"
+      - "/data"
+      - "--console-address"
+      - ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      start_period: 10s
+      retries: 3
+    secrets:
+      - STORAGE_ACCESS_KEY
+      - STORAGE_SECRET_KEY
+    networks:
+      - tesla_public
+      - tesla_private
+
+volumes:
+  minio_volume:
+    driver_opts:
+      type: none
+      device: {{ DEPLOYMENT_DATA_PATH }}/minio
+      o: bind
+secrets:
+  STORAGE_ACCESS_KEY:
+    file: ./secrets/STORAGE_ACCESS_KEY
+  STORAGE_SECRET_KEY:
+    file: ./secrets/STORAGE_SECRET_KEY
+
+networks:
+  tesla_public:
+    external: true
+  tesla_private:
+    external: true

@@ -1,0 +1,35 @@
+version: '3.5'
+services:
+  redis:
+    image: redis:alpine
+    entrypoint: sh -c '[ "$$REDIS_PASS_FILE" ] && ( cat "$$REDIS_PASS_FILE" | xargs -0 redis-server --requirepass ) || redis-server'
+    environment:
+      REDIS_PASS_FILE: /run/secrets/REDIS_PASSWORD
+    deploy:
+      restart_policy:
+        condition: on-failure
+      replicas: 1
+    networks:
+      - tesla_private
+    volumes:
+      - redis_volume:/data
+    ports:
+      - 6379:6379
+    secrets:
+      - REDIS_PASSWORD
+
+volumes:
+  redis_volume:
+    driver_opts:
+      type: none
+      device: {{ DEPLOYMENT_DATA_PATH }}/redis
+      o: bind
+secrets:
+  REDIS_PASSWORD:
+    file: ./secrets/REDIS_PASSWORD
+
+networks:
+  tesla_public:
+    external: true
+  tesla_private:
+    external: true

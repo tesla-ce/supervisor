@@ -130,3 +130,7 @@ class ServiceStatus:
                 'catalog': catalog_info
             }
         }
+
+
+class ConnectionStatus:
+    pass

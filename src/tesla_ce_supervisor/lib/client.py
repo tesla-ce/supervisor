@@ -6,7 +6,7 @@ from .tesla import TeslaClient
 from .deploy import DeployClient
 from .setup import SetupClient
 
-from .models.check import ServiceStatus
+from .models.check import ServiceStatus, ConnectionStatus
 
 
 class SupervisorClient:
@@ -232,5 +232,21 @@ class SupervisorClient:
             self.get_deployer().get_vault_status(),
             self._catalog.get_vault_status()
         )
+
+        return status
+
+    def check_connection(self, module: str) -> ConnectionStatus:
+        """
+            Check connection status of module
+            :return: ConnectionStatus
+        """
+        if module.upper() == 'SWARM':
+            status = SwarmDeployer(config=self.tesla.get_config()).check_connection()
+
+        elif module.upper() == 'NOMAD':
+            status = NomadDeployer(config=self.tesla.get_config()).check_connection()
+
+        elif module.upper() == 'CONSUL':
+            status = ConsulCatalog(config=self.tesla.get_config()).check_connection()
 
         return status

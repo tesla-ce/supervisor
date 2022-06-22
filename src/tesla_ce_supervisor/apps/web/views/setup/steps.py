@@ -31,7 +31,7 @@ def step1(request):
             ('institution_acronym', 'Acronym of the institution', 'str', 'default', None, True),
         )),
         ('deployment', 'Deployment configuration', (
-            ('catalog_system', 'Catalog system', 'enum', 'swarm', ['consult', 'swarm'], True),
+            ('catalog_system', 'Catalog system', 'enum', 'swarm', ['consul', 'swarm'], True),
             ('orchestrator', 'Deploy system', 'enum', 'swarm', ['swarm', 'terraform+normad'], True),
             ('services', 'Deploy external services', 'bool', True, None, True),
             ('lb', 'Load balancer', 'enum', 'traefik', ['traefik', 'other'], True),

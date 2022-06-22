@@ -4,7 +4,7 @@ from .nomad_client import NomadDeploy
 from .swarm_client import SwarmDeploy
 from ..tesla.conf import Config
 from ..setup_options import SetupOptions
-from ..models.check import ServiceDeploymentInformation
+from ..models.check import ServiceDeploymentInformation, ConnectionStatus
 
 
 class DeployClient:
@@ -17,8 +17,7 @@ class DeployClient:
 
         # Use configuration to set the target
         if target is None:
-            # TODO: If target is not provided, use configuration to get it
-            target = "NOMAD"
+            target = config.get('deployment_orchestrator')
 
         if target.upper() == "NOMAD":
             self._client = NomadDeploy(config)
@@ -26,6 +25,9 @@ class DeployClient:
             self._client = SwarmDeploy(config)
 
         assert self._client is not None
+
+    def check_connection(self) -> ConnectionStatus:
+        return self._client.test_connection()
 
     def deploy_lb(self) -> dict:
         return self._client.deploy_lb()
@@ -98,3 +100,4 @@ class DeployClient:
 
     def get_redis_status(self) -> ServiceDeploymentInformation:
         return self._client.get_redis_status()
+

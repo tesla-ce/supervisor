@@ -1,0 +1,52 @@
+version: '3.5'
+services:
+  rabbitmq:
+    image: rabbitmq:3.8-management-alpine
+    deploy:
+      restart_policy:
+        condition: on-failure
+      replicas: 1
+      {% if DEPLOYMENT_LB == "traefik" %}
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.{{ TESLA_DOMAIN }}`)"
+        - "traefik.http.routers.rabbitmq.entrypoints=https"
+        - "traefik.http.routers.rabbitmq.tls.certresolver=tesla-tlschallenge"
+        - "traefik.http.services.rabbitmq-service.loadbalancer.server.port={{ RABBITMQ_ADMIN_PORT }}"
+        - "traefik.http.routers.rabbitmq.service=rabbitmq-service"
+      {% endif %}
+    environment:
+      RABBITMQ_DEFAULT_USER_FILE: /run/secrets/RABBITMQ_ADMIN_USER
+      RABBITMQ_DEFAULT_PASS_FILE: /run/secrets/RABBITMQ_ADMIN_PASSWORD
+      RABBITMQ_ERLANG_COOKIE: {{ RABBITMQ_ERLANG_COOKIE }}
+    secrets:
+      - RABBITMQ_ADMIN_USER
+      - RABBITMQ_ADMIN_PASSWORD
+      - RABBITMQ_ERLANG_COOKIE
+    networks:
+      - tesla_public
+      - tesla_private
+    volumes:
+      - rabbitmq_volume:/var/lib/rabbitmq
+    ports:
+      - 5672:5672
+
+volumes:
+  rabbitmq_volume:
+    driver_opts:
+      type: none
+      device: {{ DEPLOYMENT_DATA_PATH }}/rabbitmq
+      o: bind
+secrets:
+  RABBITMQ_ADMIN_USER:
+    file: ./secrets/RABBITMQ_ADMIN_USER
+  RABBITMQ_ADMIN_PASSWORD:
+    file: ./secrets/RABBITMQ_ADMIN_PASSWORD
+  RABBITMQ_ERLANG_COOKIE:
+    file: ./secrets/RABBITMQ_ERLANG_COOKIE
+
+networks:
+  tesla_public:
+    external: true
+  tesla_private:
+    external: true

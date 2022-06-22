@@ -21,7 +21,7 @@ from tesla_ce_supervisor.jobs.scheduler import start_jobs
 from tesla_ce_supervisor.lib.client import SupervisorClient
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    #path('admin/', admin.site.urls),
     #path('supervisor/', include('tesla_ce_supervisor.apps.web.urls')),
 
 ]
