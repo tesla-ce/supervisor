@@ -85,7 +85,7 @@ class NomadConfig:
 
         # Authentication configuration
         if self.nomad_auth == "ACL":
-            self.nomad_token = self._set_value(nomad_token, 'NOMAD_TOKEN', 'NOMAD_TOKEN')
+            self.nomad_token = self._set_value(nomad_token, 'NOMAD_TOKEN', 'NOMAD_ACL_TOKEN')
         elif self.nomad_auth == "CERT":
             self.nomad_token = self._set_value(nomad_client_cert, 'NOMAD_CLIENT_CERT', 'NOMAD_CLIENT_CERT')
             self.nomad_token = self._set_value(nomad_client_key, 'NOMAD_CLIENT_KEY', 'NOMAD_CLIENT_KEY')

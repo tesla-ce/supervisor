@@ -3,46 +3,22 @@ import filecmp
 import shutil
 import logging
 
-from django.core.management import call_command
+from django.conf import settings
 from tesla_ce_supervisor.lib.client import SupervisorClient
+from tesla_ce_supervisor.lib.tesla.conf import Config
 
-logger = logging.getLogger('background_tasks')
+logger = logging.getLogger('main_background_loop')
 
 
-def update_deploy_status():
-    print('UPDATE_DEPLOY_STATUS')
-    logger.debug('Update deploy status')
-    client = SupervisorClient()
+def main_background_loop():
+    # If Supervisor is started in Configuration mode and
+    if settings.SETUP_MODE.upper() == 'CONFIG' and os.path.exists(os.path.join(settings.SECRETS_PATH, 'TESLA_CE_CFG')):
 
-    # If configuration file does not exist, create it
-    if not client.configuration_exists():
-        logger.warning('Configuration file does not exist. Creating new configuration file.')
-        client.export_configuration()
-        logger.info('Configuration file created')
+        # Load configuration from secret
+        conf = Config()
+        conf.load_file(os.path.join(settings.SECRETS_PATH, 'TESLA_CE_CFG'))
 
-    # Check configuration
-    errors = client.check_configuration()
-    if not errors['valid']:
-        logger.error('Configuration file not valid. Stop process. \n{}'.format('\n'.join(errors['errors'])))
-        print('Configuration file not valid. Stop process. \n{}'.format('\n'.join(errors['errors'])))
-        return
-    if len(errors['warnings']) > 0:
-        logger.warning('The following warnings were found checking configuration:\n{}'.format(
-            '\n'.join(errors['warnings'])))
+        # Create or update configuration keys to local database
+        conf.persist_db()
 
-    # Check if configuration file has changed
-    configuration_changed = False
-    if os.path.exists('tesla-ce.cfg'):
-        # Compare both files
-        if not filecmp.cmp('tesla-ce.cfg', client.get_config_path()):
-            logger.warning('External configuration differs from internal configuration.')
-            configuration_changed = True
-    else:
-        logger.warning('Internal configuration file does not exist. External file is imported.')
-        configuration_changed = True
 
-    # Update configuration if needed
-    if configuration_changed:
-        logger.warning('Configuration changed. Reconfiguring TeSLA CE')
-        shutil.copy(client.get_config_path(), 'tesla-ce.cfg')
-        call_command('reconfigure')

@@ -2,7 +2,7 @@ import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore
-from tesla_ce_supervisor.jobs.tasks import update_deploy_status
+from tesla_ce_supervisor.jobs.tasks import main_background_loop
 
 logger = logging.getLogger('background_tasks')
 
@@ -14,7 +14,7 @@ def start_jobs():
 
     # Add our task to scheduler.
     try:
-        scheduler.add_job(update_deploy_status, 'interval', seconds=10)
+        scheduler.add_job(main_background_loop, 'interval', seconds=10)
     except Exception:
         pass
 

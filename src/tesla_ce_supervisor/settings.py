@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
 from pathlib import Path
+from django.core.management.utils import get_random_secret_key
 
 LOGGING = {
     'version': 1,
@@ -33,17 +34,32 @@ LOGGING = {
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# GET SECRETS PATH
+SECRETS_PATH = os.environ.get('SECRETS_PATH', '/run/secrets')
+
+
+def _read_secret(secret_path: str, key: str, default=None):
+    # Check environment variables
+    value = os.getenv(key, None)
+    if value is not None:
+        return value
+    # Check file environment variable
+    file_path = os.getenv('{}_FILE'.format(key.upper()), None)
+    if file_path is None:
+        file_path = os.path.join(secret_path, key.upper())
+    if file_path is not None and os.path.exists(file_path):
+        with open(file_path, 'r') as secret:
+            value = secret.read()
+    if value is None:
+        value = default
+    return value
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-9fnp#tvehe=49wr&*td-draz18+3c(-)p$6%k08p88av0(5bvw'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = ['*']
 
 # Setup data directory
 DATA_DIRECTORY = Path(os.environ.get('SUPERVISOR_DATA', os.path.join(BASE_DIR, '_data', ''))).resolve()
@@ -61,8 +77,32 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'django_apscheduler',
     'tesla_ce_supervisor',
-    'apps.web'
+#    'apps.web',
+#    'apps.api'
 ]
+
+# AUTO, None, SETUP, CONFIG (in service mode, force update all variables and exit())
+SETUP_MODE = os.environ.get('SETUP_MODE', None)
+if SETUP_MODE is not None:
+    SETUP_MODE = SETUP_MODE.upper()
+
+if SETUP_MODE == 'SETUP':
+    SUPERVISOR_ADMIN_TOKEN = None
+    SECRET_KEY = get_random_secret_key()
+    TESLA_DOMAIN = None
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    INSTALLED_APPS += [
+        'apps.web',
+    ]
+else:
+    SUPERVISOR_ADMIN_TOKEN = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_TOKEN')
+    SECRET_KEY = _read_secret(SECRETS_PATH, 'SUPERVISOR_SECRET')
+    TESLA_DOMAIN = _read_secret(SECRETS_PATH, 'TESLA_DOMAIN')
+    ALLOWED_HOSTS = [TESLA_DOMAIN]
+    INSTALLED_APPS += [
+        'apps.api',
+    ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -155,19 +195,6 @@ STATIC_ROOT = ''
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CATALOG SERVICE
-CATALOG_SERVICE = os.environ.get('CATALOG_SERVICE', 'CONSUL')
-
-# CONSUL Configuration
-CONSUL_HOST = os.environ.get('CONSUL_HOST', 'localhost')
-CONSUL_PORT = os.environ.get('CONSUL_PORT', 8500)
-CONSUL_SCHEME = os.environ.get('CONSUL_SCHEME', 'http')
-CONSUL_VERIFY = os.environ.get('CONSUL_VERIFY', True)
-CONSUL_CERT = os.environ.get('CONSUL_CERT')
-
-# AUTO, None, SETUP, CONFIG (in service mode, force update all variables and exit())
-SETUP_MODE = os.environ.get('SETUP_MODE', None)
-# todo: define catalog service swarm
 
 # supervisor service secrets:
 # vault token

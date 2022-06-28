@@ -1,5 +1,5 @@
 import urllib
-
+import os
 import consul
 import typing
 
@@ -9,17 +9,88 @@ from .base import BaseCatalog, ServiceCatalogInformation, Config
 from ..models.check import ConnectionStatus
 
 
+class ConsulConfig:
+    """
+        Consul configuration
+    """
+    # Nomad server URL
+    consul_host: str = '127.0.0.1'
+
+    # Consul server port
+    consul_port: int = 8500
+
+    # Consul connection scheme
+    consul_scheme: str = 'http'
+
+    # Authentication
+    consul_auth: typing.Optional[typing.Union[typing.Literal["ACL"], typing.Literal["CERT"]]] = None
+
+    # Consul SecretID of an ACL token for authentication
+    consul_token: typing.Optional[str] = None
+
+    # Verify Server identity
+    consul_verify: bool = True
+
+    def __init__(self, config, consul_host: typing.Optional[str] = 'localhost',
+                 consul_port: typing.Optional[int] = 8500,
+                 consul_scheme: typing.Optional[typing.List[str]] = 'http',
+                 consul_auth: typing.Optional[typing.Union[typing.Literal["ACL"], typing.Literal["CERT"]]] = None,
+                 consul_token: typing.Optional[str] = None,
+                 consul_verify: typing.Optional[bool] = True,
+                 consul_cert: typing.Optional[str] = None,
+                 ) -> None:
+
+        # Consul configuration
+        self.consul_auth = self._set_value(
+            config, consul_auth
+        )
+        self.consul_host = self._set_value(config, consul_host, 'CONSUL_HOST', 'CONSUL_HOST')
+        self.consul_port = self._set_value(config, consul_port, 'CONSUL_PORT', 'CONSUL_PORT')
+        self.consul_scheme = self._set_value(config, consul_scheme, 'CONSUL_SCHEME', 'CONSUL_SCHEME')
+        self.consul_verify = self._set_value(config, consul_verify, 'CONSUL_VERIFY', 'CONSUL_VERIFY')
+        self.consul_token = self._set_value(config, consul_token, 'CONSUL_TOKEN', 'CONSUL_ACL_TOKEN')
+
+        # self.consul_cert = self._set_value(config, consul_cert, 'CONSUL_CERT', 'CONSUL_CERT')
+
+    @staticmethod
+    def _set_value(config, parameter, env_key=None, conf_key=None, default=None):
+        if parameter is not None:
+            return parameter
+        default_value = None
+        if conf_key is not None:
+            default_value = config.get(conf_key)
+        if env_key is not None:
+            ret_val = os.getenv(env_key, default_value)
+        else:
+            ret_val = default_value
+        if ret_val is None:
+            ret_val = default
+        return ret_val
+
+
 class ConsulCatalog(BaseCatalog):
 
-    def __init__(self, config: typing.Optional[Config] = None) -> None:
+    def __init__(self, config: typing.Optional[Config] = None, consul_conf: typing.Optional[ConsulConfig] = None) -> None:
         super().__init__(config)
 
-        self._client = consul.Consul(host=settings.CONSUL_HOST,
-                                     port=settings.CONSUL_PORT,
-                                     scheme=settings.CONSUL_SCHEME,
-                                     verify=settings.CONSUL_VERIFY,
-                                     cert=settings.CONSUL_CERT
-                                     )
+        self.consul_conf = consul_conf
+        if self.consul_conf is None:
+            self.consul_conf = ConsulConfig(config)
+        if self.consul_conf.consul_auth is None:
+            self._client = consul.Consul(
+                host=self.consul_conf.consul_host,
+                port=self.consul_conf.consul_port,
+                scheme=self.consul_conf.consul_scheme,
+                verify=self.consul_conf.consul_verify,
+            )
+        elif self.consul_conf.consul_auth == "ACL":
+            self._client = consul.Consul(
+                host=self.consul_conf.consul_host,
+                port=self.consul_conf.consul_port,
+                scheme=self.consul_conf.consul_scheme,
+                verify=self.consul_conf.consul_verify,
+                token=self.consul_conf.consul_token,
+            )
 
     def _merge_status_data(self, name: str,
                            stats: typing.List[ServiceCatalogInformation]) -> ServiceCatalogInformation:
