@@ -20,12 +20,17 @@ variable "image" {
 
 variable "storage_path" {
   type = string
-  default = "{{ DEPLOYMENT_DATA_PATH }}/traefik"
+  default = "{{ DEPLOYMENT_DATA_PATH }}/supervisor"
 }
 
-variable "tesla_ce_cfg" {
+variable "supervisor_secret" {
   type = string
-  default = "{{ CONFIG_FILE_DATA }}"
+  default = "{{ SUPERVISOR_SECRET }}"
+}
+
+variable "supervisor_admin_token" {
+  type = string
+  default = "{{ SUPERVISOR_ADMIN_TOKEN }}"
 }
 
 job "supervisor" {
@@ -102,8 +107,12 @@ job "supervisor" {
 
       # Store secrets
       template {
-        data = "${ var.tesla_ce_cfg }"
-        destination = "secrets/TESLA_CE_CFG"
+        data = "${ var.supervisor_secret }"
+        destination = "secrets/SUPERVISOR_SECRET"
+      }
+      template {
+        data = "${ var.supervisor_admin_token }"
+        destination = "secrets/SUPERVISOR_ADMIN_TOKEN"
       }
 
       resources {
