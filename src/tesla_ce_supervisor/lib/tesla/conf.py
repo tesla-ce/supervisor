@@ -167,6 +167,10 @@ class Config:
             ('client_key', 'Client key', 'str', None, None, True),
             ('client_cert', 'Client certificate', 'str', None, None, True),
             ('specific_ca_cert', 'Specific CA certificate', 'str', None, None, True),
+        )),
+        ('supervisor', 'TeSLA CE Supervisor configuration.', (
+            ('secret', 'Supervisor Secret', 'str', None, None, True),
+            ('admin_token', 'Administration token', 'str', None, None, True),
         ))
     )
 

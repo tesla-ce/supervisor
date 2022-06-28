@@ -101,3 +101,14 @@ class DeployClient:
     def get_redis_status(self) -> ServiceDeploymentInformation:
         return self._client.get_redis_status()
 
+    def deploy_supervisor(self) -> dict:
+        return self._client.deploy_supervisor()
+
+    def remove_supervisor(self) -> dict:
+        return self._client.remove_supervisor()
+
+    def get_supervisor_script(self) -> SetupOptions:
+        return self._client.get_supervisor_script()
+
+    def get_supervisor_status(self) -> ServiceDeploymentInformation:
+        return self._client.get_supervisor_status()

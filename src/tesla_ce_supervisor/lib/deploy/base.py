@@ -199,3 +199,31 @@ class BaseDeploy(abc.ABC):
     @staticmethod
     def _remove_empty_lines(text):
         return '\n'.join([line for line in text.split('\n') if line.strip()])
+
+    @abc.abstractmethod
+    def deploy_supervisor(self) -> dict:
+        """
+            Deploy TeSLA CE Supervisor
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def remove_supervisor(self) -> dict:
+        """
+            Remove deployed TeSLA CE Supervisor
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def get_supervisor_script(self) -> SetupOptions:
+        """
+            Get the script to deploy TeSLA CE Supervisor
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def get_supervisor_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE Supervisor
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)

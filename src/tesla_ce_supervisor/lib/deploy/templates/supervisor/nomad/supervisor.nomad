@@ -33,7 +33,12 @@ variable "supervisor_admin_token" {
   default = "{{ SUPERVISOR_ADMIN_TOKEN }}"
 }
 
-job "supervisor" {
+variable "base_domain" {
+  type = string
+  default = "{{ TESLA_DOMAIN }}"
+}
+
+job "tesla_ce_supervisor" {
   # Run the job in the global region, which is the default.
   region = var.region
 
@@ -103,6 +108,7 @@ job "supervisor" {
       env = {
         "SUPERVISOR_DATA"     = "/data"
         "SECRETS_PATH"        = "/secrets"
+        "TESLA_DOMAIN"        = var.base_domain
       }
 
       # Store secrets
@@ -121,7 +127,7 @@ job "supervisor" {
       }
     }
     service {
-      name = "web"
+      name = "supervisor"
       port = 5000
 
       tags = [

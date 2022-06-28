@@ -92,7 +92,7 @@ if SETUP_MODE == 'SETUP':
     TESLA_DOMAIN = None
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
     INSTALLED_APPS += [
-        'apps.web',
+        'tesla_ce_supervisor.apps.web',
     ]
 else:
     SUPERVISOR_ADMIN_TOKEN = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_TOKEN')
@@ -100,7 +100,7 @@ else:
     TESLA_DOMAIN = _read_secret(SECRETS_PATH, 'TESLA_DOMAIN')
     ALLOWED_HOSTS = [TESLA_DOMAIN]
     INSTALLED_APPS += [
-        'apps.api',
+        'tesla_ce_supervisor.apps.api',
     ]
 
 
