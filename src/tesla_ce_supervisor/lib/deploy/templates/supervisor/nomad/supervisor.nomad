@@ -135,8 +135,6 @@ job "tesla_ce_supervisor" {
         "supervisor",
         "traefik.enable=true",
         "traefik.http.routers.supervisor.rule=Host(`${var.base_domain}`) && PathPrefix(`/supervisor`)",
-        "traefik.http.routers.supervisor-service.loadbalancer.server.port=5000",
-        "traefik.http.routers.supervisor.service=supervisor-service",
         "traefik.consulcatalog.connect=true",
       ]
 
