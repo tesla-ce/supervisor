@@ -3,7 +3,6 @@ apscheduler
 
 django-apscheduler
 django-widget-tweaks
-django-fernet-fields
 django-storages
 django-redis
 django-cache-memoize
@@ -15,6 +14,10 @@ django-cors-headers
 django-rest-auth
 drf-extensions
 django-sslserver
+
+# Database encrypton
+# django-fernet-fields  # Not working with DJango >= 4
+djfernet
 
 # Nomad + Consul clients
 python-nomad
