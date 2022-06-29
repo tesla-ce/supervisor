@@ -21,6 +21,11 @@ urlpatterns = [
     path('check/rabbitmq', check.APICheckRabbitMQ.as_view(), name='setup_api_check_rabbitmq'),
     path('check/redis', check.APICheckRedis.as_view(), name='setup_api_check_redis'),
     path('check/vault', check.APICheckVault.as_view(), name='setup_api_check_vault'),
+
+    # TeSLA CE Supervisor
+    path('deploy/supervisor', deploy.APIDeploySupervisor.as_view(), name='setup_api_deploy_supervisor'),
+    #path('check/supervisor', check.APICheckSupervisor.as_view(), name='setup_api_check_supervisor'),
+
     # Vault Configuration
     path('vault/kv', vault.APIVaultInitKV.as_view(), name='setup_api_vault_kv'),
 ]

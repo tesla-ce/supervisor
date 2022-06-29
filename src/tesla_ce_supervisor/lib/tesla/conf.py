@@ -14,7 +14,9 @@
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 """ Configuration Module"""
+import os
 import configparser
+from django.conf import settings
 from .exceptions import TeslaConfigException
 
 
@@ -165,6 +167,10 @@ class Config:
             ('client_key', 'Client key', 'str', None, None, True),
             ('client_cert', 'Client certificate', 'str', None, None, True),
             ('specific_ca_cert', 'Specific CA certificate', 'str', None, None, True),
+        )),
+        ('supervisor', 'TeSLA CE Supervisor configuration.', (
+            ('secret', 'Supervisor Secret', 'str', None, None, True),
+            ('admin_token', 'Administration token', 'str', None, None, True),
         ))
     )
 
@@ -173,6 +179,8 @@ class Config:
 
         #: Configuration values contained in this class
         self._config = dict()
+
+        self.secret_path = settings.SECRETS_PATH
 
     def set(self, key, value=None):
         """
@@ -478,19 +486,43 @@ class Config:
         # Read values in secrets
         if os.path.exists(self.secrets_path):
             for secret in list(os.scandir(self.secrets_path)):
-                if self.config.is_valid_key(secret.name):
+                if self.is_valid_key(secret.name):
                     with open(secret.path, 'r') as f_secret:
                         value = f_secret.read()
-                        self.config.set(secret.name, value)
+                        self.set(secret.name, value)
 
         # Read options from environment variables
         for k in os.environ.keys():
-            if self.config.is_valid_key(k):
-                self.config.set(k, os.getenv(k))
+            if self.is_valid_key(k):
+                self.set(k, os.getenv(k))
             elif k.upper().endswith('_FILE'):
                 # Try to read from file
                 key = k.upper().split('_FILE')[0]
-                if os.path.exists(os.getenv(k)) and self.config.is_valid_key(key):
+                if os.path.exists(os.getenv(k)) and self.is_valid_key(key):
                     with open(os.getenv(k), 'r') as f_secret:
                         value = f_secret.read()
-                        self.config.set(key, value)
+                        self.set(key, value)
+
+    def load_file(self, config_file: str):
+        """
+            Load configuration from file
+            :param config_file: Path to the configuration
+            :return: True if configuration has been read or False otherwise
+        """
+        if os.path.exists(config_file):
+            conf = configparser.ConfigParser()
+            with open(config_file, 'r') as conf_file:
+                conf.read_file(conf_file, config_file)
+                self.update(conf)
+        else:
+            return False
+
+        return True
+
+
+    def persist_db(self):
+
+        for key in self.get_config_kv().keys():
+            print('{}={}'.format(key, self.get(key)))
+
+

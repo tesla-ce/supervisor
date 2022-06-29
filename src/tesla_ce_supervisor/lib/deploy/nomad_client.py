@@ -85,7 +85,7 @@ class NomadConfig:
 
         # Authentication configuration
         if self.nomad_auth == "ACL":
-            self.nomad_token = self._set_value(nomad_token, 'NOMAD_TOKEN', 'NOMAD_TOKEN')
+            self.nomad_token = self._set_value(nomad_token, 'NOMAD_TOKEN', 'NOMAD_ACL_TOKEN')
         elif self.nomad_auth == "CERT":
             self.nomad_token = self._set_value(nomad_client_cert, 'NOMAD_CLIENT_CERT', 'NOMAD_CLIENT_CERT')
             self.nomad_token = self._set_value(nomad_client_key, 'NOMAD_CLIENT_KEY', 'NOMAD_CLIENT_KEY')
@@ -569,6 +569,66 @@ class NomadDeploy(BaseDeploy):
         """
         return self._create_status_obj('rabbitmq')
 
+    def deploy_supervisor(self) -> dict:
+        """
+            Deploy TeSLA CE Supervisor
+        """
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'supervisor_image': 'teslace/supervisor:latest',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'SUPERVISOR_SECRET': self._config.get('SUPERVISOR_SECRET'),
+            'SUPERVISOR_ADMIN_TOKEN': self._config.get('SUPERVISOR_ADMIN_TOKEN'),
+        }
+        return self._crete_nomad_job('tesla_ce_supervisor', 'supervisor/nomad/supervisor.nomad', context)
+
+    def remove_supervisor(self) -> dict:
+        """
+            Remove deployed TeSLA CE Supervisor
+        """
+        return self._client.job.deregister_job('tesla_ce_supervisor', True)
+
+    def get_supervisor_script(self) -> SetupOptions:
+        """
+            Get the script to deploy TeSLA CE Supervisor
+        """
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'supervisor_image': 'teslace/supervisor:latest',
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'SUPERVISOR_SECRET': self._config.get('RABBITMQ_ADMIN_USER'),
+            'SUPERVISOR_ADMIN_TOKEN': self._config.get('SUPERVISOR_ADMIN_TOKEN'),
+        }
+        task_def = self._remove_empty_lines(render_to_string('supervisor/nomad/supervisor.nomad', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='nomad job run tesla-ce-supervisor.nomad',
+            description='Create new Nomad job for TeSLA CE Supervisor'
+        )
+        script.add_file(
+            filename='tesla-ce-supervisor.nomad',
+            description='Job description for TeSLA CE Supervisor',
+            content=task_def,
+            mimetype='application/hcl'
+        )
+
+        return script
+
+    def get_supervisor_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE Supervisor
+        """
+        return self._create_status_obj('tesla_ce_supervisor')
+
     def test_connection(self) -> ConnectionStatus:
         pass
+
+
 

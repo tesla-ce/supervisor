@@ -90,3 +90,12 @@ class APIDeployRabbitMQ(BaseAPIDeploy):
     script = SupervisorClient().get_deployer().get_rabbitmq_script
     deploy = SupervisorClient().get_deployer().deploy_rabbitmq
     remove = SupervisorClient().get_deployer().remove_rabbitmq
+
+
+class APIDeploySupervisor(BaseAPIDeploy):
+    """
+        Manage TeSLA CE Supervisor deployment
+    """
+    script = SupervisorClient().get_deployer().get_supervisor_script
+    deploy = SupervisorClient().get_deployer().deploy_supervisor
+    remove = SupervisorClient().get_deployer().remove_supervisor

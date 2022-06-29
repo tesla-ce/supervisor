@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand
 from django_apscheduler.jobstores import DjangoJobStore
 from django_apscheduler.models import DjangoJobExecution
 from django_apscheduler import util
-from tesla_ce_supervisor.jobs.tasks import update_deploy_status
+from tesla_ce_supervisor.jobs.tasks import main_background_loop
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +37,13 @@ class Command(BaseCommand):
         scheduler.add_jobstore(DjangoJobStore(), "default")
 
         scheduler.add_job(
-            update_deploy_status,
+            main_background_loop,
             trigger=CronTrigger(second="*/10"),  # Every 10 seconds
-            id="my_job",  # The `id` assigned to each job MUST be unique
+            id="main_background_loop",
             max_instances=1,
             replace_existing=True,
         )
-        logger.info("Added job 'my_job'.")
+        logger.info("Main background loop scheduled.")
 
         scheduler.add_job(
             delete_old_job_executions,

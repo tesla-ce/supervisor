@@ -6,6 +6,7 @@ tesla-ce
 
 django-apscheduler
 django-widget-tweaks
+django-fernet-fields
 
 python-nomad
 
