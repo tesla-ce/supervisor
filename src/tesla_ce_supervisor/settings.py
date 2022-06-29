@@ -87,7 +87,17 @@ SETUP_MODE = os.environ.get('SETUP_MODE', None)
 if SETUP_MODE is not None:
     SETUP_MODE = SETUP_MODE.upper()
 
-if SETUP_MODE == 'SETUP':
+if SETUP_MODE == 'BUILD':
+    # Used for Docker image build
+    SUPERVISOR_ADMIN_TOKEN = None
+    SECRET_KEY = get_random_secret_key()
+    TESLA_DOMAIN = None
+    ALLOWED_HOSTS = []  # No access allowed
+    INSTALLED_APPS += [
+        'tesla_ce_supervisor.apps.web',
+        'tesla_ce_supervisor.apps.api',
+    ]
+elif SETUP_MODE == 'SETUP':
     SUPERVISOR_ADMIN_TOKEN = None
     SECRET_KEY = get_random_secret_key()
     TESLA_DOMAIN = None

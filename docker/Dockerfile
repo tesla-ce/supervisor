@@ -93,7 +93,7 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 
 # Generate static files
 ENV STATICS_PATH=/tesla/static
-RUN /venv/bin/python manage.py collectstatic --noinput
+RUN SETUP_MODE=BUILD /venv/bin/python manage.py collectstatic --noinput
 
 CMD ["/usr/bin/supervisord"]
 ENTRYPOINT ["docker-entrypoint.sh"]
