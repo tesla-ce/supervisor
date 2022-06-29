@@ -31,12 +31,12 @@ class ConsulConfig:
     # Verify Server identity
     consul_verify: bool = True
 
-    def __init__(self, config, consul_host: typing.Optional[str] = 'localhost',
-                 consul_port: typing.Optional[int] = 8500,
-                 consul_scheme: typing.Optional[typing.List[str]] = 'http',
+    def __init__(self, config, consul_host: typing.Optional[str] = None,
+                 consul_port: typing.Optional[int] = None,
+                 consul_scheme: typing.Optional[typing.List[str]] = None,
                  consul_auth: typing.Optional[typing.Union[typing.Literal["ACL"], typing.Literal["CERT"]]] = None,
                  consul_token: typing.Optional[str] = None,
-                 consul_verify: typing.Optional[bool] = True,
+                 consul_verify: typing.Optional[bool] = None,
                  consul_cert: typing.Optional[str] = None,
                  ) -> None:
 
@@ -200,6 +200,10 @@ class ConsulCatalog(BaseCatalog):
         return self._merge_status_data('minio',
                                        [self.get_service_status('minio-api'),
                                         self.get_service_status('minio-console')])
+
+    def get_supervisor_status(self) -> ServiceCatalogInformation:
+        return self._merge_status_data('supervisor',
+                                       [self.get_service_status('supervisor'),])
 
     def test_connection(self) -> ConnectionStatus:
         pass

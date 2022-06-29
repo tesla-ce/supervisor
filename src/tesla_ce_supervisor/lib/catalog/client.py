@@ -44,3 +44,7 @@ class CatalogClient:
 
     def get_redis_status(self) -> ServiceCatalogInformation:
         return self._client.get_redis_status()
+
+    def get_supervisor_status(self) -> ServiceCatalogInformation:
+        return self._client.get_supervisor_status()
+

@@ -71,3 +71,13 @@ class APICheckVault(APIView):
         client = SupervisorClient()
         status = client.check_vault()
         return JsonResponse(status.to_json())
+
+
+class APICheckSupervisor(APIView):
+    """
+        Check TeSLA CE Supervisor status
+    """
+    def get(self, request, format=None):
+        client = SupervisorClient()
+        status = client.check_supervisor()
+        return JsonResponse(status.to_json())

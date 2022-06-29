@@ -24,7 +24,7 @@ urlpatterns = [
 
     # TeSLA CE Supervisor
     path('deploy/supervisor', deploy.APIDeploySupervisor.as_view(), name='setup_api_deploy_supervisor'),
-    #path('check/supervisor', check.APICheckSupervisor.as_view(), name='setup_api_check_supervisor'),
+    path('check/supervisor', check.APICheckSupervisor.as_view(), name='setup_api_check_supervisor'),
 
     # Vault Configuration
     path('vault/kv', vault.APIVaultInitKV.as_view(), name='setup_api_vault_kv'),

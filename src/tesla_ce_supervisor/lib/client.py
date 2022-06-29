@@ -235,6 +235,19 @@ class SupervisorClient:
 
         return status
 
+    def check_supervisor(self) -> ServiceStatus:
+        """
+            Check deployment status of TeSLA CE Supervisor
+            :return: Status information
+        """
+        status = ServiceStatus(
+            self.get_deployer().get_supervisor_status(),
+            self._catalog.get_supervisor_status()
+        )
+
+        return status
+
+
     def check_connection(self, module: str) -> ConnectionStatus:
         """
             Check connection status of module

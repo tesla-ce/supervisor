@@ -1,7 +1,6 @@
 import os
 import typing
 import nomad
-from urllib.parse import urlparse
 from django.template.loader import render_to_string
 from .base import BaseDeploy, ServiceDeploymentInformation
 from .exceptions import TeslaDeployNomadTemplateException, TeslaDeployNomadException
@@ -625,7 +624,7 @@ class NomadDeploy(BaseDeploy):
         """
             Get the deployment information for TeSLA CE Supervisor
         """
-        return self._create_status_obj('tesla_ce_supervisor')
+        return self._create_status_obj('supervisor')
 
     def test_connection(self) -> ConnectionStatus:
         pass

@@ -60,5 +60,9 @@ class BaseCatalog(abc.ABC):
     def get_minio_status(self) -> ServiceCatalogInformation:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
+    @abc.abstractmethod
+    def get_supervisor_status(self) -> ServiceCatalogInformation:
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
 
 
