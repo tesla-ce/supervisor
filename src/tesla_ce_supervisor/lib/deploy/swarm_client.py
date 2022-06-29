@@ -468,3 +468,16 @@ class SwarmDeploy(BaseDeploy):
     def test_connection(self) -> ConnectionStatus:
         pass
 
+    def deploy_supervisor(self) -> dict:
+        pass
+
+    def remove_supervisor(self) -> dict:
+        pass
+
+    def get_supervisor_script(self) -> SetupOptions:
+        pass
+
+    def get_supervisor_status(self) -> ServiceDeploymentInformation:
+        pass
+
+
