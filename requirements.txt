@@ -1,14 +1,36 @@
 Django
 apscheduler
-python-consul
-
-tesla-ce
 
 django-apscheduler
 django-widget-tweaks
 django-fernet-fields
+django-storages
+django-redis
+django-cache-memoize
+djangorestframework
+djangorestframework_simplejwt
+djangorestframework-datatables
+django-filter
+django-cors-headers
+django-rest-auth
+drf-extensions
+django-sslserver
 
+# Nomad + Consul clients
 python-nomad
+python-consul
 
+# Vault SDK
+hvac[parser]
+
+# Docker client
 docker
 pyyaml
+
+# Utility packages
+requests
+simplejson
+
+# Database connectors
+#mysqlclient
+#psycopg2

@@ -1,5 +1,6 @@
 #FROM python:3.7-alpine
-FROM python:3-alpine3.13
+#FROM python:3-alpine3.13
+FROM python:3-alpine
 
 # Install build deps, then run `pip install`, then remove unneeded build deps all in a single step.
 RUN set -ex \
@@ -23,7 +24,7 @@ RUN set -ex \
             sqlite-dev \
     && python3 -m venv /venv \
     && /venv/bin/pip install -U pip \
-    && LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install --no-cache-dir wheel uwsgi tesla-ce mysqlclient psycopg2 cffi --upgrade" \
+    && LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install --no-cache-dir wheel uwsgi mysqlclient psycopg2 cffi --upgrade" \
     && runDeps="$( \
             scanelf --needed --nobanner --recursive /venv \
                     | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
