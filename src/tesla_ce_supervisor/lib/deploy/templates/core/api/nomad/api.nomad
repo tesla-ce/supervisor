@@ -15,22 +15,27 @@ variable "region" {
 
 variable "image" {
   type    = string
-  default = "{{ supervisor_image }}"
+  default = "{{ tesla_ce_image }}"
 }
 
-variable "storage_path" {
+variable "vault_mount_path_kv" {
   type = string
-  default = "{{ DEPLOYMENT_DATA_PATH }}/supervisor"
+  default = "{{ VAULT_MOUNT_PATH_KV }}"
 }
 
-variable "supervisor_secret" {
+variable "vault_mount_path_approle" {
   type = string
-  default = "{{ SUPERVISOR_SECRET }}"
+  default = "{{ VAULT_MOUNT_PATH_APPROLE }}"
 }
 
-variable "supervisor_admin_token" {
+variable "role_id" {
   type = string
-  default = "{{ SUPERVISOR_ADMIN_TOKEN }}"
+  default = "{{ API_VAULT_ROLE_ID }}"
+}
+
+variable "secret_id" {
+  type = string
+  default = "{{ API_VAULT_SECRET_ID }}"
 }
 
 variable "base_domain" {
@@ -38,7 +43,7 @@ variable "base_domain" {
   default = "{{ TESLA_DOMAIN }}"
 }
 
-job "tesla_ce_supervisor" {
+job "tesla_ce_api" {
   # Run the job in the global region, which is the default.
   region = var.region
 
@@ -62,7 +67,7 @@ job "tesla_ce_supervisor" {
 
   # Create a 'minio' group. Each task in the group will be
   # scheduled onto the same machine.
-  group "supervisor" {
+  group "api" {
     # Control the number of instances of this group.
     # Defaults to 1
     count = var.count
@@ -92,7 +97,7 @@ job "tesla_ce_supervisor" {
     }
 
     # Define a task to run
-    task "tesla_ce_supervisor" {
+    task "tesla_ce_api" {
       # Use Docker to run the task.
       driver = "docker"
 
@@ -100,25 +105,25 @@ job "tesla_ce_supervisor" {
       config {
         image = var.image
         ports = ["web"]
-        volumes = [
-          "${var.storage_path}:/data"
-        ]
       }
 
       env = {
-        "SUPERVISOR_DATA"     = "/data"
-        "SECRETS_PATH"        = "/secrets"
-        "TESLA_DOMAIN"        = var.base_domain
+        "SECRETS_PATH"             = "/secrets"
+        "VAULT_URL"                = var.vault_url
+        "VAULT_ROLE_ID_FILE"       = "/secrets/ROLE_ID"
+        "VAULT_SECRET_ID_FILE"     = "/secrets/SECRET_ID"
+        "VAULT_MOUNT_PATH_KV"      = var.vault_mount_path_kv
+        "VAULT_MOUNT_PATH_APPROLE" = var.vault_mount_path_approle
       }
 
       # Store secrets
       template {
-        data = "${ var.supervisor_secret }"
-        destination = "secrets/SUPERVISOR_SECRET"
+        data = "${ var.role_id }"
+        destination = "secrets/ROLE_ID"
       }
       template {
-        data = "${ var.supervisor_admin_token }"
-        destination = "secrets/SUPERVISOR_ADMIN_TOKEN"
+        data = "${ var.secret_id }"
+        destination = "secrets/SECRET_ID"
       }
 
       resources {
@@ -127,14 +132,14 @@ job "tesla_ce_supervisor" {
       }
     }
     service {
-      name = "supervisor"
+      name = "api"
       port = 5000
 
       tags = [
         "tesla-ce",
-        "supervisor",
+        "api",
         "traefik.enable=true",
-        "traefik.http.routers.supervisor.rule=Host(`${var.base_domain}`) && PathPrefix(`/supervisor`)",
+        "traefik.http.routers.supervisor.rule=Host(`${var.base_domain}`) && PathPrefix(`/api`)",
         "traefik.consulcatalog.connect=true",
       ]
 
