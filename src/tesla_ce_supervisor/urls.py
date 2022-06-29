@@ -13,17 +13,13 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 
-from tesla_ce_supervisor.jobs.scheduler import start_jobs
 from tesla_ce_supervisor.lib.client import SupervisorClient
 
 urlpatterns = [
-    #path('admin/', admin.site.urls),
-    #path('supervisor/', include('tesla_ce_supervisor.apps.web.urls')),
-
+    path('supervisor/api/', include('tesla_ce_supervisor.apps.api.urls')),
 ]
 
 if settings.SETUP_MODE == 'SETUP':
@@ -34,6 +30,3 @@ if settings.SETUP_MODE == 'SETUP':
 elif settings.SETUP_MODE == 'AUTO':
     client = SupervisorClient()
     client.auto_deploy()
-
-# Start background jobs
-# start_jobs()

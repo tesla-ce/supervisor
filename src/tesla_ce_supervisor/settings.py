@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'widget_tweaks',
     'django_apscheduler',
+    'rest_framework',
     'tesla_ce_supervisor',
 #    'apps.web',
 #    'apps.api'
