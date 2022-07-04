@@ -2,7 +2,10 @@ version: '3.5'
 services:
   vault:
     image: vault
-    command: "server -config /local_config.json"
+    command:
+      - "server"
+      - "-config"
+      - "/local_config.json"
     deploy:
       restart_policy:
         condition: on-failure

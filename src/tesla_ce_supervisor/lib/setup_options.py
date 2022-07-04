@@ -69,6 +69,11 @@ class SetupOptions:
                 cmd_list += '{}\n\n'.format(cmd.command)
             zip.writestr('commands.txt', cmd_list)
             for file in self.files:
+                if len(file.filename.split('/')) > 1:
+                    aux = ''
+                    for part in file.filename.split('/')[:-1]:
+                        zip.writestr(zipfile.ZipInfo(aux+'/'+part+'/'), '')
+                        aux = aux+'/'+part
                 zip.writestr(file.filename, file.content)
         return buffer.getvalue()
 

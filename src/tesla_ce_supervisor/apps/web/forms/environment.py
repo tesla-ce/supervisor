@@ -87,7 +87,8 @@ class SwarmForm(ConfigForm):
         for field in self._field_correspondence:
             if (field[0] == 'swarm_client_key' or field[0] == 'swarm_client_cert' or field[0] == 'swarm_specific_ca_cert') and self.parse_config_value(field[0], config.get(field[1])) != '':
                 try:
-                    self.fields[field[0]].initial = base64.b64decode(self.parse_config_value(field[0], config.get(field[1])).encode('utf8')).decode('utf8')
+                    if self.parse_config_value(field[0], config.get(field[1])) is not None:
+                        self.fields[field[0]].initial = base64.b64decode(self.parse_config_value(field[0], config.get(field[1])).encode('utf8')).decode('utf8')
                 except (TypeError, binascii.Error) as err:
                     pass
 

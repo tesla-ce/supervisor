@@ -45,7 +45,8 @@ secrets:
   {% endif %}
   DB_ROOT_PASSWORD:
     file: ./secrets/DB_ROOT_PASSWORD
-
+  VAULT_DB_PASSWORD:
+    file: ./secrets/VAULT_DB_PASSWORD
 networks:
   tesla_public:
     external: true

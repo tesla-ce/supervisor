@@ -33,7 +33,7 @@ class SwarmCatalog(BaseCatalog):
             total_instances = service.attrs['Spec']['Mode']['Replicated']['Replicas']
             healthy_instances = len(service.tasks(filters={'desired-state': 'RUNNING'}))
 
-        except docker.errors.DockerException:
+        except docker.errors.DockerException as err:
             pass
 
         status = ServiceCatalogInformation(name, 'swarm')
@@ -72,3 +72,6 @@ class SwarmCatalog(BaseCatalog):
 
     def test_connection(self) -> ConnectionStatus:
         pass
+
+    def get_supervisor_status(self) -> ServiceCatalogInformation:
+        return self.get_service_status('supervisor')

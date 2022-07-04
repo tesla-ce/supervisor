@@ -1,6 +1,6 @@
 import docker
 from docker.types.healthcheck import Healthcheck
-from docker.types.services import EndpointSpec, SecretReference
+from docker.types.services import EndpointSpec, SecretReference, ConfigReference
 import os
 import typing
 import yaml
@@ -247,8 +247,35 @@ class SwarmDeploy(BaseDeploy):
                                                           retries=service_def_dict['healthcheck']['retries'],
                                                           start_period=start_period)
         #config file
-        if 'configs' in service_def_dict:
-            del service_def_dict['configs']
+
+        if 'configs' in task_def_dict:
+            configs_rename = []
+            configs_aux = {}
+            for key in task_def_dict['configs']:
+                file = task_def_dict['configs'][key]['file']
+
+                try:
+                    config_id = "{}_{}".format(self.swarm_conf.swarm_service_prefix, key)
+                    config = self._client.configs.get(config_id)
+                    configs_aux[key] = config
+                except docker.errors.NotFound as err:
+                    config_id = "{}_{}".format(self.swarm_conf.swarm_service_prefix, key)
+
+                    template = 'services/{}/swarm/{}'.format(name, file)
+                    config_data = render_to_string(template, context)
+                    self._client.configs.create(name=config_id, data=config_data)
+                    config = self._client.configs.get(config_id)
+                    configs_aux[key] = config
+                except docker.errors.DockerException as err:
+                    pass
+
+            for key in service_def_dict['configs']:
+                for key2 in configs_aux.keys():
+                    if key2 == key['source']:
+                        c = configs_aux[key2]
+                        configs_rename.append(ConfigReference(config_id=c.id, config_name=c.name, filename=key['target']))
+
+            service_def_dict['configs'] = configs_rename
 
         try:
             self._client.services.create(image=image, command=None, **service_def_dict)
@@ -299,6 +326,7 @@ class SwarmDeploy(BaseDeploy):
             command='docker stack -t traefik.yaml tesla',
             description='Create new service for Traefik Load Balancer'
         )
+
         script.add_file(
             filename='traefik.yaml',
             description='Stack description for Traefik Load Balancer',
@@ -320,7 +348,14 @@ class SwarmDeploy(BaseDeploy):
         """
         context = {
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN')
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'VAULT_BACKEND': self._config.get('VAULT_BACKEND'),
+            'VAULT_DB_HOST': self._config.get('VAULT_DB_HOST'),
+            'VAULT_DB_PORT': self._config.get('VAULT_DB_PORT'),
+            'VAULT_DB_USER': self._config.get('VAULT_DB_USER'),
+            'VAULT_DB_PASSWORD': self._config.get('VAULT_DB_PASSWORD'),
+            'VAULT_DB_NAME': self._config.get('VAULT_DB_NAME'),
+            'DB_PASSWORD': self._config.get('DB_PASSWORD')
         }
 
         return self._create_swarm_service('vault', 'services/vault/swarm/vault.yaml', context)
@@ -329,7 +364,54 @@ class SwarmDeploy(BaseDeploy):
         """
             Get the script to deploy Hashicorp Vault
         """
+        context = {
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'VAULT_BACKEND': self._config.get('VAULT_BACKEND'),
+            'VAULT_DB_HOST': self._config.get('VAULT_DB_HOST'),
+            'VAULT_DB_PORT': self._config.get('VAULT_DB_PORT'),
+            'VAULT_DB_USER': self._config.get('VAULT_DB_USER'),
+            'VAULT_DB_PASSWORD': self._config.get('VAULT_DB_PASSWORD'),
+            'VAULT_DB_NAME': self._config.get('VAULT_DB_NAME'),
+            'DB_PASSWORD': self._config.get('DB_PASSWORD')
+        }
+
+        task_def = self._remove_empty_lines(render_to_string('services/vault/swarm/vault.yaml', context))
+        secret_VAULT_DB_PASSWORD = ''
+        if self._config.get('VAULT_DB_PASSWORD') is not None:
+            secret_VAULT_DB_PASSWORD = self._config.get('VAULT_DB_PASSWORD')
+
+        secret_DB_PASSWORD = ''
+        if self._config.get('DB_PASSWORD') is not None:
+            secret_DB_PASSWORD = self._config.get('DB_PASSWORD')
+
         script = SetupOptions()
+        script.add_command(
+            command='docker stack -t vault.yaml tesla',
+            description='Create new service for vault'
+        )
+
+        script.add_file(
+            filename='vault.yaml',
+            description='Stack description for vault',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/VAULT_DB_PASSWORD',
+            description='Secret VAULT_DB_PASSWORD',
+            content=secret_VAULT_DB_PASSWORD,
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/DB_PASSWORD',
+            description='Secret DB_PASSWORD',
+            content=secret_DB_PASSWORD,
+            mimetype='text/plain'
+        )
+
         return script
 
     def deploy_minio(self) -> dict:
@@ -350,7 +432,50 @@ class SwarmDeploy(BaseDeploy):
         """
             Get the script to deploy MinIO
         """
+        context = {
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'STORAGE_REGION': self._config.get('STORAGE_REGION'),
+            'STORAGE_ACCESS_KEY': self._config.get('STORAGE_ACCESS_KEY'),
+            'STORAGE_SECRET_KEY': self._config.get('STORAGE_SECRET_KEY'),
+        }
+
+        task_def = self._remove_empty_lines(render_to_string('services/minio/swarm/minio.yaml', context))
+        secret_STORAGE_ACCESS_KEY = ''
+        if self._config.get('STORAGE_ACCESS_KEY') is not None:
+            secret_STORAGE_ACCESS_KEY = self._config.get('STORAGE_ACCESS_KEY')
+
+        secret_STORAGE_SECRET_KEY = ''
+        if self._config.get('STORAGE_SECRET_KEY') is not None:
+            secret_STORAGE_SECRET_KEY = self._config.get('STORAGE_SECRET_KEY')
+
         script = SetupOptions()
+        script.add_command(
+            command='docker stack -t minio.yaml tesla',
+            description='Create new service for MinIO'
+        )
+
+        script.add_file(
+            filename='minio.yaml',
+            description='Stack description for MinIO',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/STORAGE_ACCESS_KEY',
+            description='Secret STORAGE_ACCESS_KEY',
+            content=secret_STORAGE_ACCESS_KEY,
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/STORAGE_SECRET_KEY',
+            description='Secret STORAGE_SECRET_KEY',
+            content=secret_STORAGE_SECRET_KEY,
+            mimetype='text/plain'
+        )
+
         return script
 
     def deploy_redis(self) -> dict:
@@ -369,6 +494,37 @@ class SwarmDeploy(BaseDeploy):
             Get the script to deploy Redis
         """
         script = SetupOptions()
+
+        context = {
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'REDIS_PASSWORD': self._config.get('REDIS_PASSWORD'),
+        }
+
+        task_def = self._remove_empty_lines(render_to_string('services/redis/swarm/redis.yaml', context))
+        secret_REDIS_PASSWORD = ''
+        if self._config.get('REDIS_PASSWORD') is not None:
+            secret_REDIS_PASSWORD = self._config.get('REDIS_PASSWORD')
+
+        script = SetupOptions()
+        script.add_command(
+            command='docker stack -t redis.yaml tesla',
+            description='Create new service for redis'
+        )
+
+        script.add_file(
+            filename='redis.yaml',
+            description='Stack description for Redis',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/REDIS_PASSWORD',
+            description='Secret REDIS_PASSWORD',
+            content=secret_REDIS_PASSWORD,
+            mimetype='text/plain'
+        )
+
         return script
 
     def deploy_database(self) -> dict:
@@ -405,7 +561,59 @@ class SwarmDeploy(BaseDeploy):
         """
             Get the script to deploy Database
         """
+        context = {
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'DB_ROOT_PASSWORD': self._config.get('DB_ROOT_PASSWORD'),
+            'DB_PASSWORD': self._config.get('DB_PASSWORD'),
+            'DB_USER': self._config.get('DB_USER'),
+            'DB_NAME': self._config.get('DB_NAME'),
+            'VAULT_DB_PASSWORD': self._config.get('VAULT_DB_PASSWORD')
+        }
+        task_def = self._remove_empty_lines(render_to_string('services/database/mysql/swarm/mysql.yaml', context))
+        secret_DB_ROOT_PASSWORD = ''
+        if self._config.get('DB_ROOT_PASSWORD') is not None:
+            secret_DB_ROOT_PASSWORD = self._config.get('DB_ROOT_PASSWORD')
+
+        secret_DB_PASSWORD = ''
+        if self._config.get('DB_PASSWORD') is not None:
+            secret_DB_PASSWORD = self._config.get('DB_PASSWORD')
+
+        secret_VAULT_DB_PASSWORD = ''
+        if self._config.get('VAULT_DB_PASSWORD') is not None:
+            secret_DB_PASSWORD = self._config.get('VAULT_DB_PASSWORD')
+
         script = SetupOptions()
+        script.add_command(
+            command='docker stack -t database.yaml tesla',
+            description='Create new service for database'
+        )
+
+        script.add_file(
+            filename='database.yaml',
+            description='Stack description for Database',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/DB_ROOT_PASSWORD',
+            description='Secret DB_ROOT_PASSWORD',
+            content=secret_DB_ROOT_PASSWORD,
+            mimetype='text/plain'
+        )
+        script.add_file(
+            filename='secrets/DB_PASSWORD',
+            description='Secret DB_PASSWORD',
+            content=secret_DB_PASSWORD,
+            mimetype='text/plain'
+        )
+        script.add_file(
+            filename='secrets/VAULT_DB_PASSWORD',
+            description='Secret VAULT_DB_PASSWORD',
+            content=secret_VAULT_DB_PASSWORD,
+            mimetype='text/plain'
+        )
+
         return script
 
     def deploy_rabbitmq(self) -> dict:
@@ -422,11 +630,65 @@ class SwarmDeploy(BaseDeploy):
 
         return self._create_swarm_service('rabbitmq', 'services/rabbitmq/swarm/rabbitmq.yaml', context)
 
-    def get_rabbit_script(self) -> SetupOptions:
+    def get_rabbitmq_script(self) -> SetupOptions:
         """
             Get the script to deploy RabbitMQ
         """
+        context = {
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'RABBITMQ_ADMIN_USER': self._config.get('RABBITMQ_ADMIN_USER'),
+            'RABBITMQ_ADMIN_PASSWORD': self._config.get('RABBITMQ_ADMIN_PASSWORD'),
+            'RABBITMQ_ERLANG_COOKIE': self._config.get('RABBITMQ_ERLANG_COOKIE'),
+        }
+
+        task_def = self._remove_empty_lines(render_to_string('services/rabbitmq/swarm/rabbitmq.yaml', context))
+        secret_RABBITMQ_ADMIN_USER = ''
+        if self._config.get('RABBITMQ_ADMIN_USER') is not None:
+            secret_RABBITMQ_ADMIN_USER = self._config.get('RABBITMQ_ADMIN_USER')
+
+        secret_RABBITMQ_ADMIN_PASSWORD = ''
+        if self._config.get('RABBITMQ_ADMIN_PASSWORD') is not None:
+            secret_RABBITMQ_ADMIN_PASSWORD = self._config.get('RABBITMQ_ADMIN_PASSWORD')
+
+        secret_RABBITMQ_ERLANG_COOKIE = ''
+        if self._config.get('RABBITMQ_ERLANG_COOKIE') is not None:
+            secret_RABBITMQ_ERLANG_COOKIE = self._config.get('RABBITMQ_ERLANG_COOKIE')
+
         script = SetupOptions()
+        script.add_command(
+            command='docker stack -t rabbitmq.yaml tesla',
+            description='Create new service for rabbitmq'
+        )
+
+        script.add_file(
+            filename='rabbitmq.yaml',
+            description='Stack description for rabbitmq',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/RABBITMQ_ADMIN_USER',
+            description='Secret RABBITMQ_ADMIN_USER',
+            content=secret_RABBITMQ_ADMIN_USER,
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/RABBITMQ_ADMIN_PASSWORD',
+            description='Secret RABBITMQ_ADMIN_PASSWORD',
+            content=secret_RABBITMQ_ADMIN_PASSWORD,
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/RABBITMQ_ERLANG_COOKIE',
+            description='Secret RABBITMQ_ERLANG_COOKIE',
+            content=secret_RABBITMQ_ERLANG_COOKIE,
+            mimetype='text/plain'
+        )
+
         return script
 
     def remove_lb(self) -> dict:
@@ -459,9 +721,6 @@ class SwarmDeploy(BaseDeploy):
     def remove_rabbitmq(self) -> dict:
         return self._remove_swarm_service('rabbitmq')
 
-    def get_rabbitmq_script(self) -> SetupOptions:
-        pass
-
     def get_rabbitmq_status(self) -> ServiceDeploymentInformation:
         return self._create_status_obj('rabbitmq')
 
@@ -478,6 +737,7 @@ class SwarmDeploy(BaseDeploy):
         pass
 
     def get_supervisor_status(self) -> ServiceDeploymentInformation:
-        pass
-
-
+        """
+            Get the deployment information for TeSLA CE Supervisor
+        """
+        return self._create_status_obj('supervisor')

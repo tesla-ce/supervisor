@@ -47,4 +47,3 @@ class CatalogClient:
 
     def get_supervisor_status(self) -> ServiceCatalogInformation:
         return self._client.get_supervisor_status()
-
