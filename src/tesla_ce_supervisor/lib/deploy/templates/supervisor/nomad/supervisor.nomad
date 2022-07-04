@@ -123,8 +123,12 @@ job "tesla_ce_supervisor" {
         destination = "secrets/SUPERVISOR_SECRET"
       }
       template {
-        data = "${ var.supervisor_admin_token }"
-        destination = "secrets/SUPERVISOR_ADMIN_TOKEN"
+        data = "${ var.supervisor_admin_user }"
+        destination = "secrets/SUPERVISOR_ADMIN_USER"
+      }
+      template {
+        data = "${ var.supervisor_admin_password }"
+        destination = "secrets/SUPERVISOR_ADMIN_PASSWORD"
       }
 
       resources {

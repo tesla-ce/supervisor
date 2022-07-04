@@ -172,7 +172,8 @@ class Config:
         )),
         ('supervisor', 'TeSLA CE Supervisor configuration.', (
             ('secret', 'Supervisor Secret', 'str', None, None, True),
-            ('admin_token', 'Administration token', 'str', None, None, True),
+            ('admin_user', 'Administrator username', 'str', 'admin', None, True),
+            ('admin_password', 'Administrator password', 'str', None, None, True),
         ))
     )
 
