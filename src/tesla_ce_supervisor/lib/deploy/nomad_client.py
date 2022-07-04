@@ -282,7 +282,6 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
-
     def get_vault_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for Vault

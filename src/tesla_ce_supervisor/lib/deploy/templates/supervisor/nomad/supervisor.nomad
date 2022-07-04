@@ -28,10 +28,16 @@ variable "supervisor_secret" {
   default = "{{ SUPERVISOR_SECRET }}"
 }
 
-variable "supervisor_admin_token" {
+variable "supervisor_admin_user" {
   type = string
-  default = "{{ SUPERVISOR_ADMIN_TOKEN }}"
+  default = "{{ SUPERVISOR_ADMIN_USER }}"
 }
+
+variable "supervisor_admin_password" {
+  type = string
+  default = "{{ SUPERVISOR_ADMIN_PASSWORD }}"
+}
+
 
 variable "base_domain" {
   type = string

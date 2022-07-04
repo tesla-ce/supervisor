@@ -91,7 +91,7 @@ job "vault" {
         data = <<EOH
 {
   "ui": true,
-  "backend": {
+  "storage": {
     "file": {
       "path": "/vault_data"
     }

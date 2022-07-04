@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework import routers
 
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 
 admin_router = routers.SimpleRouter()
@@ -13,6 +14,8 @@ api_router = routers.SimpleRouter()
 
 
 urlpatterns = [
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('admin/', include(admin_router.urls)),
     path('status', views.Status.as_view()),
     path('v1/', include(api_router.urls))

@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'django_apscheduler',
     'rest_framework',
+    'rest_framework_simplejwt',
     'tesla_ce_supervisor',
 #    'apps.web',
 #    'apps.api'
@@ -89,7 +90,8 @@ if SETUP_MODE is not None:
 
 if SETUP_MODE == 'BUILD':
     # Used for Docker image build
-    SUPERVISOR_ADMIN_TOKEN = None
+    SUPERVISOR_ADMIN_USER = None
+    SUPERVISOR_ADMIN_PASSWORD = None
     SECRET_KEY = get_random_secret_key()
     TESLA_DOMAIN = None
     ALLOWED_HOSTS = []  # No access allowed
@@ -98,7 +100,8 @@ if SETUP_MODE == 'BUILD':
         'tesla_ce_supervisor.apps.api',
     ]
 elif SETUP_MODE == 'SETUP':
-    SUPERVISOR_ADMIN_TOKEN = None
+    SUPERVISOR_ADMIN_USER = None
+    SUPERVISOR_ADMIN_PASSWORD = None
     SECRET_KEY = get_random_secret_key()
     TESLA_DOMAIN = None
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
@@ -106,7 +109,8 @@ elif SETUP_MODE == 'SETUP':
         'tesla_ce_supervisor.apps.web',
     ]
 else:
-    SUPERVISOR_ADMIN_TOKEN = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_TOKEN')
+    SUPERVISOR_ADMIN_USER = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_USER')
+    SUPERVISOR_ADMIN_PASSWORD = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_PASSWORD')
     SECRET_KEY = _read_secret(SECRETS_PATH, 'SUPERVISOR_SECRET')
     TESLA_DOMAIN = _read_secret(SECRETS_PATH, 'TESLA_DOMAIN')
     ALLOWED_HOSTS = [TESLA_DOMAIN]
@@ -181,6 +185,13 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'tesla_ce_supervisor.apps.api.auth.SupervisorJWTAuthentication',
+        #'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
 
 
 # Internationalization
