@@ -578,8 +578,8 @@ class NomadDeploy(BaseDeploy):
             'supervisor_image': 'teslace/supervisor:latest',
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
             'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'SUPERVISOR_SECRET': self._config.get('SUPERVISOR_SECRET'),
-            'SUPERVISOR_ADMIN_TOKEN': self._config.get('SUPERVISOR_ADMIN_TOKEN'),
+            'SUPERVISOR_ADMIN_USER': self._config.get('SUPERVISOR_ADMIN_USER'),
+            'SUPERVISOR_ADMIN_PASSWORD': self._config.get('SUPERVISOR_ADMIN_PASSWORD'),
         }
         return self._crete_nomad_job('tesla_ce_supervisor', 'supervisor/nomad/supervisor.nomad', context)
 
@@ -601,7 +601,8 @@ class NomadDeploy(BaseDeploy):
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
             'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
             'SUPERVISOR_SECRET': self._config.get('RABBITMQ_ADMIN_USER'),
-            'SUPERVISOR_ADMIN_TOKEN': self._config.get('SUPERVISOR_ADMIN_TOKEN'),
+            'SUPERVISOR_ADMIN_USER': self._config.get('SUPERVISOR_ADMIN_USER'),
+            'SUPERVISOR_ADMIN_PASSWORD': self._config.get('SUPERVISOR_ADMIN_PASSWORD'),
         }
         task_def = self._remove_empty_lines(render_to_string('supervisor/nomad/supervisor.nomad', context))
 
