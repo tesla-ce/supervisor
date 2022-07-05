@@ -135,6 +135,8 @@ class TeslaClient:
             with open(self._config_file, 'r') as conf_file:
                 conf.read_file(conf_file, self._config_file)
                 self._config.update(conf)
+
+            self._config.set('tesla_config_file', self._config_file)
         else:
             return False
 

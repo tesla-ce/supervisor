@@ -21,8 +21,8 @@ class CatalogClient:
 
         assert self._client is not None
 
-    def check_connection(self) -> ConnectionStatus:
-        return self._client.test_connection()
+    def check_connection(self, module: str) -> ConnectionStatus:
+        return self._client.test_connection(module)
 
     def get_services(self):
         return self._client.get_services()

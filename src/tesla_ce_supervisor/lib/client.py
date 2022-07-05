@@ -115,6 +115,7 @@ class SupervisorClient:
             :param target: The target system (Nomad or Swarm)
             :return: Deployer instance
         """
+        self._tesla.load_configuration()
         return DeployClient(self._tesla.get_config(), target)
 
     def get_setup(self):
@@ -254,12 +255,12 @@ class SupervisorClient:
             :return: ConnectionStatus
         """
         if module.upper() == 'SWARM':
-            status = SwarmDeployer(config=self.tesla.get_config()).check_connection()
+            status = SwarmDeployer(config=self.tesla.get_config()).check_connection(module)
 
         elif module.upper() == 'NOMAD':
-            status = NomadDeployer(config=self.tesla.get_config()).check_connection()
+            status = NomadDeployer(config=self.tesla.get_config()).check_connection(module)
 
         elif module.upper() == 'CONSUL':
-            status = ConsulCatalog(config=self.tesla.get_config()).check_connection()
+            status = ConsulCatalog(config=self.tesla.get_config()).check_connection(module)
 
         return status

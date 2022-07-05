@@ -24,7 +24,9 @@ def get_url_from_status(client: SupervisorClient) -> str:
         new_url = reverse('setup_services_deploy')
     elif status == 6:  # Register external services
         new_url = reverse('setup_services_register')
-    elif status == 7:  # Configuration wizard 1
+    elif status == 7:   # Deploy supervisor
+        new_url = reverse('setup_supervisor')
+    elif status == 8:  # Configuration wizard 1
         new_url = reverse('setup_step1')
     else:
         new_url = reverse('setup_home')

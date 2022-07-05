@@ -2,6 +2,7 @@ from .basic_info import tesla_basic_info
 from .environment import environment as env_view
 from .home import home as home_view
 from .load_balancer import lb_view
+from .supervisor import supervisor_view
 from . import steps
 from . import services
 
@@ -10,6 +11,7 @@ __all__ = [
     'env_view',
     'home_view',
     'lb_view',
+    'supervisor_view'
     'steps',
     'services',
 ]

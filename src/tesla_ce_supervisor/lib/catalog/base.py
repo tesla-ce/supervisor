@@ -17,10 +17,6 @@ class BaseCatalog(abc.ABC):
         self._config = config
 
     @abc.abstractmethod
-    def test_connection(self) -> ConnectionStatus:
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
     def get_services(self) -> typing.List[ServiceCatalogInformation]:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
@@ -64,5 +60,6 @@ class BaseCatalog(abc.ABC):
     def get_supervisor_status(self) -> ServiceCatalogInformation:
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
-
-
+    def test_connection(self, module: str) -> ConnectionStatus:
+        # todo: implement
+        return ConnectionStatus()

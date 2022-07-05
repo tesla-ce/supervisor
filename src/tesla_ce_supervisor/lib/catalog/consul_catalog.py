@@ -204,7 +204,3 @@ class ConsulCatalog(BaseCatalog):
     def get_supervisor_status(self) -> ServiceCatalogInformation:
         return self._merge_status_data('supervisor',
                                        [self.get_service_status('supervisor'),])
-
-    def test_connection(self) -> ConnectionStatus:
-        pass
-

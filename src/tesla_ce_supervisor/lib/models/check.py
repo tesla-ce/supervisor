@@ -133,4 +133,13 @@ class ServiceStatus:
 
 
 class ConnectionStatus:
+    # valid: True|False
+    # can connect?
+    # info {
+    #    "sealed"
+    #    "auth"
+    #    "init"...
+    # }
+    # errors {
+    # }
     pass

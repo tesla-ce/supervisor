@@ -7,6 +7,7 @@ const service_desc = {
     'minio': {name: 'MinIO', deploy: base_url + 'deploy/minio', status: base_url + 'check/minio'},
     'redis': {name: 'Redis', deploy: base_url + 'deploy/redis', status: base_url + 'check/redis'},
     'vault': {name: 'HashiCorp Vault', deploy: base_url + 'deploy/vault', status: base_url + 'check/vault'},
+    'supervisor': {name: 'Supervisor', deploy: base_url + 'deploy/supervisor', status: base_url + 'check/supervisor'},
 }
 
 function set_instances(service, instances) {
