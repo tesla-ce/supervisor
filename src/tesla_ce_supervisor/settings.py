@@ -88,10 +88,12 @@ SETUP_MODE = os.environ.get('SETUP_MODE', None)
 if SETUP_MODE is not None:
     SETUP_MODE = SETUP_MODE.upper()
 
+SUPERVISOR_MODULES = []
 if SETUP_MODE == 'BUILD':
     # Used for Docker image build
     SUPERVISOR_ADMIN_USER = None
     SUPERVISOR_ADMIN_PASSWORD = None
+    SUPERVISOR_ADMIN_EMAIL = None
     SECRET_KEY = get_random_secret_key()
     TESLA_DOMAIN = None
     ALLOWED_HOSTS = []  # No access allowed
@@ -99,24 +101,29 @@ if SETUP_MODE == 'BUILD':
         'tesla_ce_supervisor.apps.web',
         'tesla_ce_supervisor.apps.api',
     ]
+    SUPERVISOR_MODULES = ['web', 'api']
 elif SETUP_MODE == 'SETUP':
     SUPERVISOR_ADMIN_USER = None
     SUPERVISOR_ADMIN_PASSWORD = None
+    SUPERVISOR_ADMIN_EMAIL = None
     SECRET_KEY = get_random_secret_key()
     TESLA_DOMAIN = None
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
     INSTALLED_APPS += [
         'tesla_ce_supervisor.apps.web',
     ]
+    SUPERVISOR_MODULES = ['web']
 else:
     SUPERVISOR_ADMIN_USER = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_USER')
     SUPERVISOR_ADMIN_PASSWORD = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_PASSWORD')
+    SUPERVISOR_ADMIN_EMAIL = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_EMAIL')
     SECRET_KEY = _read_secret(SECRETS_PATH, 'SUPERVISOR_SECRET')
     TESLA_DOMAIN = _read_secret(SECRETS_PATH, 'TESLA_DOMAIN')
     ALLOWED_HOSTS = [TESLA_DOMAIN]
     INSTALLED_APPS += [
         'tesla_ce_supervisor.apps.api',
     ]
+    SUPERVISOR_MODULES = ['api']
 
 
 MIDDLEWARE = [

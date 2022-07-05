@@ -38,6 +38,10 @@ variable "supervisor_admin_password" {
   default = "{{ SUPERVISOR_ADMIN_PASSWORD }}"
 }
 
+variable "supervisor_admin_email" {
+  type = string
+  default = "{{ SUPERVISOR_ADMIN_EMAIL }}"
+}
 
 variable "base_domain" {
   type = string
@@ -112,9 +116,10 @@ job "tesla_ce_supervisor" {
       }
 
       env = {
-        "SUPERVISOR_DATA"     = "/data"
-        "SECRETS_PATH"        = "/secrets"
-        "TESLA_DOMAIN"        = var.base_domain
+        "SUPERVISOR_DATA"        = "/data"
+        "SECRETS_PATH"           = "/secrets"
+        "TESLA_DOMAIN"           = var.base_domain
+        "SUPERVISOR_ADMIN_EMAIL" = var.supervisor_admin_email
       }
 
       # Store secrets

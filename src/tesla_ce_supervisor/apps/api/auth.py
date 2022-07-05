@@ -1,4 +1,24 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.exceptions import AuthenticationFailed
+from django.conf import settings
+from django.contrib.auth import get_user_model
+
+
+def _initialize_authentication():
+    """
+        Initialize authentication
+    """
+    if settings.SUPERVISOR_ADMIN_USER is not None and settings.SUPERVISOR_ADMIN_PASSWORD is not None:
+        try:
+            get_user_model().objects.get(username=settings.SUPERVISOR_ADMIN_USER)
+        except get_user_model().DoesNotExist:
+            # Create the administrator user
+            get_user_model().objects.create_superuser(
+                username=settings.SUPERVISOR_ADMIN_USER,
+                password=settings.SUPERVISOR_ADMIN_PASSWORD,
+                email=settings.SUPERVISOR_ADMIN_EMAIL
+            )
 
 
 class SupervisorJWTAuthentication(JWTAuthentication):
