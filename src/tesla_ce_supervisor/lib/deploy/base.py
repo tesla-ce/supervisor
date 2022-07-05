@@ -266,7 +266,7 @@ class BaseDeploy(abc.ABC):
             if self._config.get('SUPERVISOR_ADMIN_PASSWORD') is None:
                 self._config.set('SUPERVISOR_ADMIN_PASSWORD', User.objects.make_random_password())
 
-    def get_status(self, module: ModuleCode):
+    def get_status(self, module: ModuleCode) -> ServiceDeploymentInformation:
         """
             Get module status
             :param module: Name of the module
@@ -288,7 +288,7 @@ class BaseDeploy(abc.ABC):
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
 
-    def get_script(self, module: ModuleCode):
+    def get_script(self, module: ModuleCode) -> SetupOptions:
         """
             Get deployment script
             :param module: Name of the module
@@ -310,7 +310,7 @@ class BaseDeploy(abc.ABC):
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
 
-    def deploy(self, module: ModuleCode):
+    def deploy(self, module: ModuleCode) -> dict:
         """
             Deploy a module
             :param module: Name of the module
@@ -332,7 +332,7 @@ class BaseDeploy(abc.ABC):
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
 
-    def remove(self, module: ModuleCode):
+    def remove(self, module: ModuleCode) -> dict:
         """
             Remove deployed module
             :param module: Name of the module

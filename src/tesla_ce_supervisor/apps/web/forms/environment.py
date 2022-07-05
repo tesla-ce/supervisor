@@ -1,7 +1,6 @@
 import base64
 import binascii
-import os
-from django.conf import settings
+from urllib.parse import urlparse
 from django import forms
 from .base import ConfigForm
 
@@ -34,18 +33,45 @@ class NomadConsulForm(ConfigForm):
         #('nomad_tls_servername', 'NOMAD_TLS_SERVER_NAME'),
         ('nomad_authOptions', 'NOMAD_AUTH_TYPE'),
         ('nomad_acl_token', 'NOMAD_ACL_TOKEN'),
-        ('consul_addr', 'CONSUL_ADDR'),
+        ('consul_host', 'CONSUL_HOST'),
+        ('consul_port', 'CONSUL_PORT'),
+        ('consul_scheme', 'CONSUL_SCHEME'),
         #('consul_skip_verify', 'CONSUL_SKIP_VERIFY'),
         #('consul_tls_servername', 'CONSUL_TLS_SERVER_NAME'),
         ('consul_authOptions', 'CONSUL_AUTH_TYPE'),
         ('consul_acl_token', 'CONSUL_ACL_TOKEN'),
     ]
 
+    def load_config(self, config):
+        super().load_config(config)
+        self.fields['consul_addr'].initial = '{}://{}:{}'.format(
+            config.get('CONSUL_SCHEME'),
+            config.get('CONSUL_HOST'),
+            config.get('CONSUL_PORT'),
+        )
+
     def clean_nomad_authOptions(self):
         authOptions = self.cleaned_data['nomad_authOptions']
         if authOptions is None:
             authOptions = 'none'
         return authOptions
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if cleaned_data['consul_addr'] is not None:
+            parsed_consul = urlparse(cleaned_data['consul_addr'])
+            cleaned_data['consul_scheme'] = parsed_consul.scheme
+            cleaned_data['consul_host'] = parsed_consul.hostname
+            if parsed_consul.port is None:
+                if parsed_consul.scheme == 'http':
+                    cleaned_data['consul_port'] = 80
+                else:
+                    cleaned_data['consul_port'] = 443
+            else:
+                cleaned_data['consul_port'] = parsed_consul.port
+
+        return cleaned_data
 
     def parse_config_value(self, field, value):
         if field == 'nomad_datacenters':

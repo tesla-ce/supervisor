@@ -1,5 +1,6 @@
 from typing import Optional, Union, Literal
 
+from .base import ModuleCode
 from .nomad_client import NomadDeploy
 from .swarm_client import SwarmDeploy
 from ..tesla.conf import Config
@@ -112,3 +113,31 @@ class DeployClient:
 
     def get_supervisor_status(self) -> ServiceDeploymentInformation:
         return self._client.get_supervisor_status()
+
+    def deploy(self, module: ModuleCode) -> dict:
+        """
+            Deploy a module
+            :param module: Name of the module
+        """
+        return self._client.deploy(module)
+
+    def remove(self, module: ModuleCode) -> dict:
+        """
+            Remove deployed module
+            :param module: Name of the module
+        """
+        return self._client.remove(module)
+
+    def get_script(self, module: ModuleCode) -> SetupOptions:
+        """
+            Get deployment script
+            :param module: Name of the module
+        """
+        return self._client.get_script(module)
+
+    def get_status(self, module: ModuleCode) -> ServiceDeploymentInformation:
+        """
+            Get module status
+            :param module: Name of the module
+        """
+        return self._client.get_status(module)

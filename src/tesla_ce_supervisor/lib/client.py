@@ -117,6 +117,7 @@ class SupervisorClient:
             :param target: The target system (Nomad or Swarm)
             :return: Deployer instance
         """
+        self._tesla.get_config_path()
         self._tesla.load_configuration()
         return DeployClient(self._tesla.get_config(), target)
 
