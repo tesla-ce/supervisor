@@ -157,6 +157,12 @@ class SwarmDeploy(BaseDeploy):
             if key == 'placement':
                 for subkey in service_def_dict['deploy'][key].keys():
                     service_def_dict[subkey] = service_def_dict['deploy'][key][subkey]
+            elif key == 'labels':
+                labels = {}
+                for item in service_def_dict['deploy'][key]:
+                    labels[item.split('=')[0]] = item.split('=')[1]
+
+                service_def_dict[key] = labels
             elif key != 'replicas':
                 service_def_dict[key] = service_def_dict['deploy'][key]
 
@@ -355,7 +361,8 @@ class SwarmDeploy(BaseDeploy):
             'VAULT_DB_USER': self._config.get('VAULT_DB_USER'),
             'VAULT_DB_PASSWORD': self._config.get('VAULT_DB_PASSWORD'),
             'VAULT_DB_NAME': self._config.get('VAULT_DB_NAME'),
-            'DB_PASSWORD': self._config.get('DB_PASSWORD')
+            'DB_PASSWORD': self._config.get('DB_PASSWORD'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         return self._create_swarm_service('vault', 'services/vault/swarm/vault.yaml', context)
@@ -373,7 +380,8 @@ class SwarmDeploy(BaseDeploy):
             'VAULT_DB_USER': self._config.get('VAULT_DB_USER'),
             'VAULT_DB_PASSWORD': self._config.get('VAULT_DB_PASSWORD'),
             'VAULT_DB_NAME': self._config.get('VAULT_DB_NAME'),
-            'DB_PASSWORD': self._config.get('DB_PASSWORD')
+            'DB_PASSWORD': self._config.get('DB_PASSWORD'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         task_def = self._remove_empty_lines(render_to_string('services/vault/swarm/vault.yaml', context))
@@ -424,6 +432,7 @@ class SwarmDeploy(BaseDeploy):
             'STORAGE_REGION': self._config.get('STORAGE_REGION'),
             'STORAGE_ACCESS_KEY': self._config.get('STORAGE_ACCESS_KEY'),
             'STORAGE_SECRET_KEY': self._config.get('STORAGE_SECRET_KEY'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         return self._create_swarm_service('minio', 'services/minio/swarm/minio.yaml', context)
@@ -438,6 +447,7 @@ class SwarmDeploy(BaseDeploy):
             'STORAGE_REGION': self._config.get('STORAGE_REGION'),
             'STORAGE_ACCESS_KEY': self._config.get('STORAGE_ACCESS_KEY'),
             'STORAGE_SECRET_KEY': self._config.get('STORAGE_SECRET_KEY'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         task_def = self._remove_empty_lines(render_to_string('services/minio/swarm/minio.yaml', context))
@@ -485,6 +495,7 @@ class SwarmDeploy(BaseDeploy):
         context = {
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
             'REDIS_PASSWORD': self._config.get('REDIS_PASSWORD'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         return self._create_swarm_service('redis', 'services/redis/swarm/redis.yaml', context)
@@ -498,6 +509,7 @@ class SwarmDeploy(BaseDeploy):
         context = {
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
             'REDIS_PASSWORD': self._config.get('REDIS_PASSWORD'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         task_def = self._remove_empty_lines(render_to_string('services/redis/swarm/redis.yaml', context))
@@ -553,6 +565,7 @@ class SwarmDeploy(BaseDeploy):
             'DB_PASSWORD': self._config.get('DB_PASSWORD'),
             'DB_USER': self._config.get('DB_USER'),
             'DB_NAME': self._config.get('DB_NAME'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         return self._create_swarm_service('database', template, context)
@@ -567,7 +580,8 @@ class SwarmDeploy(BaseDeploy):
             'DB_PASSWORD': self._config.get('DB_PASSWORD'),
             'DB_USER': self._config.get('DB_USER'),
             'DB_NAME': self._config.get('DB_NAME'),
-            'VAULT_DB_PASSWORD': self._config.get('VAULT_DB_PASSWORD')
+            'VAULT_DB_PASSWORD': self._config.get('VAULT_DB_PASSWORD'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
         task_def = self._remove_empty_lines(render_to_string('services/database/mysql/swarm/mysql.yaml', context))
         secret_DB_ROOT_PASSWORD = ''
@@ -626,6 +640,7 @@ class SwarmDeploy(BaseDeploy):
             'RABBITMQ_ADMIN_USER': self._config.get('RABBITMQ_ADMIN_USER'),
             'RABBITMQ_ADMIN_PASSWORD': self._config.get('RABBITMQ_ADMIN_PASSWORD'),
             'RABBITMQ_ERLANG_COOKIE': self._config.get('RABBITMQ_ERLANG_COOKIE'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         return self._create_swarm_service('rabbitmq', 'services/rabbitmq/swarm/rabbitmq.yaml', context)
@@ -640,6 +655,7 @@ class SwarmDeploy(BaseDeploy):
             'RABBITMQ_ADMIN_USER': self._config.get('RABBITMQ_ADMIN_USER'),
             'RABBITMQ_ADMIN_PASSWORD': self._config.get('RABBITMQ_ADMIN_PASSWORD'),
             'RABBITMQ_ERLANG_COOKIE': self._config.get('RABBITMQ_ERLANG_COOKIE'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         task_def = self._remove_empty_lines(render_to_string('services/rabbitmq/swarm/rabbitmq.yaml', context))
@@ -728,13 +744,86 @@ class SwarmDeploy(BaseDeploy):
         pass
 
     def deploy_supervisor(self) -> dict:
-        pass
+        """
+           Deploy Supervisor
+        """
+        context = {
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'SUPERVISOR_SECRET': self._config.get('SUPERVISOR_SECRET'),
+            'SUPERVISOR_ADMIN_USER': self._config.get('SUPERVISOR_ADMIN_USER'),
+            'SUPERVISOR_ADMIN_PASSWORD': self._config.get('SUPERVISOR_ADMIN_PASSWORD'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
+        }
+
+        return self._create_swarm_service('supervisor', 'supervisor/swarm/supervisor.yaml', context)
 
     def remove_supervisor(self) -> dict:
-        pass
+        return self._remove_swarm_service('supervisor')
 
     def get_supervisor_script(self) -> SetupOptions:
-        pass
+        """
+            Get the script to deploy Supervisor
+        """
+        script = SetupOptions()
+
+        context = {
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'SUPERVISOR_SECRET': self._config.get('SUPERVISOR_SECRET'),
+            'SUPERVISOR_ADMIN_USER': self._config.get('SUPERVISOR_ADMIN_USER'),
+            'SUPERVISOR_ADMIN_PASSWORD': self._config.get('SUPERVISOR_ADMIN_PASSWORD'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
+        }
+
+        task_def = self._remove_empty_lines(render_to_string('supervisor/swarm/supervisor.yaml', context))
+        secret_SUPERVISOR_SECRET = ''
+        if self._config.get('SUPERVISOR_SECRET') is not None:
+            secret_SUPERVISOR_SECRET = self._config.get('SUPERVISOR_SECRET')
+
+        secret_SUPERVISOR_ADMIN_USER = ''
+        if self._config.get('SUPERVISOR_ADMIN_USER') is not None:
+            secret_SUPERVISOR_ADMIN_USER = self._config.get('SUPERVISOR_ADMIN_USER')
+
+        secret_SUPERVISOR_ADMIN_PASSWORD = ''
+        if self._config.get('SUPERVISOR_ADMIN_PASSWORD') is not None:
+            secret_SUPERVISOR_ADMIN_PASSWORD = self._config.get('SUPERVISOR_ADMIN_PASSWORD')
+
+        script = SetupOptions()
+        script.add_command(
+            command='docker stack -t supervisor.yaml tesla',
+            description='Create new service for supervisor'
+        )
+
+        script.add_file(
+            filename='supervisor.yaml',
+            description='Stack description for Supervisor',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/SUPERVISOR_SECRET',
+            description='Secret SUPERVISOR_SECRET',
+            content=secret_SUPERVISOR_SECRET,
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/SUPERVISOR_ADMIN_USER',
+            description='Secret SUPERVISOR_ADMIN_USER',
+            content=secret_SUPERVISOR_ADMIN_USER,
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/SUPERVISOR_ADMIN_PASSWORD',
+            description='Secret SUPERVISOR_ADMIN_PASSWORD',
+            content=secret_SUPERVISOR_ADMIN_PASSWORD,
+            mimetype='text/plain'
+        )
+
+        return script
 
     def get_supervisor_status(self) -> ServiceDeploymentInformation:
         """

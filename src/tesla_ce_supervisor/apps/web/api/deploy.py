@@ -15,8 +15,12 @@ class BaseAPIDeploy(APIView, abc.ABC):
     script: typing.Callable = None
     deploy: typing.Callable = None
     remove: typing.Callable = None
+    client: SupervisorClient = None
 
     def get(self, request, format=None):
+        self.client._tesla.get_config_path()
+        self.client._tesla.load_configuration()
+
         response = self.script()
         json_resp = response.to_json()
         if 'zip' in request.query_params and request.query_params['zip'] == '1':
@@ -25,6 +29,8 @@ class BaseAPIDeploy(APIView, abc.ABC):
 
     def post(self, request, format=None):
         try:
+            self.client._tesla.get_config_path()
+            self.client._tesla.load_configuration()
             response = self.deploy()
         except TeslaException as exc:
             return JsonResponse({'error': str(exc)}, status=400)
@@ -32,6 +38,8 @@ class BaseAPIDeploy(APIView, abc.ABC):
 
     def delete(self, request, format=None):
         try:
+            self.client._tesla.get_config_path()
+            self.client._tesla.load_configuration()
             response = self.remove()
         except TeslaException as exc:
             return JsonResponse({'error': str(exc)}, status=400)
@@ -42,60 +50,67 @@ class APIDeployLoadBalancer(BaseAPIDeploy):
     """
         Manage Load Balancer deployment
     """
-    script = SupervisorClient().get_deployer().get_lb_script
-    deploy = SupervisorClient().get_deployer().deploy_lb
-    remove = SupervisorClient().get_deployer().remove_lb
+    client = SupervisorClient()
+    script = client.get_deployer().get_lb_script
+    deploy = client.get_deployer().deploy_lb
+    remove = client.get_deployer().remove_lb
 
 
 class APIDeployVault(BaseAPIDeploy):
     """
         Manage Vault deployment
     """
-    script = SupervisorClient().get_deployer().get_vault_script
-    deploy = SupervisorClient().get_deployer().deploy_vault
-    remove = SupervisorClient().get_deployer().remove_vault
+    client = SupervisorClient()
+    script = client.get_deployer().get_vault_script
+    deploy = client.get_deployer().deploy_vault
+    remove = client.get_deployer().remove_vault
 
 
 class APIDeployDatabase(BaseAPIDeploy):
     """
         Manage Database deployment
     """
-    script = SupervisorClient().get_deployer().get_database_script
-    deploy = SupervisorClient().get_deployer().deploy_database
-    remove = SupervisorClient().get_deployer().remove_database
+    client = SupervisorClient()
+    script = client.get_deployer().get_database_script
+    deploy = client.get_deployer().deploy_database
+    remove = client.get_deployer().remove_database
 
 
 class APIDeployMinio(BaseAPIDeploy):
     """
         Manage MinIO deployment
     """
-    script = SupervisorClient().get_deployer().get_minio_script
-    deploy = SupervisorClient().get_deployer().deploy_minio
-    remove = SupervisorClient().get_deployer().remove_minio
+    client = SupervisorClient()
+    script = client.get_deployer().get_minio_script
+    deploy = client.get_deployer().deploy_minio
+    remove = client.get_deployer().remove_minio
 
 
 class APIDeployRedis(BaseAPIDeploy):
     """
         Manage Redis deployment
     """
-    script = SupervisorClient().get_deployer().get_redis_script
-    deploy = SupervisorClient().get_deployer().deploy_redis
-    remove = SupervisorClient().get_deployer().remove_redis
+    client = SupervisorClient()
+    script = client.get_deployer().get_redis_script
+    deploy = client.get_deployer().deploy_redis
+    remove = client.get_deployer().remove_redis
 
 
 class APIDeployRabbitMQ(BaseAPIDeploy):
     """
         Manage RabbitMQ deployment
     """
-    script = SupervisorClient().get_deployer().get_rabbitmq_script
-    deploy = SupervisorClient().get_deployer().deploy_rabbitmq
-    remove = SupervisorClient().get_deployer().remove_rabbitmq
+    client = SupervisorClient()
+    script = client.get_deployer().get_rabbitmq_script
+    deploy = client.get_deployer().deploy_rabbitmq
+    remove = client.get_deployer().remove_rabbitmq
 
 
 class APIDeploySupervisor(BaseAPIDeploy):
     """
         Manage TeSLA CE Supervisor deployment
     """
-    script = SupervisorClient().get_deployer().get_supervisor_script
-    deploy = SupervisorClient().get_deployer().deploy_supervisor
-    remove = SupervisorClient().get_deployer().remove_supervisor
+    client = SupervisorClient()
+    script = client.get_deployer().get_supervisor_script
+    deploy = client.get_deployer().deploy_supervisor
+    remove = client.get_deployer().remove_supervisor

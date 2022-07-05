@@ -70,8 +70,5 @@ class SwarmCatalog(BaseCatalog):
     def get_minio_status(self) -> ServiceCatalogInformation:
         return self.get_service_status('minio')
 
-    def test_connection(self) -> ConnectionStatus:
-        pass
-
     def get_supervisor_status(self) -> ServiceCatalogInformation:
         return self.get_service_status('supervisor')

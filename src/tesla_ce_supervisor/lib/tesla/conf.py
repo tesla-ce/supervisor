@@ -15,6 +15,7 @@
 #
 """ Configuration Module"""
 import os
+import uuid
 import configparser
 from django.conf import settings
 from .exceptions import TeslaConfigException
@@ -522,10 +523,14 @@ class Config:
 
         return True
 
-
     def persist_db(self):
-
         for key in self.get_config_kv().keys():
             print('{}={}'.format(key, self.get(key)))
 
+    def get_uuid(self):
+        return uuid.uuid4().__str__()
 
+    def refresh(self):
+        config_file = self.get('tesla_config_file')
+        if config_file is not None:
+            self.load_file(config_file=config_file)
