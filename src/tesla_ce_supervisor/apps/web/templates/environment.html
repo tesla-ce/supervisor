@@ -124,54 +124,34 @@
                             <div class="col-md-8">
                                 <h5 class="card-title">Docker Configuration</h5>
                                 <div class="form-group mb-2">
-                                    <label for="consul_addr">Service prefix</label>
+                                    <label for="swarm_service_prefixHelp">Service prefix</label>
                                     {{ form.swarm_service_prefix|add_class:"form-control"|attr:"aria-describedby: swarm_service_prefixHelp"|attr:"placeholder: Base url"}}
                                     <small id="swarm_service_prefixHelp" class="form-text text-muted">Prefix to all TeSLA CE services.</small>
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label for="consul_addr">Address</label>
+                                    <label for="swarm_base_urlHelp">Address</label>
                                     {{ form.swarm_base_url|add_class:"form-control"|attr:"aria-describedby: swarm_base_urlHelp"|attr:"placeholder: Base url"}}
-                                    <small id="swarm_base_urlHelp" class="form-text text-muted">URL to the Docker server. For example, unix:///var/run/docker.sock or tcp://127.0.0.1:1234.</small>
+                                    <small id="swarm_base_urlHelp" class="form-text text-muted">URL to the Docker server. For example, unix:///var/run/docker.sock or tcp://127.0.0.1:2376.</small>
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label for="consul_addr">Client key</label>
+                                    <label for="swarm_client_keyHelp">Client key</label>
                                     {{ form.swarm_client_key|add_class:"form-control"|attr:"aria-describedby: swarm_client_keyHelp"|attr:"placeholder: Client key"}}
                                     <small id="swarm_client_keyHelp" class="form-text text-muted">Content of client key.</small>
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label for="consul_addr">Client certificate</label>
+                                    <label for="swarm_client_certHelp">Client certificate</label>
                                     {{ form.swarm_client_cert|add_class:"form-control"|attr:"aria-describedby: swarm_client_certHelp"|attr:"placeholder: Client certificate"}}
                                     <small id="swarm_client_certHelp" class="form-text text-muted">Content of client key.</small>
                                 </div>
                                 <div class="form-group mb-2">
-                                    <label for="consul_addr">Specific CA certificate</label>
-                                    {{ form.swarm_specific_ca_cert|add_class:"form-control"|attr:"aria-describedby: swarm_client_certHelp"|attr:"placeholder: Specific CA certificate"}}
-                                    <small id="swarm_client_certHelp" class="form-text text-muted">Content specific CA certificate.</small>
+                                    <label for="swarm_client_caHelp">Specific CA certificate</label>
+                                    {{ form.swarm_specific_ca_cert|add_class:"form-control"|attr:"aria-describedby: swarm_client_caHelp"|attr:"placeholder: Specific CA certificate"}}
+                                    <small id="swarm_client_caHelp" class="form-text text-muted">Content specific CA certificate.</small>
                                 </div>
 
-                                <div class="form-group mb-2">
-                                    <label>Authentication</label>
-                                    <br>
-                                    {% for radio in form.consul_authOptions %}
-                                    <div class="form-check form-check-inline">
-                                        {{ radio.tag }}
-                                        <label class="form-check-label" for="id_consul_authOptions_{{ forloop.counter0 }}">{{ radio.choice_label }}</label>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                <div class="form-group mb-2" id="consul_acl_token_div">
-                                    <label for="consul_acl_token">ACL Token</label>
-                                    <div class="input-group">
-                                        {{ form.consul_acl_token|add_class:"form-control"|attr:"aria-describedby: consul_acl_tokenHelp"|attr:"placeholder: Token"}}
-                                        <div class="input-group-prepend">
-                                            <div class="input-group-text toggle-password">
-                                                <i class="bi bi-eye bi-eye-slash"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <small id="consul_acl_tokenHelp" class="form-text text-muted">Needs permissions to access the status of deployed services.</small>
-                                </div>
-                                <a href="#" data-action="test_consul" class="btn btn-success action-btn disabled">Test</a>
+                                <input type="hidden" id="check_swarm" name="check_swarm" value="0" />
+                                <button type="button" class="btn btn-success action-btn" data-action="test-swarm">Test</button>
+                                <div id="swarm_result"></div>
                             </div>
                         </div>
                     </div>
@@ -258,6 +238,14 @@
         });
         $(".action-btn").click(function (env) {
            const action = this.dataset['action'];
+
+            $("#check_swarm").val('0');
+           if (action === 'test-swarm') {
+               html = '<i class="bi bi-activity"></i> Test in progress...';
+               $("#swarm_result").html(html)
+               $("#check_swarm").val('1');
+           }
+
            let data = $('form').serializeArray();
            $.ajax({
                url: '',
@@ -265,6 +253,11 @@
                headers: {'X-CSRFToken': csrftoken},
                data: data,
                success: function(data) {
+                   if (action === 'test-swarm') {
+                       show_swarm_test_result(data);
+                       return;
+                   }
+
                    if (data.hasOwnProperty('redirect_url')) {
                        $(location).attr("href", data['redirect_url']);
                    } else {
@@ -278,5 +271,14 @@
         // Handle Consul authentication
         manage_consul_auth();
     });
+    function show_swarm_test_result(data) {
+        if (data['test']['result'] == true) {
+            html = '<i class="bi bi-check-circle text-success"></i> Hurray, it seems good!';
+        } else {
+            html = '<i class="bi bi-x-circle text-danger"></i> '+data['test']['info'];
+        }
+
+        $("#swarm_result").html(html)
+    }
 </script>
 {% endblock %}

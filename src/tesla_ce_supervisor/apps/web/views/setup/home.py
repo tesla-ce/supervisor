@@ -7,7 +7,7 @@ from tesla_ce_supervisor.apps.web.views.setup.utils import get_url_from_status
 
 
 def home(request):
-    client = SupervisorClient()
+    client = SupervisorClient.get_instance()
 
     options_env = None
     if client.tesla.get("DEPLOYMENT_CATALOG_SYSTEM") == 'consul' and client.tesla.get("DEPLOYMENT_ORCHESTRATOR") == 'nomad':

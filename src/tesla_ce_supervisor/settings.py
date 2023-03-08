@@ -59,7 +59,8 @@ def _read_secret(secret_path: str, key: str, default=None):
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+
+DEBUG = os.getenv('DEBUG', False) in [1, "1", True, "True", "true"]
 
 # Setup data directory
 DATA_DIRECTORY = Path(os.environ.get('SUPERVISOR_DATA', os.path.join(BASE_DIR, '_data', ''))).resolve()
@@ -79,6 +80,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'tesla_ce_supervisor',
+    # Prometheus metrics exporter
+    'django_prometheus',
 #    'apps.web',
 #    'apps.api'
 ]
@@ -89,8 +92,10 @@ if SETUP_MODE is not None:
     SETUP_MODE = SETUP_MODE.upper()
 
 SUPERVISOR_MODULES = []
+CONFIGURATION_SOURCE = 'database'
+
 if SETUP_MODE == 'BUILD':
-    # Used for Docker image build
+    # Used for Docker image build. Only for migrations!
     SUPERVISOR_ADMIN_USER = None
     SUPERVISOR_ADMIN_PASSWORD = None
     SUPERVISOR_ADMIN_EMAIL = None
@@ -102,6 +107,8 @@ if SETUP_MODE == 'BUILD':
         'tesla_ce_supervisor.apps.api',
     ]
     SUPERVISOR_MODULES = ['web', 'api']
+    CONFIGURATION_SOURCE = 'file'
+
 elif SETUP_MODE == 'SETUP':
     SUPERVISOR_ADMIN_USER = None
     SUPERVISOR_ADMIN_PASSWORD = None
@@ -113,13 +120,30 @@ elif SETUP_MODE == 'SETUP':
         'tesla_ce_supervisor.apps.web',
     ]
     SUPERVISOR_MODULES = ['web']
+    CONFIGURATION_SOURCE = 'file'
+
+elif SETUP_MODE == 'DEV':
+    # todo: remove this SETUP_MODE='DEV'
+    SUPERVISOR_ADMIN_USER = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_USER')
+    SUPERVISOR_ADMIN_PASSWORD = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_PASSWORD')
+    SUPERVISOR_ADMIN_EMAIL = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_EMAIL')
+    SECRET_KEY = get_random_secret_key()
+    TESLA_DOMAIN = None
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    INSTALLED_APPS += [
+        'tesla_ce_supervisor.apps.api',
+        'tesla_ce_supervisor.apps.web',
+    ]
+    SUPERVISOR_MODULES = ['web', 'api']
+    CONFIGURATION_SOURCE = 'file'
+
 else:
     SUPERVISOR_ADMIN_USER = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_USER')
     SUPERVISOR_ADMIN_PASSWORD = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_PASSWORD')
     SUPERVISOR_ADMIN_EMAIL = _read_secret(SECRETS_PATH, 'SUPERVISOR_ADMIN_EMAIL')
     SECRET_KEY = _read_secret(SECRETS_PATH, 'SUPERVISOR_SECRET')
     TESLA_DOMAIN = _read_secret(SECRETS_PATH, 'TESLA_DOMAIN')
-    ALLOWED_HOSTS = [TESLA_DOMAIN]
+    ALLOWED_HOSTS = [TESLA_DOMAIN, '*']
     INSTALLED_APPS += [
         'tesla_ce_supervisor.apps.api',
     ]
@@ -127,6 +151,7 @@ else:
 
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -134,6 +159,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'tesla_ce_supervisor.urls'
@@ -169,10 +195,13 @@ WSGI_APPLICATION = 'tesla_ce_supervisor.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'django_prometheus.db.backends.sqlite3',
         'NAME': DATA_DIRECTORY / 'supervisor.sqlite3',
+        'ATOMIC_REQUESTS': True
     }
 }
+
+
 
 
 # Password validation

@@ -46,11 +46,14 @@
                                 <table class="table table-stripped">
                                     <thead>
                                         <th>Service</th>
-                                        <th>Status</th>
+                                        <th>Can connect?</th>
+                                        <th>Ready?</th>
                                         <th>Info</th>
                                     </thead>
                                     <tbody>
-                                        {% include "items/dns_status_row.html" with hostname=options.base_domain %}
+                                        {% for service in options.services %}
+                                            {% include "items/connection_status_row.html" with service=service %}
+                                        {% endfor %}
                                     </tbody>
                                 </table>
 
@@ -68,81 +71,30 @@
 {% block js %}
     {% csrf_token %}
     <script src="{% static 'js/service_deployment_table.js' %}"></script>
+    <script src="{% static 'js/service_connection_table.js' %}"></script>
 
 <script>
     // CSRF value
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    let dns_status_ok = false;
-
-    // Check DNS status
-    function check_dns(callback) {
-        $.get('{% url 'setup_api_check_dns' %}', function(data) {
-            let allok = true;
-            for (const hostname of Object.keys(data)) {
-                if (data[hostname]['ip']) {
-                    $('span.domain-check-ip[data-domain="' + hostname + '"]').html(
-                        data[hostname]['ip']
-                    )
-                    $('span.domain-check-status[data-domain="' + hostname + '"]').html(
-                        '<i class="bi bi-check-circle text-success"></i>'
-                    )
-                } else {
-                    allok = false;
-                    $('span.domain-check-ip[data-domain="' + hostname + '"]').html(
-                        '<i class="bi bi-question-circle text-muted"></i>'
-                    )
-                    $('span.domain-check-status[data-domain="' + hostname + '"]').html(
-                        '<i class="bi bi-x-circle text-danger"></i>'
-                    )
-                }
-            }
-            dns_status_ok = allok;
-            if (callback) {
-                callback({ status: allok, detail: data});
-            }
-        });
-    }
-
-    // Check Load Balancer status
-    function check_lb(callback) {
-        $.get('{% url 'setup_api_check_lb' %}', function(data) {
-
-        });
-    }
-
-    // Check deployment status and manage UI according
-    function check_status() {
-        check_dns(function(data) {
-            if (data['status']) {
-                // Enable deployment actions
-            } else {
-                // Disable deployment actions
-            }
-            check_lb(function(data) {
-
-            });
-        })
-    }
 
     $(function() {
         // Check the status
-        check_status();
         $(".action-btn").click(function (env) {
-           const action = this.dataset['action'];
-           let data = $('form').serializeArray();
-           $.ajax({
-               url: '',
-               method: 'POST',
-               headers: {'X-CSRFToken': csrftoken},
-               data: data,
-               success: function(data) {
-                   if (data.hasOwnProperty('redirect_url')) {
-                       $(location).attr("href", data['redirect_url']);
-                   } else {
-                       console.log(data['errors'])
-                   }
-               }
-           });
+            const action = this.dataset['action'];
+            let data = $('form').serializeArray();
+            $.ajax({
+                url: '',
+                method: 'POST',
+                headers: {'X-CSRFToken': csrftoken},
+                data: data,
+                success: function(data) {
+                    if (data.hasOwnProperty('redirect_url')) {
+                        $(location).attr("href", data['redirect_url']);
+                    } else {
+                        console.log(data['errors'])
+                    }
+                }
+            });
         });
     });
 </script>

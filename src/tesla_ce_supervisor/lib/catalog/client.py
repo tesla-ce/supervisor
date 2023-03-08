@@ -3,7 +3,7 @@ from django.conf import settings
 
 from .consul_catalog import ConsulCatalog, Config
 from .swarm_catalog import SwarmCatalog
-from ..models.check import ServiceCatalogInformation, ConnectionStatus
+from ..models.check import ServiceCatalogInformation, ConnectionStatus, ServiceStatus
 
 
 class CatalogClient:
@@ -47,3 +47,30 @@ class CatalogClient:
 
     def get_supervisor_status(self) -> ServiceCatalogInformation:
         return self._client.get_supervisor_status()
+
+    def get_api_status(self) -> ServiceCatalogInformation:
+        return self._client.get_service_status('api')
+
+    def get_beat_status(self) -> ServiceCatalogInformation:
+        return self._client.get_service_status('beat')
+
+    def get_workers_status(self, module) -> ServiceCatalogInformation:
+        return self._client.get_service_status(module.lower())
+
+    def get_lapi_status(self) -> ServiceCatalogInformation:
+        return self._client.get_service_status('lapi')
+
+    def get_dashboard_status(self) -> ServiceCatalogInformation:
+        return self._client.get_service_status('dashboard')
+
+    def get_moodle_status(self) -> ServiceCatalogInformation:
+        return self._client.get_service_status('moodle')
+
+    def get_tks_status(self) -> ServiceCatalogInformation:
+        return self._client.get_service_status('tks')
+
+    def get_tfr_status(self) -> ServiceCatalogInformation:
+        return self._client.get_service_status('tfr')
+
+    def get_tpt_status(self) -> ServiceCatalogInformation:
+        return self._client.get_service_status('tpt')

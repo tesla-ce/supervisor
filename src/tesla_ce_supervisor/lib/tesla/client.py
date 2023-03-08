@@ -130,17 +130,21 @@ class TeslaClient:
         os.chmod(self._config_file, 0o600)
 
     def load_configuration(self):
-        if os.path.exists(self._config_file):
-            conf = configparser.ConfigParser()
-            with open(self._config_file, 'r') as conf_file:
-                conf.read_file(conf_file, self._config_file)
-                self._config.update(conf)
+        if settings.SETUP_MODE in ('SETUP', 'DEV'):
+            if os.path.exists(self._config_file):
+                conf = configparser.ConfigParser()
+                with open(self._config_file, 'r') as conf_file:
+                    conf.read_file(conf_file, self._config_file)
+                    self._config.update(conf)
 
-            self._config.set('tesla_config_file', self._config_file)
+                self._config.set('tesla_config_file', self._config_file)
+                self._config.get_effective_config()
+            else:
+                return False
+            return True
         else:
-            return False
-
-        return True
+            self._config.load_db()
+            return True
 
     def get_config_path(self):
         """
@@ -149,12 +153,18 @@ class TeslaClient:
         """
         return self._config_file
 
-    def persist_configuration(self):
+    def persist_configuration(self, force_db=False):
         """
             Write configuration data to disk
         """
-        with open(os.path.join(self.get_config_path()), 'w') as config_file:
-            self._config.write(config_file)
+        if settings.SETUP_MODE in ('SETUP', 'DEV'):
+            with open(os.path.join(self.get_config_path()), 'w') as config_file:
+                self._config.write(config_file)
+        else:
+            self._config.persist_db()
+
+        if force_db is True:
+            self._config.persist_db()
 
     def get_vault_policies(self):
         policies = VaultManager(self._config).get_policies_definition()
@@ -162,3 +172,14 @@ class TeslaClient:
 
     def get_config(self):
         return self._config
+
+    def get_module_credentials(self, module):
+        self._config.set('VAULT_MANAGEMENT', True)
+        vault_client = VaultManager(self._config)
+
+        if module.find('vle_') != -1:
+            # todo: Register the VLE
+            # vle_info = vault_client.register_vle(module)
+            pass
+
+        return vault_client.get_module_credentials(module)

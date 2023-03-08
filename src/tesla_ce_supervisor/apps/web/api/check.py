@@ -1,83 +1,188 @@
+import abc
+import base64
+import typing
+
 from django.http import HttpResponse, JsonResponse
 from rest_framework.views import APIView
+from tesla_ce_supervisor.lib.deploy.base import ModuleCode
 from tesla_ce_supervisor.lib.client import SupervisorClient
 
 
-class APICheckDNS(APIView):
+class BaseAPIDeploy(APIView, abc.ABC):
     """
-        Check DNS registration status for required domains
+        Base class for deployment
     """
-    def get(self, request, format=None):
-        client = SupervisorClient()
-        json_resp = client.check_dns()
+    module: typing.Optional[ModuleCode] = None
+    _client = None
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = SupervisorClient.get_instance()
+
+        return self._client
+
+    def get(self, request):
+        json_resp = self.client.check_module(self.module)
         return JsonResponse(json_resp)
 
 
-class APICheckLoadBalancer(APIView):
+class APICheckDNS(BaseAPIDeploy):
+    """
+        Check DNS registration status for required domains
+    """
+    module = 'DNS'
+
+
+class APICheckLoadBalancer(BaseAPIDeploy):
     """
         Check Load Balancer status
     """
-    def get(self, request, format=None):
-        client = SupervisorClient()
-        status = client.check_lb()
-        return JsonResponse(status.to_json())
+    module = 'LB'
 
 
-class APICheckDatabase(APIView):
+class APICheckDatabase(BaseAPIDeploy):
     """
         Check Database status
     """
-    def get(self, request, format=None):
-        client = SupervisorClient()
-        status = client.check_database()
-        return JsonResponse(status.to_json())
+    module = 'DATABASE'
 
 
-class APICheckMinio(APIView):
+class APICheckMinio(BaseAPIDeploy):
     """
         Check MinIO status
     """
-    def get(self, request, format=None):
-        client = SupervisorClient()
-        status = client.check_minio()
-        return JsonResponse(status.to_json())
+    module = 'MINIO'
 
 
-class APICheckRabbitMQ(APIView):
+class APICheckRabbitMQ(BaseAPIDeploy):
     """
         Check MinIO status
     """
-    def get(self, request, format=None):
-        client = SupervisorClient()
-        status = client.check_rabbitmq()
-        return JsonResponse(status.to_json())
+    module = 'RABBITMQ'
 
 
-class APICheckRedis(APIView):
+class APICheckRedis(BaseAPIDeploy):
     """
         Check Redis status
     """
-    def get(self, request, format=None):
-        client = SupervisorClient()
-        status = client.check_redis()
-        return JsonResponse(status.to_json())
+    module = 'REDIS'
 
 
-class APICheckVault(APIView):
+class APICheckVault(BaseAPIDeploy):
     """
         Check Vault status
     """
-    def get(self, request, format=None):
-        client = SupervisorClient()
-        status = client.check_vault()
-        return JsonResponse(status.to_json())
+    module = 'VAULT'
 
 
-class APICheckSupervisor(APIView):
+class APICheckSupervisor(BaseAPIDeploy):
     """
         Check TeSLA CE Supervisor status
     """
-    def get(self, request, format=None):
-        client = SupervisorClient()
-        status = client.check_supervisor()
-        return JsonResponse(status.to_json())
+    module = 'SUPERVISOR'
+
+
+class APICheckAPI(BaseAPIDeploy):
+    """
+        Check TeSLA CE Supervisor status
+    """
+    module = 'API'
+
+
+class APICheckBeat(BaseAPIDeploy):
+    """
+        Check TeSLA CE Supervisor status
+    """
+    module = 'BEAT'
+
+
+class APICheckAPIWorkerAll(BaseAPIDeploy):
+    """
+        Manage TeSLA CE API worker all deployment
+    """
+    module = 'WORKER-ALL'
+
+
+class APICheckAPIWorkerEnrolment(BaseAPIDeploy):
+    """
+        Manage TeSLA CE API worker enrolment deployment
+    """
+    module = 'WORKER-ENROLMENT'
+
+
+class APICheckAPIWorkerEnrolmentStorage(BaseAPIDeploy):
+    """
+        Manage TeSLA CE API worker enrolment storage deployment
+    """
+    module = 'WORKER-ENROLMENT-STORAGE'
+
+
+class APICheckAPIWorkerEnrolmentValidation(BaseAPIDeploy):
+    """
+        Manage TeSLA CE API worker enrolment validation deployment
+    """
+    module = 'WORKER-ENROLMENT-VALIDATION'
+
+
+class APICheckAPIWorkerVerification(BaseAPIDeploy):
+    """
+        Manage TeSLA CE API worker verification deployment
+    """
+    module = 'WORKER-VERIFICATION'
+
+
+class APICheckAPIWorkerAlerts(BaseAPIDeploy):
+    """
+        Manage TeSLA CE API worker alerts deployment
+    """
+    module = 'WORKER-ALERTS'
+
+
+class APICheckAPIWorkerReporting(BaseAPIDeploy):
+    """
+        Manage TeSLA CE API worker reporting deployment
+    """
+    module = 'WORKER-REPORTING'
+
+class APICheckLAPI(BaseAPIDeploy):
+    """
+        Check TeSLA CE LAPI deployment
+    """
+    module = 'LAPI'
+
+
+class APICheckDashboard(BaseAPIDeploy):
+    """
+        Check TeSLA CE Dasboard deployment
+    """
+    module = 'DASHBOARD'
+
+
+class APICheckMoodle(BaseAPIDeploy):
+    """
+        Check TeSLA CE Moodle deployment
+    """
+    module = 'MOODLE'
+
+
+class APICheckFR(BaseAPIDeploy):
+    """
+        Check TeSLA CE Face Recognition deployment
+    """
+    module = 'TFR'
+
+
+class APICheckKS(BaseAPIDeploy):
+    """
+        Check TeSLA CE Keystroke deployment
+    """
+    module = 'TKS'
+
+
+class APICheckTPT(BaseAPIDeploy):
+    """
+        Check TeSLA CE TPT deployment
+    """
+    module = 'TPT'
+

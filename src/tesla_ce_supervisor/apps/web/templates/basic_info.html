@@ -42,6 +42,11 @@
                                     <small id="admin_emailHelp" class="form-text text-muted">Email of the administrator.</small>
                                 </div>
                                 <div class="form-group mb-2">
+                                    <label for="{{ form.admin_password.id_for_label }}">Administrator password</label>
+                                    {{ form.admin_password|add_class:"form-control"|attr:"type : password"|attr:"aria-describedby: admin_passwordHelp"|attr:"placeholder: Administrator password"}}
+                                    <small id="admin_passwordHelp" class="form-text text-muted">Password of the administrator.</small>
+                                </div>
+                                <div class="form-group mb-2">
                                     <label for="{{ form.base_domain.id_for_label }}">Base domain name</label>
                                     {{ form.base_domain|add_class:"form-control"|attr:"aria-describedby: base_domainHelp"|attr:"placeholder: Domain"}}
                                     <small id="base_domainHelp" class="form-text text-muted">Root domain used for TeSLA CE.</small>

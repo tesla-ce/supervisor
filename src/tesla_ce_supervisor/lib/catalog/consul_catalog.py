@@ -4,7 +4,6 @@ import consul
 import typing
 
 from django.conf import settings
-
 from .base import BaseCatalog, ServiceCatalogInformation, Config
 from ..models.check import ConnectionStatus
 

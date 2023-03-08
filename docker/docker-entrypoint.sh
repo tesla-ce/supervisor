@@ -2,6 +2,6 @@
 
 set -e
 
-/venv/bin/python manage.py migrate
+SETUP_MODE=BUILD /venv/bin/python manage.py migrate
 
 exec "$@"

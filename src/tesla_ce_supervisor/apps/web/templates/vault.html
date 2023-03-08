@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% load web_filters %}
+{% block extra_css %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" />
+<style>
+    .logo {
+        max-width: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_head_scripts %}
+
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <form id="swarm" method="post" class="mt-4" autocomplete="off">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-sm-12">
+                    <div id="dep_env_swarm" class="card h-100">
+                        <div class="card-body row">
+                            <div class="col-md-4 align-content-center text-center">
+                                <img src="{% static 'img/Superman_S_symbol.svg.png' %}" class="img-fluid rounded-start logo" alt="Supervisor logo">
+                            </div>
+                            <div class="col-md-8">
+                                <h5 class="card-title">Vault</h5>
+                                <p>In order all data to be persisted, the following folder needs to exist:
+                                <ul>
+                                    <li>{{ options.data_path }}/supervisor</li>
+                                </ul>
+
+                                <p class="text-justify">
+                                    Supervisor is used to deploy and monitor TeSLA CE installation.
+                                </p>
+                                {% include "items/service_deployment_table.html" with services="supervisor"|split:";" %}
+                            </div>
+
+                            <div class="col-md-offset-4 offset-md-4 col-md-8 mt-4">
+                                <strong>Supervisor check services connection</strong>
+                                <p class="text-justify">
+                                    In the following table, you can check if supervisor service can connect to services.
+                                </p>
+                                <table class="table table-stripped">
+                                    <thead>
+                                        <th>Service</th>
+                                        <th>Status</th>
+                                        <th>Info</th>
+                                    </thead>
+                                    <tbody>
+                                        {% for service in options.services %}
+                                            {% include "items/connection_status_row.html" with service=service %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div id="actions" class="mt-4 text-center">
+            <button type="submit" class="btn btn-success action-btn">Next</button>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+    {% csrf_token %}
+    <script src="{% static 'js/service_connection_table.js' %}"></script>
+
+<script>
+    // CSRF value
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+</script>
+{% endblock %}

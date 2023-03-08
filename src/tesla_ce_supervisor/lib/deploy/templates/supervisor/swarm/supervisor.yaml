@@ -1,0 +1,54 @@
+version: '3.5'
+services:
+  supervisor:
+    image: teslace/supervisor:edge
+    deploy:
+      placement:
+        constraints:
+          - "node.role==manager"
+      restart_policy:
+        condition: on-failure
+      replicas: 1
+      {% if DEPLOYMENT_LB == "traefik" %}
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.supervisor.rule=Host(`{{ TESLA_DOMAIN }}`) && PathPrefix(`/supervisor`)"
+        - "traefik.http.routers.supervisor.entrypoints=https"
+        - "traefik.http.routers.supervisor.tls.certresolver=tesla-tlschallenge"
+        - "traefik.http.services.supervisor-service.loadbalancer.server.port=5000"
+        - "traefik.http.routers.supervisor.service=supervisor-service"
+      {% endif %}
+    networks:
+      - tesla_public
+      - tesla_private
+    environment:
+      - TESLA_DOMAIN={{ TESLA_DOMAIN }}
+      - SUPERVISOR_ADMIN_EMAIL={{ SUPERVISOR_ADMIN_EMAIL }}
+      - SUPERVISOR_DATA=/data
+    volumes:
+      - supervisor_volume:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    secrets:
+      - SUPERVISOR_SECRET
+      - SUPERVISOR_ADMIN_USER
+      - SUPERVISOR_ADMIN_PASSWORD
+
+volumes:
+  supervisor_volume:
+    driver_opts:
+      type: none
+      device: {{ DEPLOYMENT_DATA_PATH }}/supervisor
+      o: bind
+
+secrets:
+  SUPERVISOR_SECRET:
+    file: ./secrets/SUPERVISOR_SECRET
+  SUPERVISOR_ADMIN_USER:
+    file: ./secrets/SUPERVISOR_ADMIN_USER
+  SUPERVISOR_ADMIN_PASSWORD:
+    file: ./secrets/SUPERVISOR_ADMIN_PASSWORD
+networks:
+  tesla_public:
+    external: true
+  tesla_private:
+    external: true

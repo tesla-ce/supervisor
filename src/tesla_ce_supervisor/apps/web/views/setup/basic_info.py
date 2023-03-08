@@ -7,7 +7,7 @@ from tesla_ce_supervisor.apps.web.forms.tesla_basics import TeslaBasicInfoForm
 
 
 def tesla_basic_info(request):
-    client = SupervisorClient()
+    client = SupervisorClient.get_instance()
 
     form = TeslaBasicInfoForm()
     form.load_config(client.tesla.get_config())

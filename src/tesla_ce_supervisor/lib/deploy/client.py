@@ -5,7 +5,7 @@ from .nomad_client import NomadDeploy
 from .swarm_client import SwarmDeploy
 from ..tesla.conf import Config
 from ..setup_options import SetupOptions
-from ..models.check import ServiceDeploymentInformation, ConnectionStatus
+from ..models.check import ServiceDeploymentInformation, ConnectionStatus, CommandStatus
 
 
 class DeployClient:
@@ -114,12 +114,12 @@ class DeployClient:
     def get_supervisor_status(self) -> ServiceDeploymentInformation:
         return self._client.get_supervisor_status()
 
-    def deploy(self, module: ModuleCode) -> dict:
+    def deploy(self, module: ModuleCode, credentials=None) -> dict:
         """
             Deploy a module
             :param module: Name of the module
         """
-        return self._client.deploy(module)
+        return self._client.deploy(module, credentials)
 
     def remove(self, module: ModuleCode) -> dict:
         """
@@ -128,12 +128,12 @@ class DeployClient:
         """
         return self._client.remove(module)
 
-    def get_script(self, module: ModuleCode) -> SetupOptions:
+    def get_script(self, module: ModuleCode, credentials=None) -> SetupOptions:
         """
             Get deployment script
             :param module: Name of the module
         """
-        return self._client.get_script(module)
+        return self._client.get_script(module, credentials)
 
     def get_status(self, module: ModuleCode) -> ServiceDeploymentInformation:
         """
@@ -141,3 +141,21 @@ class DeployClient:
             :param module: Name of the module
         """
         return self._client.get_status(module)
+
+    def test_deployer(self) -> dict:
+        """
+            Test connection deployer
+            :param module: Name of the module
+        """
+        return self._client.test_deployer()
+
+    def execute_command_inside_container(self, container: str, command: str, environment: dict) -> CommandStatus:
+        """
+        Execute command inside container
+
+        :param environment:
+        :param container:
+        :param command:
+        :return:
+        """
+        return self._client.execute_command_inside_container(container, command, environment)

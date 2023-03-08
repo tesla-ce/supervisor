@@ -18,7 +18,10 @@ import os
 import uuid
 import configparser
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from .exceptions import TeslaConfigException
+
+from tesla_ce_supervisor.apps.api.models import Configuration
 
 
 class Config:
@@ -31,10 +34,12 @@ class Config:
         # (section_name, section_description, fields)
         #   (field_name, field_description, field_type, default, options, exportable)
         ('tesla', 'Generic configuration', (
+            ('config_source', 'Configuration source', 'enum', 'file', ['file', 'database', ], False),
             ('config_file', 'Configuration file to be used', 'str', None, None, False),
             ('mode', 'Working mode of TeSLA', 'enum', 'production', ['config', 'production', ], False),
             ('domain', 'Base domain', 'str', None, None, True),
             ('admin_mail', 'Mail of the administrator', 'str', None, None, True),
+            ('admin_password', 'Password of the administrator', 'str', None, None, True),
             ('institution_name', 'Name of the institution', 'str', 'Default Institution', None, True),
             ('institution_acronym', 'Acronym of the institution', 'str', 'default', None, True),
         )),
@@ -43,7 +48,7 @@ class Config:
             ('engine', 'Database engine', 'enum', 'mysql', ['mysql', 'postgresql',], True),
             ('port', 'Database port', 'int', 3306, None, True),
             ('name', 'Database name', 'str', 'tesla', None, True),
-            ('user', 'Database user', 'str', None, None, True),
+            ('user', 'Database user', 'str', 'tesla', None, True),
             ('password', 'Database password', 'str', None, None, True),
             ('root_user', 'Database root username', 'str', 'root', None, True),
             ('root_password', 'Database root password', 'str', None, None, True),
@@ -66,6 +71,8 @@ class Config:
             ('mount_path_approle', 'Mount path for approle auth engine', 'str', 'tesla-ce/approle', None, True),
             ('policies_prefix', 'Prefix prepended to ACL policy names', 'str', 'tesla-ce/policy/', None, True),
             ('backend', 'Vault backend', 'enum', 'file', ['file', 'database', ], True),
+            ('approle_default_ttl', 'Vault approle default TTL', 'str', '12h', None, True),
+            ('approle_max_ttl', 'Vault approle max TTL', 'str', '24h', None, True),
         )),
         ('redis', 'Redis configuration', (
             ('host', 'Redis host', 'str', 'localhost', None, True),
@@ -118,6 +125,7 @@ class Config:
             ('catalog_system', 'Catalog system', 'enum', 'swarm', ['consul', 'swarm'], True),
             ('orchestrator', 'Docker orchestrator', 'enum', 'swarm', ['swarm', 'nomad'], True),
             ('services', 'Deploy external services', 'bool', False, None, True),
+            ('register_services', 'Register external services', 'bool', False, None, True),
             ('lb', 'Load balancer', 'enum', 'traefik', ['traefik', 'other'], True),
             ('image', 'Docker image used for deployment', 'str',
              'teslace/core', None, True),
@@ -175,6 +183,7 @@ class Config:
             ('secret', 'Supervisor Secret', 'str', None, None, True),
             ('admin_user', 'Administrator username', 'str', 'admin', None, True),
             ('admin_password', 'Administrator password', 'str', None, None, True),
+            ('admin_email', 'Administrator email', 'str', None, None, True),
         ))
     )
 
@@ -523,9 +532,51 @@ class Config:
 
         return True
 
-    def persist_db(self):
+    def load_db(self):
+        """
+            Load configuration from database
+            :return: True if configuration has been read or False otherwise
+        """
         for key in self.get_config_kv().keys():
-            print('{}={}'.format(key, self.get(key)))
+            try:
+                c = Configuration.objects.get(key=key)
+                self.set(key, c.value)
+            except ObjectDoesNotExist:
+                pass
+
+        return True
+
+    def persist_db(self):
+        for section in self.get_sections():
+            # Write the section header
+            for key in section[2]:
+                # Skip keys with export flag to False
+                if len(key) > 5 and not key[5]:
+                    continue
+                # Write key
+                # Get current value
+                value = self.get('{}_{}'.format(section[0], key[0]).upper())
+                if key[2] == 'list' and value is not None:
+                    value = ','.join(value)
+                if value is not None:
+                    value = str(value)
+
+                # Get the default value as string
+                default_value = key[3]
+                if key[2] == 'list' and default_value is not None:
+                    default_value = ','.join(default_value)
+                if default_value is not None:
+                    default_value = str(default_value)
+
+                # Store the key
+                try:
+                    c = Configuration.objects.get(key='{}_{}'.format(section[0], key[0]).upper())
+                    c.value = value
+                except ObjectDoesNotExist:
+                    c = Configuration()
+                    c.key = '{}_{}'.format(section[0], key[0]).upper()
+                    c.value = value
+                c.save()
 
     def get_uuid(self):
         return uuid.uuid4().__str__()
@@ -534,3 +585,44 @@ class Config:
         config_file = self.get('tesla_config_file')
         if config_file is not None:
             self.load_file(config_file=config_file)
+
+    def clone(self):
+        # todo: create clone
+        return self
+
+    def _modify_config_swarm(self) -> None:
+        # todo: rename all services with service name in host config
+        self.set('VAULT_URL', 'https://vault.{}'.format(self.get('TESLA_DOMAIN')))
+        self.set('VAULT_SSL_VERIFY', False)
+
+        self.set('DB_HOST', '{}_database'.format(self.get('SWARM_SERVICE_PREFIX')))
+        self.set('REDIS_HOST', '{}_redis'.format(self.get('SWARM_SERVICE_PREFIX')))
+        self.set('STORAGE_URL', 'https://storage.{}'.format(self.get('TESLA_DOMAIN')))
+        self.set('CELERY_BROKER_HOST', '{}_rabbitmq'.format(self.get('SWARM_SERVICE_PREFIX')))
+        self.set('RABBITMQ_HOST', '{}_rabbitmq'.format(self.get('SWARM_SERVICE_PREFIX')))
+
+    def _modify_config_consul(self) -> None:
+        # rename all services with localhost in host config
+        self.set('VAULT_URL', 'http://localhost:8200')
+        self.set('DB_HOST', 'localhost')
+        self.set('REDIS_HOST', 'localhost')
+        self.set('STORAGE_URL', 'http://localhost:9000')
+        self.set('CELERY_BROKER_HOST', 'localhost')
+        self.set('RABBITMQ_HOST', 'localhost')
+
+    def _set_service_credentials(self) -> None:
+        # todo: copy rabbitmq -> celery
+        pass
+
+    def get_effective_config(self):
+        self._set_service_credentials()
+
+        if self.get('deployment_services'):
+            if self.get('deployment_catalog_system').upper() == 'CONSUL':
+                self._modify_config_consul()
+            elif self.get('deployment_catalog_system').upper() == 'SWARM':
+                self._modify_config_swarm()
+
+        elif self.get('deployment_catalog_system').upper() == 'CONSUL' and \
+                self.get('deployment_register_services'):
+            self._modify_config_consul()

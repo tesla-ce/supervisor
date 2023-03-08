@@ -19,10 +19,11 @@ from django.conf import settings
 from tesla_ce_supervisor.lib.client import SupervisorClient
 
 urlpatterns = [
+    path('', include('django_prometheus.urls')),
     path('supervisor/api/', include('tesla_ce_supervisor.apps.api.urls')),
 ]
 
-if settings.SETUP_MODE == 'SETUP':
+if settings.SETUP_MODE == 'SETUP' or settings.SETUP_MODE == 'DEV':
     urlpatterns += [
         path('setup/', include('tesla_ce_supervisor.apps.web.urls'))
         #path('setup/', include('tesla_ce_supervisor.apps.setup.urls')),

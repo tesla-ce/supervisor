@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% load web_filters %}
+{% block extra_css %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" />
+<style>
+    .logo {
+        max-width: 200px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_head_scripts %}
+
+{% endblock %}
+{% block content %}
+    <div class="container">
+        <form id="swarm" method="post" class="mt-4" autocomplete="off">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-sm-12">
+                    <div id="dep_env_swarm" class="card h-100">
+                        <div class="card-body row">
+                            <div class="col-md-4 align-content-center text-center">
+                                <img src="{% static 'img/tesla_ce_with_text.png' %}" class="img-fluid rounded-start logo" alt="TeSLA CE logo">
+                            </div>
+                            <div class="col-md-8">
+                                <h5 class="card-title">Configure TeSLA</h5>
+                                <p>Next steps will be executed in TeSLA environment:
+                                {% include "items/service_configuration_table.html" with steps="vault_unseal;vault_init_kv;vault_init_transit;vault_init_roles;vault_init_policies;migrate_database;collect_static;load_fixtures;create_superuser"|split:";" %}
+                            </div>
+                            <div class="col-md-12">
+                                <h5 class="card-title">Log</h5>
+                                    {% include "items/service_configuration_log_table.html" %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div id="actions" class="mt-4 text-center">
+            <button type="submit" class="btn btn-success action-btn">Next</button>
+        </div>
+    </div>
+{% endblock %}
+{% block js %}
+    {% csrf_token %}
+    <script src="{% static 'js/configure_items_table.js' %}"></script>
+    <script src="{% static 'js/configure_items_log_table.js' %}"></script>
+
+<script>
+    // CSRF value
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    $(function() {
+        // Check the status
+        $(".action-btn").click(function (env) {
+            const action = this.dataset['action'];
+            let data = $('form').serializeArray();
+            $.ajax({
+                url: '',
+                method: 'POST',
+                headers: {'X-CSRFToken': csrftoken},
+                data: data,
+                success: function(data) {
+                    if (data.hasOwnProperty('redirect_url')) {
+                        $(location).attr("href", data['redirect_url']);
+                    } else {
+                        console.log(data['errors'])
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

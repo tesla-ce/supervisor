@@ -8,7 +8,7 @@ from tesla_ce_supervisor.apps.web.forms.environment import NomadConsulForm, Swar
 
 
 def environment(request):
-    client = SupervisorClient()
+    client = SupervisorClient.get_instance()
 
     options_env = None
     if client.tesla.get("DEPLOYMENT_CATALOG_SYSTEM") == 'consul' and client.tesla.get("DEPLOYMENT_ORCHESTRATOR") == 'nomad':
@@ -40,8 +40,15 @@ def environment(request):
             form = SwarmForm(request.POST)
         if form.is_valid():
             form.update_config(client.tesla.get_config())
-            client.tesla.get_config().set('DEPLOYMENT_STATUS', 2)
             client.tesla.persist_configuration()
-            return JsonResponse({'redirect_url': get_url_from_status(client)})
+            test_info = None
+            if request.POST.get('check_swarm') == '1':
+                test_info = client.get_deployer().test_deployer()
+                client.tesla.get_config().set('DEPLOYMENT_STATUS', 1)
+            else:
+                client.tesla.get_config().set('DEPLOYMENT_STATUS', 2)
+            client.tesla.persist_configuration()
+
+            return JsonResponse({'redirect_url': get_url_from_status(client), 'test': test_info})
         return JsonResponse({'errors': form.errors})
     return render(request, 'environment.html', context)

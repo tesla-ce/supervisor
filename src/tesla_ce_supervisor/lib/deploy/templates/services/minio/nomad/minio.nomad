@@ -111,7 +111,7 @@ job "minio" {
           "${var.storage_path}:/export",
           "secrets:/var/run/secrets"
         ]
-        ports = ["minio", "minio-console"]
+        ports = ["minio", "minio_console"]
         args = [
           "server",
           "/export",
@@ -132,6 +132,9 @@ job "minio" {
 
       env {
         MINIO_REGION_NAME = var.storage_region
+        MINIO_BROWSER_REDIRECT_URL = "https://storage-console.${var.base_domain}"
+        MINIO_ROOT_USER = var.access_key
+        MINIO_ROOT_PASSWORD = var.secret_key
       }
 
       resources {
@@ -148,6 +151,9 @@ job "minio" {
         "s3",
         "minio",
         "api",
+        "traefik.enable=true",
+        "traefik.http.routers.minio.rule=Host(`storage.${var.base_domain}`)",
+        "traefik.consulcatalog.connect=true",
       ]
       port = 9000 # "minio"
 
@@ -174,8 +180,8 @@ job "minio" {
         "minio",
         "console",
         "traefik.enable=true",
-        "traefik.http.routers.minio.rule=Host(`storage.${var.base_domain}`)",
-        "traefik.consulcatalog.connect=true"
+        "traefik.http.routers.minio-console.rule=Host(`storage-console.${var.base_domain}`)",
+        "traefik.consulcatalog.connect=true",
       ]
       port = 9001 # "minio_console"
 

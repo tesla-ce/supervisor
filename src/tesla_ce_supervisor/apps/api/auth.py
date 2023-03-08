@@ -14,11 +14,12 @@ def _initialize_authentication():
             get_user_model().objects.get(username=settings.SUPERVISOR_ADMIN_USER)
         except get_user_model().DoesNotExist:
             # Create the administrator user
-            get_user_model().objects.create_superuser(
-                username=settings.SUPERVISOR_ADMIN_USER,
-                password=settings.SUPERVISOR_ADMIN_PASSWORD,
-                email=settings.SUPERVISOR_ADMIN_EMAIL
-            )
+            if get_user_model().objects.count() == 0:
+                get_user_model().objects.create_superuser(
+                    username=settings.SUPERVISOR_ADMIN_USER,
+                    password=settings.SUPERVISOR_ADMIN_PASSWORD,
+                    email=settings.SUPERVISOR_ADMIN_EMAIL
+                )
 
 
 class SupervisorJWTAuthentication(JWTAuthentication):

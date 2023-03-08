@@ -1,0 +1,19 @@
+<tr>
+    <td class="service-connection-name" data-service="{{ service }}">
+        {{ service }}
+    </td>
+    <td class="service-connection-can-connect" data-service="{{ service }}">
+    </td>
+    <td class="service-connection-ready" data-service="{{ service }}">
+    </td>
+    <td class="service-connection-info" data-service="{{ service }}" style="max-width: 30rem">
+    </td>
+    <td>
+        <button type="button" class="btn btn-sm btn-secondary connection-action" data-service="{{ service }}" data-action="refresh">
+            <i class="bi bi-arrow-repeat"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-secondary connection-action config-action" data-service="{{ service }}" data-action="config">
+            <i class="bi bi-stars"></i>
+        </button>
+    </td>
+</tr>

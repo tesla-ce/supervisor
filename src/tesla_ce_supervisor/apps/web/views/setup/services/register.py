@@ -9,7 +9,7 @@ from tesla_ce_supervisor.apps.web.forms.tesla_basics import TeslaBasicInfoForm
 
 
 def service_registration(request):
-    client = SupervisorClient()
+    client = SupervisorClient.get_instance()
 
     context = {
         'options': {

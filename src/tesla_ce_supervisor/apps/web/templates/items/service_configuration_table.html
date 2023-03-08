@@ -1,0 +1,61 @@
+
+{% load static %}
+<!-- Service Information Download Modal -->
+<div class="modal fade" id="service_modal_dialog" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <p>To manually deploy the service, download the deployment scripts and follow provided instructions.</p>
+                <div class="text-center">
+                    <a id="service_modal_dialog_file" href="" role="button" class="btn btn-secondary" aria-label="Download Scripts">Download Scripts</a>
+                </div>
+                <div class="m-4" id="service_modal_commands">
+
+                </div>
+            </div>
+            <div class="modal-footer" data-prismjs-copy-timeout="500">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<table class="table table-stripped">
+    <thead>
+    <th>Step</th>
+    <th>Status</th>
+    <th>Info</th>
+    <th class="global-actions-bloc text-right">
+        <button type="button" class="btn btn-sm btn-light global-action" data-action="refresh_all">
+            <i class="bi bi-arrow-repeat"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-light global-action" data-action="execute_all">
+            <i class="bi bi-stars"></i>
+        </button>
+    </th>
+    </thead>
+    <tbody>
+    {% for step in steps %}
+    <tr class="item-config-row" data-step="{{ step }}">
+        <td class="item-config-name" data-step="{{ step }}">{{ step }}</td>
+        <td class="item-config-status" data-step="{{ step }}"></td>
+        <td class="item-config-info" data-step="{{ step }}"></td>
+        <td class="item-config-actions text-right" data-step="{{ step }}">
+            <button type="button" class="btn btn-sm btn-secondary step-action" data-step="{{ step }}" data-action="refresh">
+                <i class="bi bi-arrow-repeat"></i>
+            </button>
+
+            <button type="button" class="btn btn-sm btn-secondary step" data-step="{{ step }}" data-action="download">
+                <i class="bi bi-cloud-download"></i>
+            </button>
+
+            <button type="button" class="btn btn-sm btn-secondary step-action" data-step="{{ step }}" data-action="execute">
+                <i class="bi bi-stars"></i>
+            </button>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<span class="m-2"><i class="bi bi-arrow-repeat"></i> Refresh status</span>
+<span class="m-2"><i class="bi bi-cloud-download"></i> Download scripts</span>
+<span class="m-2"><i class="bi bi-stars"></i> Execute</span>

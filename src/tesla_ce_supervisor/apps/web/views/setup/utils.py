@@ -26,8 +26,16 @@ def get_url_from_status(client: SupervisorClient) -> str:
         new_url = reverse('setup_services_register')
     elif status == 7:   # Deploy supervisor
         new_url = reverse('setup_supervisor')
-    elif status == 8:  # Configuration wizard 1
-        new_url = reverse('setup_step1')
+    elif status == 8:   # Setup TeSLA configure
+        new_url = reverse('setup_tesla_configure')
+    elif status == 9:  # Configuration wizard 1
+        new_url = reverse('setup_tesla_deploy_core')
+    elif status == 10:  # Configuration wizard 1
+        new_url = reverse('setup_tesla_deploy_workers')
+    elif status == 11:  # Configuration wizard 1
+        new_url = reverse('setup_tesla_deploy_instruments')
+    elif status == 12:  # Configuration wizard 1
+        new_url = reverse('setup_tesla_deploy_moodle')
     else:
         new_url = reverse('setup_home')
     return new_url

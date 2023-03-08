@@ -8,7 +8,7 @@ from tesla_ce_supervisor.apps.web.forms.environment import NomadConsulForm, Swar
 from tesla_ce_supervisor.apps.web.forms.tesla_basics import TeslaBasicInfoForm
 
 def service_configuration(request):
-    client = SupervisorClient()
+    client = SupervisorClient.get_instance()
 
     context = {
         'options': {

@@ -45,8 +45,8 @@
     <tbody>
         {% for service in services %}
         <tr class="service-deploy-row" data-service="{{ service }}">
-            <td class="service-deploy-name" data-service="{{ service }}">{{ service }}</td>
-            <td class="service-deploy-jobs" data-service="{{ service }}"></td>
+            <td class="service-deploy-name" data-catalog="{{ options.catalog }}" data-service="{{ service }}">{{ service }}</td>
+            <td class="service-deploy-jobs" data-catalog="{{ options.catalog }}" data-service="{{ service }}"></td>
             <td class="service-deploy-instances" data-catalog="{{ options.catalog }}" data-service="{{ service }}"></td>
             <td class="service-deploy-status" data-service="{{ service }}"></td>
             <td class="service-deploy-actions text-right" data-service="{{ service }}">

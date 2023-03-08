@@ -77,8 +77,8 @@ ADD src/tesla_ce_supervisor /tesla/tesla_ce_supervisor
 RUN cp /tesla/tesla_ce_supervisor/manage.py /tesla/manage.py
 
 # Create a user and group for uWSGI and Celery
-RUN addgroup -g 2000 -S web_group && \
-    adduser -u 1000 -S web_user -G web_group
+RUN addgroup -g 2000 -S web_group && addgroup -S docker && \
+    adduser -u 1000 -S web_user -G web_group docker
 
 # Give permisions to root folder for this user
 RUN chown -R web_user:web_group /tesla
@@ -92,6 +92,7 @@ COPY docker/uwsgi.ini /etc/uwsgi/
 # Custom Supervisord config
 COPY docker/supervisord.conf /etc/supervisord.conf
 
+# USER web_user
 # Generate static files
 ENV STATICS_PATH=/tesla/static
 RUN SETUP_MODE=BUILD /venv/bin/python manage.py collectstatic --noinput

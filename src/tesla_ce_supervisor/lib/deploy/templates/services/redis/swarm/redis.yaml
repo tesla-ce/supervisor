@@ -2,7 +2,7 @@ version: '3.5'
 services:
   redis:
     image: redis:alpine
-    entrypoint: sh -c '[ "$$REDIS_PASS_FILE" ] && ( cat "$$REDIS_PASS_FILE" | xargs -0 redis-server --requirepass ) || redis-server'
+    entrypoint: sh -c '[ "$REDIS_PASS_FILE" ] && ( cat "$REDIS_PASS_FILE" | xargs -0 redis-server --requirepass ) || redis-server'
     environment:
       REDIS_PASS_FILE: /run/secrets/REDIS_PASSWORD
     deploy:

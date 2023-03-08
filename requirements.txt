@@ -14,6 +14,7 @@ django-cors-headers
 django-rest-auth
 drf-extensions
 django-sslserver
+django_prometheus
 
 # Database encrypton
 # django-fernet-fields  # Not working with DJango >= 4
@@ -35,5 +36,10 @@ requests
 simplejson
 
 # Database connectors
-#mysqlclient
-#psycopg2
+mysqlclient
+psycopg2
+
+redis
+pika
+
+boto3

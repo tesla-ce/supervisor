@@ -6,7 +6,7 @@ from tesla_ce_supervisor.apps.web.views.setup.utils import get_url_from_status
 
 
 def lb_view(request):
-    client = SupervisorClient()
+    client = SupervisorClient.get_instance()
 
     options_env = None
     if client.tesla.get("DEPLOYMENT_CATALOG_SYSTEM") == 'consul' and client.tesla.get("DEPLOYMENT_ORCHESTRATOR") == 'nomad':
@@ -26,10 +26,10 @@ def lb_view(request):
         'options': {
             'environment': options_env,
             'mode': options_mode,
-            'catalog': client.tesla.get("DEPLOYMENT_CATALOG_SYSTEM"),
-            'load_balancer': client.tesla.get("DEPLOYMENT_LB"),
-            'base_domain': client.tesla.get("TESLA_DOMAIN"),
-            'data_path': client.tesla.get("DEPLOYMENT_DATA_PATH"),
+            'catalog': client.tesla.get_config().get("DEPLOYMENT_CATALOG_SYSTEM"),
+            'load_balancer': client.tesla.get_config().get("DEPLOYMENT_LB"),
+            'base_domain': client.tesla.get_config().get("TESLA_DOMAIN"),
+            'data_path': client.tesla.get_config().get("DEPLOYMENT_DATA_PATH"),
         }
     }
     if request.method == 'POST':

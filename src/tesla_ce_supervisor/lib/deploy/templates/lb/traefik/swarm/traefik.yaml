@@ -1,9 +1,11 @@
 version: '3.5'
 services:
   traefik:
-    image: traefik:v2.1
+    image: traefik:v2.9
     command:
+      {% if DEBUG == True %}
       - "--api.insecure=true"
+      {% endif %}
       - "--providers.docker"
       - "--providers.docker.swarmMode=true"
       - "--providers.docker.exposedbydefault=false"
@@ -22,6 +24,9 @@ services:
       restart_policy:
         condition: on-failure
     ports:
+      {% if DEBUG == True %}
+      - "8080:8080"
+      {% endif %}
       - "80:80"
       - "443:443"
     volumes:
@@ -29,6 +34,7 @@ services:
       - traefik_data:/letsencrypt
     networks:
       - tesla_public
+      - tesla_private
 volumes:
   traefik_data:
     driver_opts:
@@ -38,4 +44,6 @@ volumes:
 
 networks:
   tesla_public:
+    external: true
+  tesla_private:
     external: true

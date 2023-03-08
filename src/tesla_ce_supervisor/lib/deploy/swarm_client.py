@@ -1,102 +1,82 @@
 import docker
 from docker.types.healthcheck import Healthcheck
 from docker.types.services import EndpointSpec, SecretReference, ConfigReference
+import base64
 import os
 import typing
 import yaml
+import tempfile
+import json
 
 from django.template.loader import render_to_string
+from django.conf import settings
 from yaml.loader import SafeLoader
 
 
 from .base import BaseDeploy
-from ..models.check import ServiceDeploymentInformation, ConnectionStatus
+from ..models.check import ServiceDeploymentInformation, ConnectionStatus, CommandStatus
 from ..setup_options import SetupOptions
 from ..tesla.conf import Config
+from ..tesla.modules import get_modules
 
-
-class SwarmConfig:
-    """
-        Swarm configuration
-    """
-    # Base url address
-    swarm_base_url: str = 'unix:///var/run/docker.sock'
-
-    # Client key file path
-    client_key_file_path: int = 4646
-    client_key_file: str = ''
-
-    # Client certificate file path
-    client_cert_file_path: int = 4646
-    client_cert_file: str = ''
-
-    # Specific CA certificate path
-    specific_ca_cert_path: int = 4646
-    specific_ca_cert: str = ''
-
-    def __init__(self, config,
-                 swarm_service_prefix: typing.Optional[str] = None,
-                 swarm_base_url: typing.Optional[str] = None,
-                 client_key_file_path: typing.Optional[int] = None,
-                 client_key_file: typing.Optional[str] = None,
-                 client_cert_file_path: typing.Optional[typing.Optional[int]] = None,
-                 client_cert_file: typing.Optional[typing.Optional[str]] = None,
-                 specific_ca_cert_path: typing.Optional[typing.Optional[int]] = None,
-                 specific_ca_cert: typing.Optional[typing.Optional[str]] = None
-                 ) -> None:
-
-        # Swarm configuration
-        self.swarm_service_prefix = self._set_value(config, swarm_service_prefix, 'SWARM_SERVICE_PREFIX', 'SWARM_SERVICE_PREFIX')
-        self.swarm_base_url = self._set_value(config, swarm_base_url, 'SWARM_BASE_URL', 'SWARM_BASE_URL')
-        self.client_key_path = self._set_value(config, client_key_file_path, 'SWARM_CLIENT_KEY_PATH', 'SWARM_CLIENT_KEY_PATH')
-        self.client_cert_path = self._set_value(config, client_cert_file_path, 'SWARM_CLIENT_CERT_PATH', 'SWARM_CLIENT_CERT_PATH')
-        self.specific_ca_cert_path = self._set_value(config, specific_ca_cert_path, 'SWARM_SPECIFIC_CA_CERT_PATH', 'SWARM_SPECIFIC_CA_CERT_PATH')
-        self.client_key = self._set_value(config, client_key_file, 'SWARM_CLIENT_KEY', 'SWARM_CLIENT_KEY')
-        self.client_cert = self._set_value(config, client_cert_file, 'SWARM_CLIENT_CERT', 'SWARM_CLIENT_CERT')
-        self.specific_ca_cert = self._set_value(config, specific_ca_cert, 'SWARM_SPECIFIC_CA_CERT', 'SWARM_SPECIFIC_CA_CERT')
-
-    @staticmethod
-    def _set_value(config, parameter, env_key=None, conf_key=None, default=None):
-        if parameter is not None:
-            return parameter
-        default_value = None
-        if conf_key is not None:
-            default_value = config.get(conf_key)
-        if env_key is not None:
-            ret_val = os.getenv(env_key, default_value)
-        else:
-            ret_val = default_value
-        if ret_val is None:
-            ret_val = default
-        return ret_val
 
 class SwarmDeploy(BaseDeploy):
-    # Swarm configuration
-    # swarm_conf: typing.Optional[SwarmConfig] = None
+    _client = None
 
-    def __init__(self, config: typing.Optional[Config] = None, swarm_conf: typing.Optional[SwarmConfig] = None) -> None:
+    def __init__(self, config: typing.Optional[Config] = None) -> None:
         super().__init__(config)
-        self.swarm_conf = swarm_conf
-        if self.swarm_conf is None:
-            self.swarm_conf = SwarmConfig(config)
+        self.config = config
 
-        self._client = docker.DockerClient(base_url=self.swarm_conf.swarm_base_url)
+    @property
+    def client(self):
+        if self._client is None:
+            self.config.get('swarm_base_url')
+
+            tls_config = None
+
+            if self.config.get('swarm_client_key') is not None and self.config.get('swarm_client_cert') is not None and \
+                    self.config.get('swarm_specific_ca_cert') is not None:
+
+                client_key_file = os.path.join(settings.DATA_DIRECTORY, 'client_key.pem')
+                with open(client_key_file, 'w') as file:
+                    content = base64.b64decode(self.config.get('swarm_client_key')).decode('utf8')
+                    file.write(content)
+                    file.close()
+
+                client_cert_file = os.path.join(settings.DATA_DIRECTORY, 'client_cert.pem')
+                with open(client_cert_file, 'w') as file:
+                    content = base64.b64decode(self.config.get('swarm_client_cert')).decode('utf8')
+                    file.write(content)
+                    file.close()
+
+                client_ca_file = os.path.join(settings.DATA_DIRECTORY, 'client_ca.pem')
+                with open(client_ca_file, 'w') as file:
+                    content = base64.b64decode(self.config.get('swarm_specific_ca_cert')).decode('utf8')
+                    file.write(content)
+                    file.close()
+
+                tls_config = docker.tls.TLSConfig(
+                    client_cert=(client_cert_file, client_key_file), ca_cert=client_ca_file
+                )
+
+            self._client = docker.DockerClient(base_url=self.config.get('swarm_base_url'), tls=tls_config)
 
         assert self._client is not None
 
+        return self._client
 
     def _create_status_obj(self, name: str) -> ServiceDeploymentInformation:
         # Check if job exists
         '''
         job_info = None
-        if len(self._client.jobs.get_jobs(name)) == 1:
-            job_info = self._client.job.get_deployment(name)
+        if len(self.client.jobs.get_jobs(name)) == 1:
+            job_info = self.client.job.get_deployment(name)
         '''
-        service_id = '{}_{}'.format(self.swarm_conf.swarm_service_prefix, name)
+        service_id = '{}_{}'.format(self.config.get('SWARM_SERVICE_PREFIX'), name)
         status = ServiceDeploymentInformation(service_id, 'swarm', {})
 
         try:
-            service = self._client.services.get(service_id)
+            service = self.client.services.get(service_id)
             total_instances = service.attrs['Spec']['Mode']['Replicated']['Replicas']
             healthy_instances = len(service.tasks(filters={'desired-state': 'RUNNING'}))
             preparing_instances = len(service.tasks(filters={'desired-state': 'PREPARING'})) + \
@@ -115,26 +95,39 @@ class SwarmDeploy(BaseDeploy):
         except docker.errors.NotFound:
             pass
 
-
         return status
 
-    def _remove_swarm_service(self, name: str) -> dict:
-        service_id = '{}_{}'.format(self.swarm_conf.swarm_service_prefix, name)
+    def _remove_swarm_service(self, name: str, template: str, context: dict = {}) -> dict:
+        service_id = '{}_{}'.format(self.config.get('SWARM_SERVICE_PREFIX'), name)
         try:
-            service = self._client.services.get(service_id)
+            service = self.client.services.get(service_id)
             service.remove()
+
+            # remove secrets
+            task_def = self._remove_empty_lines(render_to_string(template, context))
+
+            task_def_dict = yaml.load(task_def, Loader=SafeLoader)
+            service_def_dict = task_def_dict['services'][name]
+            if 'secrets' in service_def_dict:
+                for sec in service_def_dict['secrets']:
+                    try:
+                        secret_id = sec.upper()
+                        secret = self.client.secrets.get(secret_id)
+                        secret.remove()
+                    except docker.errors.DockerException:
+                        pass
+
         except docker.errors.DockerException:
             pass
 
         return {}
 
     def _create_swarm_service(self, name: str, template: str, context: dict) -> dict:
-
         task_def = self._remove_empty_lines(render_to_string(template, context))
 
         task_def_dict = yaml.load(task_def, Loader=SafeLoader)
         service_def_dict = task_def_dict['services'][name]
-        service_def_dict['name'] = '{}_{}'.format(self.swarm_conf.swarm_service_prefix, name)
+        service_def_dict['name'] = '{}_{}'.format(self.config.get('SWARM_SERVICE_PREFIX'), name)
 
         image = service_def_dict['image']
         del service_def_dict['image']
@@ -148,6 +141,7 @@ class SwarmDeploy(BaseDeploy):
             if type(service_def_dict['args']) == str:
                 service_def_dict['args'] = [service_def_dict['args']]
 
+        command = None
         if 'entrypoint' in service_def_dict:
             command = service_def_dict['entrypoint']
             del service_def_dict['entrypoint']
@@ -174,8 +168,8 @@ class SwarmDeploy(BaseDeploy):
             res_ports = []
             for port in service_def_dict['ports']:
                 aux = {
-                    'TargetPort': int(port.split(':')[0]),
-                    'PublishedPort': int(port.split(':')[1])
+                    'TargetPort': int(port.split(':')[1]),
+                    'PublishedPort': int(port.split(':')[0])
                 }
                 res_ports.append(aux)
 
@@ -188,12 +182,12 @@ class SwarmDeploy(BaseDeploy):
         networks_rename = []
         for net in service_def_dict['networks']:
             try:
-                network_id = '{}_{}'.format(self.swarm_conf.swarm_service_prefix, net)
-                network = self._client.networks.get(network_id)
+                network_id = '{}_{}'.format(self.config.get('SWARM_SERVICE_PREFIX'), net)
+                network = self.client.networks.get(network_id)
                 # in this case netowrk exists
                 networks_rename.append(network_id)
             except docker.errors.NotFound:
-                self._client.networks.create(name=network_id, driver='overlay')
+                self.client.networks.create(name=network_id, driver='overlay', attachable=True)
                 networks_rename.append(network_id)
             except docker.errors.DockerException:
                 pass
@@ -205,10 +199,10 @@ class SwarmDeploy(BaseDeploy):
             for vol in task_def_dict['volumes']:
                 try:
                     volume_id = vol
-                    volume = self._client.volumes.get(volume_id)
+                    volume = self.client.volumes.get(volume_id)
                 except docker.errors.NotFound:
                     driver_opts = task_def_dict['volumes'][vol]['driver_opts']
-                    self._client.volumes.create(name=volume_id, driver='local', driver_opts=driver_opts)
+                    self.client.volumes.create(name=volume_id, driver='local', driver_opts=driver_opts)
                 except docker.errors.DockerException:
                     pass
 
@@ -229,12 +223,12 @@ class SwarmDeploy(BaseDeploy):
             for sec in service_def_dict['secrets']:
                 try:
                     secret_id = sec.upper()
-                    secret = self._client.secrets.get(secret_id)
+                    secret = self.client.secrets.get(secret_id)
                     secrets_rename.append(SecretReference(secret_id=secret.attrs['ID'],
                                                           secret_name=secret.name))
                 except docker.errors.NotFound:
                     secret_data = context[sec]
-                    secret = self._client.secrets.create(name=secret_id, data=secret_data)
+                    secret = self.client.secrets.create(name=secret_id, data=secret_data)
                     secrets_rename.append(SecretReference(secret_id=secret.attrs['ID'],
                                                           secret_name=secret.name))
                 except docker.errors.DockerException:
@@ -261,16 +255,17 @@ class SwarmDeploy(BaseDeploy):
                 file = task_def_dict['configs'][key]['file']
 
                 try:
-                    config_id = "{}_{}".format(self.swarm_conf.swarm_service_prefix, key)
-                    config = self._client.configs.get(config_id)
+                    config_id = "{}_{}".format(self.config.get('SWARM_SERVICE_PREFIX'), key)
+                    config = self.client.configs.get(config_id)
                     configs_aux[key] = config
                 except docker.errors.NotFound as err:
-                    config_id = "{}_{}".format(self.swarm_conf.swarm_service_prefix, key)
+                    config_id = "{}_{}".format(self.config.get('SWARM_SERVICE_PREFIX'), key)
 
                     template = 'services/{}/swarm/{}'.format(name, file)
                     config_data = render_to_string(template, context)
-                    self._client.configs.create(name=config_id, data=config_data)
-                    config = self._client.configs.get(config_id)
+                    config_data = render_to_string(template, context)
+                    self.client.configs.create(name=config_id, data=config_data)
+                    config = self.client.configs.get(config_id)
                     configs_aux[key] = config
                 except docker.errors.DockerException as err:
                     pass
@@ -283,8 +278,12 @@ class SwarmDeploy(BaseDeploy):
 
             service_def_dict['configs'] = configs_rename
 
+        if os.getenv('ADD_HOSTS', '') != '':
+            service_def_dict['hosts'] = json.loads(os.getenv('ADD_HOSTS', ''))
+
         try:
-            self._client.services.create(image=image, command=None, **service_def_dict)
+            self.client.images.pull(image)
+            self.client.services.create(image=image, command=command, **service_def_dict)
         except docker.errors.DockerException as err:
             print(err)
             pass
@@ -296,18 +295,19 @@ class SwarmDeploy(BaseDeploy):
         """
         pass
 
-    def deploy_lb(self) -> dict:
+    def _deploy_lb(self) -> dict:
         """
             Deploy Load Balancer
         """
         context = {
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
-            'TESLA_ADMIN_MAIL': self._config.get('TESLA_ADMIN_MAIL')
+            'TESLA_ADMIN_MAIL': self._config.get('TESLA_ADMIN_MAIL'),
+            'DEBUG': settings.DEBUG,
         }
 
         return self._create_swarm_service('traefik', 'lb/traefik/swarm/traefik.yaml', context)
 
-    def get_lb_script(self) -> SetupOptions:
+    def _get_lb_script(self) -> SetupOptions:
         """
             Get the script to deploy Load Balancer
         """
@@ -342,13 +342,13 @@ class SwarmDeploy(BaseDeploy):
 
         return script
 
-    def get_lb_status(self) -> ServiceDeploymentInformation:
+    def _get_lb_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for Load Balancer
         """
         return self._create_status_obj('traefik')
 
-    def deploy_vault(self) -> dict:
+    def _deploy_vault(self) -> dict:
         """
             Deploy Hashicorp Vault
         """
@@ -367,7 +367,7 @@ class SwarmDeploy(BaseDeploy):
 
         return self._create_swarm_service('vault', 'services/vault/swarm/vault.yaml', context)
 
-    def get_vault_script(self) -> SetupOptions:
+    def _get_vault_script(self) -> SetupOptions:
         """
             Get the script to deploy Hashicorp Vault
         """
@@ -422,7 +422,7 @@ class SwarmDeploy(BaseDeploy):
 
         return script
 
-    def deploy_minio(self) -> dict:
+    def _deploy_minio(self) -> dict:
         """
             Deploy MinIO
         """
@@ -437,7 +437,7 @@ class SwarmDeploy(BaseDeploy):
 
         return self._create_swarm_service('minio', 'services/minio/swarm/minio.yaml', context)
 
-    def get_minio_script(self) -> SetupOptions:
+    def _get_minio_script(self) -> SetupOptions:
         """
             Get the script to deploy MinIO
         """
@@ -488,7 +488,7 @@ class SwarmDeploy(BaseDeploy):
 
         return script
 
-    def deploy_redis(self) -> dict:
+    def _deploy_redis(self) -> dict:
         """
             Deploy Redis
         """
@@ -500,7 +500,7 @@ class SwarmDeploy(BaseDeploy):
 
         return self._create_swarm_service('redis', 'services/redis/swarm/redis.yaml', context)
 
-    def get_redis_script(self) -> SetupOptions:
+    def _get_redis_script(self) -> SetupOptions:
         """
             Get the script to deploy Redis
         """
@@ -539,7 +539,7 @@ class SwarmDeploy(BaseDeploy):
 
         return script
 
-    def deploy_database(self) -> dict:
+    def _deploy_database(self) -> dict:
         """
             Deploy Database
         """
@@ -570,7 +570,7 @@ class SwarmDeploy(BaseDeploy):
 
         return self._create_swarm_service('database', template, context)
 
-    def get_database_script(self) -> SetupOptions:
+    def _get_database_script(self) -> SetupOptions:
         """
             Get the script to deploy Database
         """
@@ -630,7 +630,7 @@ class SwarmDeploy(BaseDeploy):
 
         return script
 
-    def deploy_rabbitmq(self) -> dict:
+    def _deploy_rabbitmq(self) -> dict:
         """
            Deploy RabbitMQ
         """
@@ -640,12 +640,13 @@ class SwarmDeploy(BaseDeploy):
             'RABBITMQ_ADMIN_USER': self._config.get('RABBITMQ_ADMIN_USER'),
             'RABBITMQ_ADMIN_PASSWORD': self._config.get('RABBITMQ_ADMIN_PASSWORD'),
             'RABBITMQ_ERLANG_COOKIE': self._config.get('RABBITMQ_ERLANG_COOKIE'),
+            'RABBITMQ_ADMIN_PORT': self._config.get('RABBITMQ_ADMIN_PORT'),
             'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
         return self._create_swarm_service('rabbitmq', 'services/rabbitmq/swarm/rabbitmq.yaml', context)
 
-    def get_rabbitmq_script(self) -> SetupOptions:
+    def _get_rabbitmq_script(self) -> SetupOptions:
         """
             Get the script to deploy RabbitMQ
         """
@@ -655,6 +656,7 @@ class SwarmDeploy(BaseDeploy):
             'RABBITMQ_ADMIN_USER': self._config.get('RABBITMQ_ADMIN_USER'),
             'RABBITMQ_ADMIN_PASSWORD': self._config.get('RABBITMQ_ADMIN_PASSWORD'),
             'RABBITMQ_ERLANG_COOKIE': self._config.get('RABBITMQ_ERLANG_COOKIE'),
+            'RABBITMQ_ADMIN_PORT': self._config.get('RABBITMQ_ADMIN_PORT'),
             'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
         }
 
@@ -707,43 +709,43 @@ class SwarmDeploy(BaseDeploy):
 
         return script
 
-    def remove_lb(self) -> dict:
-        return self._remove_swarm_service('traefik')
+    def _remove_lb(self) -> dict:
+        return self._remove_swarm_service('traefik', 'lb/traefik/swarm/traefik.yaml')
 
-    def remove_vault(self) -> dict:
-        return self._remove_swarm_service('vault')
+    def _remove_vault(self) -> dict:
+        return self._remove_swarm_service('vault', 'services/vault/swarm/vault.yaml')
 
-    def get_vault_status(self) -> ServiceDeploymentInformation:
+    def _get_vault_status(self) -> ServiceDeploymentInformation:
         return self._create_status_obj('vault')
 
-    def remove_minio(self) -> dict:
-        return self._remove_swarm_service('minio')
+    def _remove_minio(self) -> dict:
+        return self._remove_swarm_service('minio', 'services/minio/swarm/minio.yaml')
 
-    def get_minio_status(self) -> ServiceDeploymentInformation:
+    def _get_minio_status(self) -> ServiceDeploymentInformation:
         return self._create_status_obj('minio')
 
-    def remove_redis(self) -> dict:
-        return self._remove_swarm_service('redis')
+    def _remove_redis(self) -> dict:
+        return self._remove_swarm_service('redis', 'services/redis/swarm/redis.yaml')
 
-    def get_redis_status(self) -> ServiceDeploymentInformation:
+    def _get_redis_status(self) -> ServiceDeploymentInformation:
         return self._create_status_obj('redis')
 
-    def remove_database(self) -> dict:
-        return self._remove_swarm_service('database')
+    def _remove_database(self) -> dict:
+        return self._remove_swarm_service('database', 'services/database/mysql/swarm/mysql.yaml')
 
-    def get_database_status(self) -> ServiceDeploymentInformation:
+    def _get_database_status(self) -> ServiceDeploymentInformation:
         return self._create_status_obj('database')
 
-    def remove_rabbitmq(self) -> dict:
-        return self._remove_swarm_service('rabbitmq')
+    def _remove_rabbitmq(self) -> dict:
+        return self._remove_swarm_service('rabbitmq', 'services/rabbitmq/swarm/rabbitmq.yaml')
 
-    def get_rabbitmq_status(self) -> ServiceDeploymentInformation:
+    def _get_rabbitmq_status(self) -> ServiceDeploymentInformation:
         return self._create_status_obj('rabbitmq')
 
     def test_connection(self) -> ConnectionStatus:
         pass
 
-    def deploy_supervisor(self) -> dict:
+    def _deploy_supervisor(self) -> dict:
         """
            Deploy Supervisor
         """
@@ -753,15 +755,16 @@ class SwarmDeploy(BaseDeploy):
             'SUPERVISOR_SECRET': self._config.get('SUPERVISOR_SECRET'),
             'SUPERVISOR_ADMIN_USER': self._config.get('SUPERVISOR_ADMIN_USER'),
             'SUPERVISOR_ADMIN_PASSWORD': self._config.get('SUPERVISOR_ADMIN_PASSWORD'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'SUPERVISOR_ADMIN_EMAIL': self._config.get('SUPERVISOR_ADMIN_EMAIL'),
         }
 
         return self._create_swarm_service('supervisor', 'supervisor/swarm/supervisor.yaml', context)
 
-    def remove_supervisor(self) -> dict:
-        return self._remove_swarm_service('supervisor')
+    def _remove_supervisor(self) -> dict:
+        return self._remove_swarm_service('supervisor', 'supervisor/swarm/supervisor.yaml')
 
-    def get_supervisor_script(self) -> SetupOptions:
+    def _get_supervisor_script(self) -> SetupOptions:
         """
             Get the script to deploy Supervisor
         """
@@ -825,8 +828,723 @@ class SwarmDeploy(BaseDeploy):
 
         return script
 
-    def get_supervisor_status(self) -> ServiceDeploymentInformation:
+    def _get_supervisor_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for TeSLA CE Supervisor
         """
         return self._create_status_obj('supervisor')
+
+    def test_deployer(self):
+        result = False
+        info = ''
+        try:
+            self.client.version()
+            result = True
+        except docker.errors.DockerException as err:
+            info = str(err)
+
+        return {"result": result, "info": info}
+
+    def execute_command_inside_container(self, container, command, environment) -> CommandStatus:
+        """
+            Execute command inside container
+        """
+        image = None
+        networks = []
+        extra_hosts = {}
+        # todo: autoremove true
+        auto_remove = False
+
+        if container == 'API':
+            image = 'teslace/core:local'
+            environment['DJANGO_SETTINGS_MODULE'] = 'tesla_ce.settings'
+            environment['DJANGO_CONFIGURATION'] = 'Setup'
+            environment['SETUP_MODE'] = 'SETUP'
+
+            networks = ['{}_tesla_private'.format(self.config.get('SWARM_SERVICE_PREFIX')),
+                        '{}_tesla_public'.format(self.config.get('SWARM_SERVICE_PREFIX'))
+                        ]
+
+            if os.getenv('ADD_HOSTS', '') != '':
+                extra_hosts = json.loads(os.getenv('ADD_HOSTS', ''))
+
+        try:
+            container = self.client.containers.create(image, command=command, environment=environment,
+                                                      auto_remove=auto_remove, extra_hosts=extra_hosts)
+
+            for net in networks:
+                network = self.client.networks.get(net)
+                network.connect(container)
+
+            container.start()
+            result = container.wait()
+
+            status = True
+            if 'StatusCode' in result and result['StatusCode'] != 0:
+                status = False
+
+            return CommandStatus(command=command, status=status, info={})
+        except docker.errors.ContainerError as err:
+            return CommandStatus(command=command, status=False, info=str(err))
+
+    def _deploy_api(self, credentials) -> dict:
+        """
+           Deploy API
+        """
+        context = {
+            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'API_VAULT_ROLE_ID': credentials.get('role_id'),
+            'API_VAULT_SECRET_ID': credentials.get('secret_id'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {},
+            'DEBUG': settings.DEBUG,
+            'VAULT_SSL_VERIFY': False,
+        }
+
+        modules = get_modules()
+        del modules['lapi']
+        del modules['beat']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+
+        return self._create_swarm_service('api', 'core/api/swarm/core.yaml', context)
+
+    def _remove_api(self) -> dict:
+        context = {
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'API_VAULT_ROLE_ID': '',
+            'API_VAULT_SECRET_ID': '',
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {}
+        }
+
+        modules = get_modules()
+        del modules['lapi']
+        del modules['beat']
+        del modules['worker']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+
+        return self._remove_swarm_service('api', 'core/api/swarm/core.yaml', context)
+
+    def _get_api_script(self, credentials) -> SetupOptions:
+        """
+            Get the script to deploy Supervisor
+        """
+        context = {
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'API_VAULT_ROLE_ID': credentials.get('role_id'),
+            'API_VAULT_SECRET_ID': credentials.get('secret_id'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {}
+        }
+
+        modules = get_modules()
+        del modules['lapi']
+        del modules['beat']
+        del modules['worker']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+
+        task_def = self._remove_empty_lines(render_to_string('core/api/swarm/core.yaml', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='docker stack -t tesla_api.yaml tesla',
+            description='Create tesla api'
+        )
+
+        script.add_file(
+            filename='tesla_api.yaml',
+            description='Stack description for tesla api',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/API_VAULT_ROLE_ID',
+            description='Secret API_VAULT_ROLE_ID',
+            content=credentials.get('role_id'),
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/API_VAULT_SECRET_ID',
+            description='Secret API_VAULT_SECRET_ID',
+            content=credentials.get('secret_id'),
+            mimetype='text/plain'
+        )
+
+        return script
+
+    def _get_api_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE API
+        """
+        return self._create_status_obj('api')
+
+    def _get_beat_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE LAPI
+        """
+        return self._create_status_obj('beat')
+
+    def _get_api_workers_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE API
+        """
+        return self._create_status_obj('api_workers')
+
+    def _get_lapi_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE LAPI
+        """
+        return self._create_status_obj('lapi')
+
+    def _get_dashboard_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE LAPI
+        """
+        return self._create_status_obj('dashboard')
+
+    def _get_moodle_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE LAPI
+        """
+        return self._create_status_obj('moodle')
+
+    def _get_tks_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE LAPI
+        """
+        return self._create_status_obj('tks')
+
+    def _get_tfr_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE LAPI
+        """
+        return self._create_status_obj('tfr')
+
+    def _get_tpt_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE LAPI
+        """
+        return self._create_status_obj('tpt')
+
+    def _deploy_beat(self, credentials) -> dict:
+        """
+           Deploy API workers
+        """
+        context = {
+            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'BEAT_VAULT_ROLE_ID': credentials.get('role_id'),
+            'BEAT_VAULT_SECRET_ID': credentials.get('secret_id'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {},
+            'DEBUG': settings.DEBUG,
+            'VAULT_SSL_VERIFY': False,
+        }
+
+        modules = get_modules()
+        del modules['api']
+        del modules['lapi']
+        del modules['worker']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+
+        return self._create_swarm_service('beat', 'core/api/swarm/core.yaml', context)
+
+    def _deploy_api_workers(self, credentials) -> dict:
+        """
+           Deploy API workers
+        """
+        context = {
+            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'API_VAULT_ROLE_ID': credentials.get('role_id'),
+            'API_VAULT_SECRET_ID': credentials.get('secret_id'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {}
+        }
+
+        modules = get_modules()
+        del modules['api']
+        del modules['lapi']
+        del modules['beat']
+        del modules['worker']
+        del modules['worker-all']
+        '''
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+        '''
+
+        context['services'] = [modules[module] for module in modules]
+
+        self._create_swarm_service('worker-enrolment', 'core/api/swarm/core.yaml', context)
+        self._create_swarm_service('worker-enrolment-storage', 'core/api/swarm/core.yaml', context)
+        self._create_swarm_service('worker-enrolment-validation', 'core/api/swarm/core.yaml', context)
+        self._create_swarm_service('worker-verification', 'core/api/swarm/core.yaml', context)
+        self._create_swarm_service('worker-alerts', 'core/api/swarm/core.yaml', context)
+        self._create_swarm_service('worker-reporting', 'core/api/swarm/core.yaml', context)
+
+    def _deploy_lapi(self, credentials) -> dict:
+        """
+           Deploy LAPI
+        """
+        context = {
+            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'LAPI_VAULT_ROLE_ID': credentials.get('role_id'),
+            'LAPI_VAULT_SECRET_ID': credentials.get('secret_id'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {},
+            'DEBUG': settings.DEBUG,
+            'VAULT_SSL_VERIFY': False,
+        }
+
+        modules = get_modules()
+        del modules['api']
+        del modules['beat']
+        del modules['worker']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+
+        return self._create_swarm_service('lapi', 'core/api/swarm/core.yaml', context)
+
+    def _deploy_dashboard(self) -> dict:
+        """
+           Deploy API
+        """
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+        }
+
+        return self._create_swarm_service('dashboard', 'core/dashboard/swarm/dashboard.yaml', context)
+
+    def _deploy_moodle(self, credentials) -> dict:
+        """
+           Deploy API
+        """
+
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'MOODLE_VAULT_ROLE_ID': credentials.get('role_id'),
+            'MOODLE_VAULT_SECRET_ID': credentials.get('secret_id'),
+            'MOODLE_DB_HOST': self._config.get('MOODLE_DB_HOST'),
+            'MOODLE_DB_USER': self._config.get('MOODLE_DB_USER'),
+            'MOODLE_DB_NAME': self._config.get('MOODLE_DB_NAME'),
+            'MOODLE_DB_PORT': self._config.get('MOODLE_DB_PORT'),
+            'MOODLE_DB_PASSWORD': self._config.get('MOODLE_DB_PASSWORD'),
+            'MOODLE_DB_PREFIX': self._config.get('MOODLE_DB_PREFIX'),
+            'MOODLE_CRON_INTERVAL': self._config.get('MOODLE_CRON_INTERVAL'),
+            'MOODLE_FULL_NAME': self._config.get('MOODLE_FULL_NAME'),
+            'MOODLE_SHORT_NAME': self._config.get('MOODLE_SHORT_NAME'),
+            'MOODLE_SUMMARY': self._config.get('MOODLE_SUMMARY'),
+            'MOODLE_ADMIN_USER': self._config.get('MOODLE_ADMIN_USER'),
+            'MOODLE_ADMIN_EMAIL': self._config.get('MOODLE_ADMIN_EMAIL'),
+            'MOODLE_ADMIN_PASSWORD': self._config.get('MOODLE_ADMIN_PASSWORD'),
+        }
+
+        return self._create_swarm_service('moodle', 'core/api/swarm/core.yaml', context)
+
+    def _deploy_instrument_provider(self, credentials, module) -> dict:
+        """
+           Deploy API
+        """
+
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'API_VAULT_ROLE_ID': credentials.get('role_id'),
+            'API_VAULT_SECRET_ID': credentials.get('secret_id'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {}
+        }
+
+        modules = get_modules()
+        del modules['api']
+        del modules['lapi']
+        del modules['beat']
+        del modules['worker']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+
+        return self._create_swarm_service('tfr', 'core/api/swarm/core.yaml', context)
+
+    def _remove_beat(self) -> dict:
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'BEAT_VAULT_ROLE_ID': '',
+            'BEAT_VAULT_SECRET_ID': '',
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {}
+        }
+
+        modules = get_modules()
+        del modules['api']
+        del modules['lapi']
+        del modules['worker']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+        return self._remove_swarm_service('beat', 'core/api/swarm/core.yaml', context)
+
+    def _get_beat_script(self, credentials) -> SetupOptions:
+        """
+            Get the script to deploy Supervisor
+        """
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'BEAT_VAULT_ROLE_ID': credentials.get('role_id'),
+            'BEAT_VAULT_SECRET_ID': credentials.get('secret_id'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {}
+        }
+
+        modules = get_modules()
+        del modules['api']
+        del modules['lapi']
+        del modules['worker']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+
+        task_def = self._remove_empty_lines(render_to_string('core/api/swarm/core.yaml', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='docker stack -t tesla_beat.yaml tesla',
+            description='Create tesla beat'
+        )
+
+        script.add_file(
+            filename='tesla_beat.yaml',
+            description='Stack description for tesla beat',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/BEAT_VAULT_ROLE_ID',
+            description='Secret BEAT_VAULT_ROLE_ID',
+            content=credentials.get('role_id'),
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/BEAT_VAULT_SECRET_ID',
+            description='Secret BEAT_VAULT_SECRET_ID',
+            content=credentials.get('secret_id'),
+            mimetype='text/plain'
+        )
+
+        return script
+
+    def _get_lapi_script(self, credentials) -> SetupOptions:
+        """
+            Get the script to deploy Supervisor
+        """
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'LAPI_VAULT_ROLE_ID': credentials.get('role_id'),
+            'LAPI_VAULT_SECRET_ID': credentials.get('secret_id'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {}
+        }
+
+        modules = get_modules()
+        del modules['api']
+        del modules['beat']
+        del modules['worker']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+
+        task_def = self._remove_empty_lines(render_to_string('core/api/swarm/core.yaml', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='docker stack -t tesla_lapi.yaml tesla',
+            description='Create tesla lapi'
+        )
+
+        script.add_file(
+            filename='tesla_lapi.yaml',
+            description='Stack description for tesla lapi',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/LAPI_VAULT_ROLE_ID',
+            description='Secret LAPI_VAULT_ROLE_ID',
+            content=credentials.get('role_id'),
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/LAPI_VAULT_SECRET_ID',
+            description='Secret LAPI_VAULT_SECRET_ID',
+            content=credentials.get('secret_id'),
+            mimetype='text/plain'
+        )
+
+        return script
+
+    def _remove_lapi(self) -> dict:
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'LAPI_VAULT_ROLE_ID': '',
+            'LAPI_VAULT_SECRET_ID': '',
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {}
+        }
+
+        modules = get_modules()
+        del modules['api']
+        del modules['beat']
+        del modules['worker']
+        del modules['worker-all']
+        del modules['worker-enrolment']
+        del modules['worker-enrolment-storage']
+        del modules['worker-enrolment-validation']
+        del modules['worker-verification']
+        del modules['worker-alerts']
+        del modules['worker-reporting']
+
+        context['services'] = [modules[module] for module in modules]
+
+        return self._remove_swarm_service('lapi', 'core/api/swarm/core.yaml', context)
+
+    def _get_dashboard_script(self) -> dict:
+        """
+           Deploy Dashboard
+        """
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+        }
+
+        task_def = self._remove_empty_lines(render_to_string('core/dashboard/swarm/dashboard.yaml', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='docker stack -t tesla_dashboard.yaml tesla',
+            description='Create tesla dashboard'
+        )
+
+        script.add_file(
+            filename='tesla_dashboard.yaml',
+            description='Stack description for tesla dashboard',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        return script
+
+    def _remove_dashboard(self) -> dict:
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+        }
+
+        return self._remove_swarm_service('dashboard', 'core/dashboard/swarm/dashboard.yaml', context)
+
+    def _deploy_worker_module(self, credentials, deploy_module) -> dict:
+        """
+           Deploy API
+        """
+        context = {
+            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {},
+            'DEBUG': settings.DEBUG,
+            'VAULT_SSL_VERIFY': False,
+        }
+
+        context[deploy_module.upper()+'_VAULT_ROLE_ID'] = credentials.get('role_id')
+        context[deploy_module.upper()+'_VAULT_SECRET_ID'] = credentials.get('secret_id')
+
+        remove_modules = ['api', 'lapi', 'beat', 'worker-all', 'worker-enrolment', 'worker-enrolment-storage',
+                          'worker-enrolment-validation', 'worker-verification', 'worker-alerts', 'worker-reporting']
+
+        deploy_module_lower = deploy_module.lower()
+        remove_modules.remove(deploy_module_lower)
+
+        modules = get_modules()
+        for rm_module in remove_modules:
+            del modules[rm_module]
+
+        context['services'] = [modules[module] for module in modules]
+
+        return self._create_swarm_service(deploy_module_lower, 'core/api/swarm/core.yaml', context)
+
+    def _remove_worker_module(self, deploy_module) -> dict:
+        """
+           Deploy API
+        """
+        context = {
+            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {},
+            'DEBUG': settings.DEBUG,
+            'VAULT_SSL_VERIFY': False,
+        }
+
+        context[deploy_module.upper()+'_VAULT_ROLE_ID'] = ''
+        context[deploy_module.upper()+'_VAULT_SECRET_ID'] = ''
+
+        remove_modules = ['api', 'lapi', 'beat', 'worker-all', 'worker-enrolment', 'worker-enrolment-storage',
+                          'worker-enrolment-validation', 'worker-verification', 'worker-alerts', 'worker-reporting']
+
+        deploy_module_lower = deploy_module.lower()
+        remove_modules.remove(deploy_module_lower)
+
+        modules = get_modules()
+        for rm_module in remove_modules:
+            del modules[rm_module]
+
+        context['services'] = [modules[module] for module in modules]
+
+        return self._remove_swarm_service(deploy_module_lower, 'core/api/swarm/core.yaml', context)
+
+    def _get_worker_status(self, module) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE Moodle
+        """
+        return self._create_status_obj(module.lower())

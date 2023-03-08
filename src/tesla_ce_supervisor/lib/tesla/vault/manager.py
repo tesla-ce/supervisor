@@ -72,6 +72,15 @@ class VaultManager:
             self._is_ready = False
             self._error = exc
 
+    def test_connection(self):
+        try:
+            self._client.sys.is_initialized()
+            return True
+        except ConnectionError as conn_err:
+            raise TeslaVaultException('Vault is not responding at {}.'.format(self.vault_url)) from conn_err
+    def is_ready(self):
+        return self._is_ready
+
     def _module_auth(self):
         """
             Authenticate with vault using module credentials
@@ -135,6 +144,33 @@ class VaultManager:
 
         # Setup vault information to be used in TeSLA
         self._setup_vault()
+
+    def initialize_without_setup(self):
+        """
+            Initialize Vault server
+        """
+        try:
+            if not self._client.sys.is_initialized():
+                # Initialize vault
+                result = self._client.sys.initialize(5, 2)
+                root_token = result['root_token']
+                keys = result['keys']
+                # Store token and keys
+                self._config.set('VAULT_TOKEN', root_token)
+                self._config.set('VAULT_KEYS', keys)
+                # Store the credentials
+                #self._config.save_configuration()
+                # Store token on client
+                self._client.token = root_token
+
+            if self._client.sys.is_sealed():
+                # Unseal vault
+                self.unseal(self._config.get('VAULT_KEYS'))
+
+            if not self._client.sys.is_initialized() or self._client.sys.is_sealed():
+                raise TeslaVaultException('Failed to initialize and unseal vault')
+        except hvac.exceptions.InvalidRequest as err:
+            raise TeslaVaultException(str(err))
 
     def unseal(self, keys=None):
         """
@@ -521,7 +557,7 @@ class VaultManager:
             :rtype: dict
         """
         # Create the setup object
-        setup = VaultSetup(self._client, self._config.config)
+        setup = VaultSetup(self._client, self._config)
 
         # Create the new entity
         try:
@@ -546,7 +582,7 @@ class VaultManager:
             :rtype: dict
         """
         # Create the setup object
-        setup = VaultSetup(self._client, self._config.config)
+        setup = VaultSetup(self._client, self._config)
 
         # Create the new entity
         try:

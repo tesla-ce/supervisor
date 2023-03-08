@@ -1,7 +1,7 @@
 import abc
+import collections
 import typing
-
-from tesla_ce_supervisor.lib.models.check import ServiceCatalogInformation, ConnectionStatus
+from tesla_ce_supervisor.lib.models.check import ServiceCatalogInformation, ConnectionStatus, ServiceStatus
 
 from ..tesla.conf import Config
 
@@ -61,5 +61,5 @@ class BaseCatalog(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     def test_connection(self, module: str) -> ConnectionStatus:
-        # todo: implement
-        return ConnectionStatus()
+        self._config.get_effective_config()
+        return ConnectionStatus(module, self._config)

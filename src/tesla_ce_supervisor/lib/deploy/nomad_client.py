@@ -4,7 +4,7 @@ import nomad
 from django.template.loader import render_to_string
 from .base import BaseDeploy, ServiceDeploymentInformation
 from .exceptions import TeslaDeployNomadTemplateException, TeslaDeployNomadException
-from ..models.check import ConnectionStatus
+from ..models.check import ConnectionStatus, CommandStatus
 from ..tesla.conf import Config
 from ..setup_options import SetupOptions
 
@@ -176,7 +176,7 @@ class NomadDeploy(BaseDeploy):
         """
         pass
 
-    def deploy_lb(self) -> dict:
+    def _deploy_lb(self) -> dict:
         """
             Deploy Load Balancer
         """
@@ -191,13 +191,13 @@ class NomadDeploy(BaseDeploy):
 
         return self._crete_nomad_job('traefik', 'lb/traefik/nomad/traefik.nomad', context)
 
-    def remove_lb(self) -> dict:
+    def _remove_lb(self) -> dict:
         """
             Remove deployed Load Balancer
         """
         return self._client.job.deregister_job('traefik', True)
 
-    def get_lb_script(self) -> SetupOptions:
+    def _get_lb_script(self) -> SetupOptions:
         """
             Get the script to deploy Load Balancer
         """
@@ -226,13 +226,13 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
-    def get_lb_status(self) -> ServiceDeploymentInformation:
+    def _get_lb_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for Load Balancer
         """
         return self._create_status_obj('traefik')
 
-    def deploy_vault(self) -> dict:
+    def _deploy_vault(self) -> dict:
         """
             Deploy Hashicorp Vault
         """
@@ -247,13 +247,13 @@ class NomadDeploy(BaseDeploy):
 
         return self._crete_nomad_job('vault', 'services/vault/nomad/vault.nomad', context)
 
-    def remove_vault(self) -> dict:
+    def _remove_vault(self) -> dict:
         """
             Remove deployed Vault
         """
         return self._client.job.deregister_job('vault', True)
 
-    def get_vault_script(self) -> SetupOptions:
+    def _get_vault_script(self) -> SetupOptions:
         """
             Get the script to deploy Hashicorp Vault
         """
@@ -282,13 +282,13 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
-    def get_vault_status(self) -> ServiceDeploymentInformation:
+    def _get_vault_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for Vault
         """
         return self._create_status_obj('vault')
 
-    def deploy_minio(self) -> dict:
+    def _deploy_minio(self) -> dict:
         """
             Deploy MinIO
         """
@@ -306,13 +306,13 @@ class NomadDeploy(BaseDeploy):
 
         return self._crete_nomad_job('minio', 'services/minio/nomad/minio.nomad', context)
 
-    def remove_minio(self) -> dict:
+    def _remove_minio(self) -> dict:
         """
             Remove deployed MinIO
         """
         return self._client.job.deregister_job('minio', True)
 
-    def get_minio_script(self) -> SetupOptions:
+    def _get_minio_script(self) -> SetupOptions:
         """
             Get the script to deploy MinIO
         """
@@ -343,13 +343,13 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
-    def get_minio_status(self) -> ServiceDeploymentInformation:
+    def _get_minio_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for MinIO
         """
         return self._create_status_obj('minio')
 
-    def deploy_redis(self) -> dict:
+    def _deploy_redis(self) -> dict:
         """
             Deploy Redis
         """
@@ -364,13 +364,13 @@ class NomadDeploy(BaseDeploy):
 
         return self._crete_nomad_job('redis', 'services/redis/nomad/redis.nomad', context)
 
-    def remove_redis(self) -> dict:
+    def _remove_redis(self) -> dict:
         """
             Remove deployed Redis
         """
         return self._client.job.deregister_job('redis', True)
 
-    def get_redis_script(self) -> SetupOptions:
+    def _get_redis_script(self) -> SetupOptions:
         """
             Get the script to deploy Redis
         """
@@ -398,13 +398,13 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
-    def get_redis_status(self) -> ServiceDeploymentInformation:
+    def _get_redis_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for Redis
         """
         return self._create_status_obj('redis')
 
-    def deploy_database(self) -> dict:
+    def _deploy_database(self) -> dict:
         """
             Deploy Database
         """
@@ -438,7 +438,7 @@ class NomadDeploy(BaseDeploy):
 
         return self._crete_nomad_job(name, template, context)
 
-    def remove_database(self) -> dict:
+    def _remove_database(self) -> dict:
         """
             Remove deployed Database
         """
@@ -453,7 +453,7 @@ class NomadDeploy(BaseDeploy):
             raise TeslaDeployNomadException('Invalid database engine')
         return self._client.job.deregister_job(name, True)
 
-    def get_database_script(self) -> SetupOptions:
+    def _get_database_script(self) -> SetupOptions:
         """
             Get the script to deploy Database
         """
@@ -500,13 +500,13 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
-    def get_database_status(self) -> ServiceDeploymentInformation:
+    def _get_database_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for Database
         """
         return self._create_status_obj(self._config.get('DB_ENGINE'))
 
-    def deploy_rabbitmq(self) -> dict:
+    def _deploy_rabbitmq(self) -> dict:
         """
             Deploy RabbitMQ
         """
@@ -524,13 +524,13 @@ class NomadDeploy(BaseDeploy):
 
         return self._crete_nomad_job('rabbitmq', 'services/rabbitmq/nomad/rabbitmq.nomad', context)
 
-    def remove_rabbitmq(self) -> dict:
+    def _remove_rabbitmq(self) -> dict:
         """
             Remove deployed RabbitMQ
         """
         return self._client.job.deregister_job('rabbitmq', True)
 
-    def get_rabbitmq_script(self) -> SetupOptions:
+    def _get_rabbitmq_script(self) -> SetupOptions:
         """
             Get the script to deploy RabbitMQ
         """
@@ -561,13 +561,13 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
-    def get_rabbitmq_status(self) -> ServiceDeploymentInformation:
+    def _get_rabbitmq_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for RabbitMQ
         """
         return self._create_status_obj('rabbitmq')
 
-    def deploy_supervisor(self) -> dict:
+    def _deploy_supervisor(self) -> dict:
         """
             Deploy TeSLA CE Supervisor
         """
@@ -585,13 +585,13 @@ class NomadDeploy(BaseDeploy):
         }
         return self._crete_nomad_job('tesla_ce_supervisor', 'supervisor/nomad/supervisor.nomad', context)
 
-    def remove_supervisor(self) -> dict:
+    def _remove_supervisor(self) -> dict:
         """
             Remove deployed TeSLA CE Supervisor
         """
         return self._client.job.deregister_job('tesla_ce_supervisor', True)
 
-    def get_supervisor_script(self) -> SetupOptions:
+    def _get_supervisor_script(self) -> SetupOptions:
         """
             Get the script to deploy TeSLA CE Supervisor
         """
@@ -623,7 +623,7 @@ class NomadDeploy(BaseDeploy):
 
         return script
 
-    def get_supervisor_status(self) -> ServiceDeploymentInformation:
+    def _get_supervisor_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for TeSLA CE Supervisor
         """
@@ -632,5 +632,11 @@ class NomadDeploy(BaseDeploy):
     def test_connection(self) -> ConnectionStatus:
         pass
 
+    def test_deployer(self) -> dict:
+        return {}
 
-
+    def execute_command_inside_container(self, container, command) -> CommandStatus:
+        """
+            Execute command inside container
+        """
+        raise NotImplementedError()
