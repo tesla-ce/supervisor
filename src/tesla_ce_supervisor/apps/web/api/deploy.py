@@ -34,7 +34,7 @@ class BaseAPIDeploy(APIView, abc.ABC):
             credentials = json.loads(response.json())
 
         if self.module.lower() in ['tfr', 'tpt', 'tks']:
-            self.client.register_provider(self.module.lower())
+            credentials = self.client.register_provider(self.module.lower())
 
 
 

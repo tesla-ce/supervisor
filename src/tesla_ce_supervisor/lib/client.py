@@ -782,32 +782,34 @@ class SupervisorClient:
                 if providers:
                     for prov in providers:
                         if prov.get('acronym') == module.lower():
-                            url = 'https://{}/api/v2/admin/instrument/{}/provider/{}/'.format(domain, instrument_id, prov.get('id'))
-                            response = requests.delete(url, headers=headers, verify=verify_ssl)
-                            # provider_found = True
+                            # url = 'https://{}/api/v2/admin/instrument/{}/provider/{}/'.format(domain, instrument_id, prov.get('id'))
+                            # response = requests.delete(url, headers=headers, verify=verify_ssl)
+                            data = {"module": 'provider_{}'.format(str(prov.get('id')).zfill(3))}
+                            url = '/supervisor/api/admin/config/role_secret/'
+                            response = self.make_request_to_supervisor_service('POST', url, data)
+                            return response.json()
+                            #return self.tesla.get_module_credentials('provider_{}'.format(str(prov.get('id')).zfill(3)))
 
-                if not provider_found:
-                    # download json of instrument
-                    response = requests.get('https://raw.githubusercontent.com/tesla-ce/core/main/providers/{}_{}.json'.
-                                            format(selected_instrument_acronym, module.lower()), headers=headers,
-                                            verify=verify_ssl)
+                # provider not exists
+                # download json of instrument
+                response = requests.get('https://raw.githubusercontent.com/tesla-ce/core/main/providers/{}_{}.json'.
+                                        format(selected_instrument_acronym, module.lower()), headers=headers,
+                                        verify=verify_ssl)
 
-                    provider_json = response.json()
-                    # Register a FR provider
-                    provider_json['enabled'] = True
-                    provider_json['validation_active'] = True
+                provider_json = response.json()
+                # Register a FR provider
+                provider_json['enabled'] = True
+                provider_json['validation_active'] = True
 
-                    if 'instrument' in provider_json:
-                        del provider_json['instrument']
+                if 'instrument' in provider_json:
+                    del provider_json['instrument']
 
-                    url = 'https://{}/api/v2/admin/instrument/{}/provider/'.format(domain, instrument_id)
+                url = 'https://{}/api/v2/admin/instrument/{}/provider/'.format(domain, instrument_id)
 
-                    provider_register = requests.post(url, json=provider_json, headers=headers, verify=verify_ssl)
+                provider_register = requests.post(url, json=provider_json, headers=headers, verify=verify_ssl)
 
-                    url = 'https://{}/api/v2/admin/instrument/{}/'.format(domain, instrument_id)
-                    fr_inst_enable_resp = requests.patch(url, json={'enabled': True}, headers=headers,
-                                                         verify=verify_ssl)
+                url = 'https://{}/api/v2/admin/instrument/{}/'.format(domain, instrument_id)
+                fr_inst_enable_resp = requests.patch(url, json={'enabled': True}, headers=headers,
+                                                     verify=verify_ssl)
 
-        pass
-
-
+                return provider_register.get('credentials')
