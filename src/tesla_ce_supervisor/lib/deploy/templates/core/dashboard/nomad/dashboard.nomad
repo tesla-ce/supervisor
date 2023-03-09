@@ -15,27 +15,7 @@ variable "region" {
 
 variable "image" {
   type    = string
-  default = "{{ tesla_ce_image }}"
-}
-
-variable "vault_mount_path_kv" {
-  type = string
-  default = "{{ VAULT_MOUNT_PATH_KV }}"
-}
-
-variable "vault_mount_path_approle" {
-  type = string
-  default = "{{ VAULT_MOUNT_PATH_APPROLE }}"
-}
-
-variable "role_id" {
-  type = string
-  default = "{{ API_VAULT_ROLE_ID }}"
-}
-
-variable "secret_id" {
-  type = string
-  default = "{{ API_VAULT_SECRET_ID }}"
+  default = "{{ dashboard_image }}"
 }
 
 variable "base_domain" {
@@ -43,7 +23,7 @@ variable "base_domain" {
   default = "{{ TESLA_DOMAIN }}"
 }
 
-job "tesla_ce_api" {
+job "tesla_ce_dashboard" {
   # Run the job in the global region, which is the default.
   region = var.region
 
@@ -65,9 +45,9 @@ job "tesla_ce_api" {
   #        value     = "node"
   #}
 
-  # Create a 'minio' group. Each task in the group will be
+  # Create a 'dashboard' group. Each task in the group will be
   # scheduled onto the same machine.
-  group "api" {
+  group "dashboard" {
     # Control the number of instances of this group.
     # Defaults to 1
     count = var.count
@@ -91,39 +71,24 @@ job "tesla_ce_api" {
 
     network {
       mode = "bridge"
-      port "web" {
-        to = 5000
+      port "http" {
+        to = 80
       }
     }
 
     # Define a task to run
-    task "tesla_ce_api" {
+    task "tesla_ce_dashboard" {
       # Use Docker to run the task.
       driver = "docker"
 
       # Configure Docker driver with the image
       config {
-        image = var.image
-        ports = ["web"]
+        image   = var.image
+        ports = ["http"]
       }
 
-      env = {
-        "SECRETS_PATH"             = "/secrets"
-        "VAULT_URL"                = var.vault_url
-        "VAULT_ROLE_ID_FILE"       = "/secrets/ROLE_ID"
-        "VAULT_SECRET_ID_FILE"     = "/secrets/SECRET_ID"
-        "VAULT_MOUNT_PATH_KV"      = var.vault_mount_path_kv
-        "VAULT_MOUNT_PATH_APPROLE" = var.vault_mount_path_approle
-      }
-
-      # Store secrets
-      template {
-        data = "${ var.role_id }"
-        destination = "secrets/ROLE_ID"
-      }
-      template {
-        data = "${ var.secret_id }"
-        destination = "secrets/SECRET_ID"
+      env {
+        API_URL = "https://${ var.base_domain }/api/v2"
       }
 
       resources {
@@ -132,55 +97,27 @@ job "tesla_ce_api" {
       }
     }
     service {
-      name = "tesla_ce_api"
-      port = 5000
-
+      name = "tesla_ce_dashboard"
       tags = [
         "tesla-ce",
-        "api",
+        "dashboard",
         "traefik.enable=true",
-        "traefik.http.routers.api.rule=Host(`${var.base_domain}`) && PathPrefix(`/api`)",
-        "traefik.consulcatalog.connect=true",
+        "traefik.http.routers.dashboard.rule=Host(`${ var.base_domain }`) && PathPrefix(`/ui/`)",
+        "traefik.consulcatalog.connect=true"
       ]
+      port = 80 # "http"
 
       check {
         expose   = true
         type     = "http"
-        path     = "/nginx/status"
-        port     = "web"
+        path     = "/"
+        port     = "http"
         interval = "10s"
         timeout  = "2s"
       }
 
       connect {
-        sidecar_service {
-          proxy {
-            upstreams {
-               destination_name = "mysql-server"
-               local_bind_port = 3306
-            }
-            upstreams {
-               destination_name = "minio-api"
-               local_bind_port = 9000
-            }
-            upstreams {
-               destination_name = "vault"
-               local_bind_port = 8200
-            }
-            upstreams {
-               destination_name = "rabbitmq"
-               local_bind_port = 5672
-            }
-            upstreams {
-               destination_name = "rabbitmq-management"
-               local_bind_port = 15672
-            }
-            upstreams {
-               destination_name = "redis"
-               local_bind_port = 6379
-            }
-          }
-        }
+        sidecar_service {}
       }
     }
   }
