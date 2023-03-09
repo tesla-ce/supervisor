@@ -846,7 +846,7 @@ class SwarmDeploy(BaseDeploy):
 
         return {"result": result, "info": info}
 
-    def execute_command_inside_container(self, container, command, environment) -> CommandStatus:
+    def execute_command_inside_container(self, image, command, environment) -> CommandStatus:
         """
             Execute command inside container
         """
@@ -855,18 +855,17 @@ class SwarmDeploy(BaseDeploy):
         extra_hosts = {}
         auto_remove = True
 
-        if container == 'API':
-            image = 'teslace/core:local'
-            environment['DJANGO_SETTINGS_MODULE'] = 'tesla_ce.settings'
-            environment['DJANGO_CONFIGURATION'] = 'Setup'
-            environment['SETUP_MODE'] = 'SETUP'
+        # image = 'teslace/core:local'
+        environment['DJANGO_SETTINGS_MODULE'] = 'tesla_ce.settings'
+        environment['DJANGO_CONFIGURATION'] = 'Setup'
+        environment['SETUP_MODE'] = 'SETUP'
 
-            networks = ['{}_tesla_private'.format(self.config.get('SWARM_SERVICE_PREFIX')),
-                        '{}_tesla_public'.format(self.config.get('SWARM_SERVICE_PREFIX'))
-                        ]
+        networks = ['{}_tesla_private'.format(self.config.get('SWARM_SERVICE_PREFIX')),
+                    '{}_tesla_public'.format(self.config.get('SWARM_SERVICE_PREFIX'))
+                    ]
 
-            if os.getenv('ADD_HOSTS', '') != '':
-                extra_hosts = json.loads(os.getenv('ADD_HOSTS', ''))
+        if os.getenv('ADD_HOSTS', '') != '':
+            extra_hosts = json.loads(os.getenv('ADD_HOSTS', ''))
 
         try:
             container = self.client.containers.create(image, command=command, environment=environment,

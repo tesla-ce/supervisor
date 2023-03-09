@@ -646,7 +646,7 @@ class NomadDeploy(BaseDeploy):
         """
             Get the deployment information for TeSLA CE Supervisor
         """
-        return self._create_status_obj('tesla_ce_supervisor')
+        return self._create_status_obj('supervisor')
 
     def test_connection(self) -> ConnectionStatus:
         pass
@@ -662,7 +662,7 @@ class NomadDeploy(BaseDeploy):
 
         return {"result": result, "info": info}
 
-    def execute_command_inside_container(self, container, command) -> CommandStatus:
+    def execute_command_inside_container(self, image, command) -> CommandStatus:
         """
             Execute command inside container
         """
@@ -758,7 +758,7 @@ class NomadDeploy(BaseDeploy):
         """
         return self._client.job.deregister_job(f'tesla_ce_{module.lower()}', True)
 
-    def _get_core_status(self, module) -> ServiceDeploymentInformation:
+    def _get_core_module_status(self, module) -> ServiceDeploymentInformation:
         """
             Get the deployment information for TeSLA CE Core module
         """
@@ -782,3 +782,8 @@ class NomadDeploy(BaseDeploy):
     def _get_moodle_status(self) -> ServiceDeploymentInformation:
         pass
 
+    def _remove_moodle(self) -> dict:
+        pass
+
+    def _get_moodle_script(self, credentials) -> SetupOptions:
+        pass

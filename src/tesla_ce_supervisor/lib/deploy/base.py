@@ -358,7 +358,7 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def execute_command_inside_container(self, container, command) -> CommandStatus:
+    def execute_command_inside_container(self, image, command) -> CommandStatus:
         """
             Get the deployment information for TeSLA CE Supervisor
         """

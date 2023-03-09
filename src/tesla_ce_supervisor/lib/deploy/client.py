@@ -149,13 +149,13 @@ class DeployClient:
         """
         return self._client.test_deployer()
 
-    def execute_command_inside_container(self, container: str, command: str, environment: dict) -> CommandStatus:
+    def execute_command_inside_container(self, image: str, command: str, environment: dict) -> CommandStatus:
         """
         Execute command inside container
 
         :param environment:
-        :param container:
+        :param image:
         :param command:
         :return:
         """
-        return self._client.execute_command_inside_container(container, command, environment)
+        return self._client.execute_command_inside_container(image, command, environment)

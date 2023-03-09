@@ -702,7 +702,12 @@ class SupervisorClient:
             environment = {
                 'SUPERVISOR_REMOTE_URL': '{}/supervisor/api/admin/config/?token={}'.format(url, token)
             }
-            command_status = self.deploy.execute_command_inside_container('API', command, environment)
+
+            image = self.tesla.get_config().get('DEPLOYMENT_IMAGE') + ':{}'.format(
+                self.tesla.get_config().get('DEPLOYMENT_VERSION', 'latest')
+            )
+
+            command_status = self.deploy.execute_command_inside_container(image, command, environment)
             result = command_status.status
             info = command_status.info
 
@@ -736,8 +741,8 @@ class SupervisorClient:
 
     def get_supervisor_url(self):
         # todo modify this server
-        if settings.SETUP_MODE == 'DEV':
-            return 'http://localhost:8081'
+        #if settings.SETUP_MODE == 'DEV':
+        #    return 'http://localhost:8081'
 
         return "https://{}".format(self.tesla.get_config().get('TESLA_DOMAIN'))
 
