@@ -114,26 +114,26 @@ class DeployClient:
     def get_supervisor_status(self) -> ServiceDeploymentInformation:
         return self._client.get_supervisor_status()
 
-    def deploy(self, module: ModuleCode, credentials=None) -> dict:
+    def deploy(self, module: ModuleCode, credentials=None, provider=None) -> dict:
         """
             Deploy a module
             :param module: Name of the module
         """
-        return self._client.deploy(module, credentials)
+        return self._client.deploy(module, credentials, provider)
 
-    def remove(self, module: ModuleCode) -> dict:
+    def remove(self, module: ModuleCode, provider=None) -> dict:
         """
             Remove deployed module
             :param module: Name of the module
         """
-        return self._client.remove(module)
+        return self._client.remove(module, provider)
 
-    def get_script(self, module: ModuleCode, credentials=None) -> SetupOptions:
+    def get_script(self, module: ModuleCode, credentials=None, provider=None) -> SetupOptions:
         """
             Get deployment script
             :param module: Name of the module
         """
-        return self._client.get_script(module, credentials)
+        return self._client.get_script(module, credentials, provider)
 
     def get_status(self, module: ModuleCode) -> ServiceDeploymentInformation:
         """

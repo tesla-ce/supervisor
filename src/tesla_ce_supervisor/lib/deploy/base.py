@@ -233,23 +233,23 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def _remove_beat(self) -> dict:
-        """
-            Remove deployed TeSLA CE Beat
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
     def _remove_dashboard(self) -> dict:
         """
-            Remove deployed TeSLA CE Beat
+            Remove deployed TeSLA CE Dashboard
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def _remove_worker_module(self, module) -> dict:
+    def _remove_core_module(self, module) -> dict:
         """
-            Remove deployed TeSLA CE Worker module
+            Remove deployed TeSLA CE Core module
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
+    def _remove_instrument_provider(self, provider) -> dict:
+        """
+            Remove deployed TeSLA CE Instrument provider module
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
@@ -268,135 +268,58 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def _deploy_api(self, credentials) -> dict:
+    def _deploy_core_module(self, credentials, module) -> dict:
         """
-            Deploy TeSLA CE API
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _deploy_beat(self, credentials) -> dict:
-        """
-            Deploy TeSLA CE API
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _deploy_worker_module(self, credentials, module) -> dict:
-        """
-            Deploy TeSLA CE Worker module
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _deploy_api_workers(self, credentials) -> dict:
-        """
-            Deploy TeSLA CE API
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _deploy_lapi(self, credentials) -> dict:
-        """
-            Deploy TeSLA CE API
+            Deploy TeSLA CE Core module
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
     def _deploy_dashboard(self) -> dict:
         """
-            Deploy TeSLA CE API
+            Deploy TeSLA CE Dashboard
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
     def _deploy_moodle(self, credentials) -> dict:
         """
-            Deploy TeSLA CE API
+            Deploy TeSLA CE Moodle
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def _deploy_instrument_provider(self, credentials, module) -> dict:
+    def _deploy_instrument_provider(self, credentials, provider) -> dict:
         """
-            Deploy TeSLA CE API
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _remove_api(self) -> dict:
-        """
-            Remove deployed TeSLA CE API
+            Deploy TeSLA CE Instrument provider
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def _remove_lapi(self) -> dict:
+    def _get_core_module_script(self, credentials, module) -> SetupOptions:
         """
-            Remove deployed TeSLA CE API
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _get_api_script(self, credentials) -> SetupOptions:
-        """
-            Get the script to deploy TeSLA CE API
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _get_beat_script(self, credentials) -> SetupOptions:
-        """
-            Get the script to deploy TeSLA CE API
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _get_lapi_script(self, credentials) -> SetupOptions:
-        """
-            Get the script to deploy TeSLA CE API
+            Get the script to deploy TeSLA CE Core module
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
     def _get_dashboard_script(self) -> SetupOptions:
         """
-            Get the script to deploy TeSLA CE API
+            Get the script to deploy TeSLA CE Dashboard
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def _get_api_status(self) -> ServiceDeploymentInformation:
+    def _get_instrument_provider_script(self, module, credentials, provider) -> SetupOptions:
         """
-            Get the deployment information for TeSLA CE API
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _get_beat_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE Beat
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _get_api_workers_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE API Workers
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _get_lapi_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE LAPI
+            Get the script to deploy TeSLA CE Instrument provider script
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
     def _get_dashboard_status(self) -> ServiceDeploymentInformation:
         """
-            Get the deployment information for TeSLA CE LAPI
+            Get the deployment information for TeSLA CE Dashboard
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
@@ -408,30 +331,16 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def _get_tks_status(self) -> ServiceDeploymentInformation:
+    def _get_instrument_provider_status(self, module) -> ServiceDeploymentInformation:
         """
             Get the deployment information for TeSLA CE Moodle
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def _get_tfr_status(self) -> ServiceDeploymentInformation:
+    def _get_core_status(self, module) -> ServiceDeploymentInformation:
         """
-            Get the deployment information for TeSLA CE Moodle
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _get_tpt_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE Moodle
-        """
-        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-    @abc.abstractmethod
-    def _get_worker_status(self, module) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE Moodle
+            Get the deployment information for TeSLA CE Core module
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
@@ -517,32 +426,23 @@ class BaseDeploy(abc.ABC):
             return self._get_vault_status()
         elif module.upper() == "SUPERVISOR":
             return self._get_supervisor_status()
-        elif module.upper() == "API":
-            return self._get_api_status()
-        elif module.upper() == "BEAT":
-            return self._get_beat_status()
-        elif module.upper() == "LAPI":
-            return self._get_lapi_status()
         elif module.upper() == "DASHBOARD":
             return self._get_dashboard_status()
         elif module.upper() == "MOODLE":
             return self._get_moodle_status()
-        elif module.upper() == "TFR":
-            return self._get_tfr_status()
-        elif module.upper() == "TKS":
-            return self._get_tks_status()
-        elif module.upper() == "TPT":
-            return self._get_tpt_status()
         elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
                                 "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
-                                "WORKER-REPORTING"]:
-            return self._get_worker_status(module.upper())
+                                "WORKER-REPORTING", "API", "LAPI", "BEAT"]:
+            return self._get_core_status(module.upper())
+        elif module.upper() in ["TKS", "TPT", "TFR"]:
+            return self._get_instrument_provider_status(module.upper())
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
 
-    def get_script(self, module: ModuleCode, credentials=None) -> SetupOptions:
+    def get_script(self, module: ModuleCode, credentials=None, provider=None) -> SetupOptions:
         """
             Get deployment script
+            :param credentials:
             :param module: Name of the module
         """
         self.generate_deployment_credentials(module=module)
@@ -561,18 +461,18 @@ class BaseDeploy(abc.ABC):
             return self._get_vault_script()
         elif module.upper() == "SUPERVISOR":
             return self._get_supervisor_script()
-        elif module.upper() == "API":
-            return self._get_api_script(credentials)
-        elif module.upper() == "BEAT":
-            return self._get_beat_script(credentials)
-        elif module.upper() == "LAPI":
-            return self._get_lapi_script(credentials)
         elif module.upper() == "DASHBOARD":
             return self._get_dashboard_script()
+        elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
+                                "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
+                                "WORKER-REPORTING", "API", "LAPI", "BEAT"]:
+            return self._get_core_module_script(credentials, module.upper())
+        elif module.upper() in ["TFR", "TPT", "TKS"]:
+            return self._get_instrument_provider_script(module.upper(), credentials, provider)
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
 
-    def deploy(self, module: ModuleCode, credentials: dict = {}) -> dict:
+    def deploy(self, module: ModuleCode, credentials: dict = {}, provider: dict = {}) -> dict:
         """
             Deploy a module
             :param credentials: dict
@@ -594,27 +494,20 @@ class BaseDeploy(abc.ABC):
             return self._deploy_vault()
         elif module.upper() == "SUPERVISOR":
             return self._deploy_supervisor()
-        elif module.upper() == "API":
-            return self._deploy_api(credentials)
-        elif module.upper() == "BEAT":
-            return self._deploy_beat(credentials)
         elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
                                 "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
-                                "WORKER-REPORTING"]:
-            return self._deploy_worker_module(credentials, module.upper())
-        elif module.upper() == "LAPI":
-            return self._deploy_lapi(credentials)
+                                "WORKER-REPORTING", "API", "BEAT", "LAPI"]:
+            return self._deploy_core_module(credentials, module.upper())
         elif module.upper() == "DASHBOARD":
             return self._deploy_dashboard()
         elif module.upper() == "MOODLE":
             return self._deploy_moodle(credentials)
         elif module.upper() in ["TKS", "TPT", "TFR"]:
-            return self._deploy_instrument_provider(credentials, module.upper())
-
+            return self._deploy_instrument_provider(credentials, provider)
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
 
-    def remove(self, module: ModuleCode) -> dict:
+    def remove(self, module: ModuleCode, provider=None) -> dict:
         """
             Remove deployed module
             :param module: Name of the module
@@ -633,17 +526,13 @@ class BaseDeploy(abc.ABC):
             return self._remove_vault()
         elif module.upper() == "SUPERVISOR":
             return self._remove_supervisor()
-        elif module.upper() == "API":
-            return self._remove_api()
-        elif module.upper() == "LAPI":
-            return self._remove_lapi()
-        elif module.upper() == "BEAT":
-            return self._remove_beat()
         elif module.upper() == "DASHBOARD":
             return self._remove_dashboard()
         elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
                                 "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
-                                "WORKER-REPORTING"]:
-            return self._remove_worker_module(module.upper())
+                                "WORKER-REPORTING", "API", "BEAT", "LAPI"]:
+            return self._remove_core_module(module.upper())
+        elif module.upper() in ["TKS", "TPT", "TFR"]:
+            return self._remove_instrument_provider(provider)
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))

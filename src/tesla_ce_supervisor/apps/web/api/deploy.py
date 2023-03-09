@@ -7,7 +7,7 @@ from django.http import HttpResponse, JsonResponse
 from rest_framework.views import APIView
 from tesla_ce_supervisor.lib.deploy.base import ModuleCode
 from tesla_ce_supervisor.lib.client import SupervisorClient
-from tesla_ce_supervisor.lib.exceptions import TeslaException
+from tesla_ce_supervisor.lib.exceptions import TeslaException, ProviderExistsException, VLEExistsException
 
 
 class BaseAPIDeploy(APIView, abc.ABC):
@@ -34,16 +34,36 @@ class BaseAPIDeploy(APIView, abc.ABC):
             credentials = json.loads(response.json())
 
         if self.module.lower() in ['tfr', 'tpt', 'tks']:
-            credentials = self.client.register_provider(self.module.lower())
+            try:
+                credentials = self.client.register_provider(self.module.lower())
+            except ProviderExistsException as exc:
+                data = {"module": 'provider_{}'.format(str(exc.provider_id).zfill(3))}
+                url = '/supervisor/api/admin/config/role_secret/'
+                response = self.client.make_request_to_supervisor_service('POST', url, data)
+                credentials = json.loads(response.json())
 
-
+        if self.module.lower() in ['moodle']:
+            try:
+                credentials = self.client.register_vle(self.module.lower())
+            except VLEExistsException as exc:
+                data = {"module": 'vle_{}'.format(str(exc.vle_id).zfill(3))}
+                url = '/supervisor/api/admin/config/role_secret/'
+                response = self.client.make_request_to_supervisor_service('POST', url, data)
+                credentials = json.loads(response.json())
 
         return credentials
 
+    def get_provider(self):
+        credentials = None
+        if self.module.lower() in ['tfr', 'tpt', 'tks']:
+            return self.client.get_provider(self.module.lower())
+
+        return [None, None]
+
     def get(self, request, format=None):
         credentials = self.get_credentials()
-
-        response = self.client.get_deployer().get_script(self.module, credentials)
+        [provider, instrument_id] = self.get_provider()
+        response = self.client.get_deployer().get_script(self.module, credentials, provider)
         json_resp = response.to_json()
         if 'zip' in request.query_params and request.query_params['zip'] == '1':
             json_resp['zip'] = 'data:application/zip;base64,{}'.format(base64.b64encode(response.get_zip()).decode())
@@ -52,8 +72,8 @@ class BaseAPIDeploy(APIView, abc.ABC):
     def post(self, request, format=None):
         try:
             credentials = self.get_credentials()
-
-            response = self.client.deploy.deploy(self.module, credentials)
+            [provider, instrument_id] = self.get_provider()
+            response = self.client.deploy.deploy(self.module, credentials, provider)
             self.client.tesla.persist_configuration()
 
         except TeslaException as exc:
@@ -62,7 +82,8 @@ class BaseAPIDeploy(APIView, abc.ABC):
 
     def delete(self, request, format=None):
         try:
-            response = self.client.get_deployer().remove(self.module)
+            [provider, instrument_id] = self.get_provider()
+            response = self.client.get_deployer().remove(self.module, provider)
         except TeslaException as exc:
             return JsonResponse({'error': str(exc)}, status=400)
         return JsonResponse(response)

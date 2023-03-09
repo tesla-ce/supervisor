@@ -22,6 +22,7 @@ from .tesla.exceptions import TeslaVaultException
 from .deploy import DeployClient
 from .setup import SetupClient
 from .task import TaskClient
+from .api import TeSLAAPI
 from .models.check import ServiceStatus, ConnectionStatus
 from tesla_ce_supervisor.apps.api.models import SystemStatus, SYSTEM_STATUS
 from typing import Optional
@@ -740,76 +741,14 @@ class SupervisorClient:
 
         return "https://{}".format(self.tesla.get_config().get('TESLA_DOMAIN'))
 
+    def get_provider(self, module):
+        tesla_api = TeSLAAPI(config=self.tesla.get_config())
+        return tesla_api.get_provider(module)
+
     def register_provider(self, module):
-        instruments_acronym = {"TFR": "fr", "TPT": "plag", "TKS": "ks", "TFA": "fa", "TVR": "vr"}
-        selected_instrument_acronym = instruments_acronym.get(module.upper())
+        tesla_api = TeSLAAPI(config=self.tesla.get_config())
+        return tesla_api.register_provider(module)
 
-        domain = self.tesla.get_config().get('tesla_domain')
-        user = self.tesla.get_config().get('tesla_admin_mail')
-        password = self.tesla.get_config().get('tesla_admin_password')
-        url = "https://{}/api/v2/auth/login".format(domain)
-
-        data = {
-            'email': user,
-            'password': password
-        }
-        verify_ssl = True
-
-        if settings.DEBUG is True:
-            verify_ssl = False
-        response = requests.post(url, data, verify=verify_ssl)
-        access_tokens = response.json()
-
-        headers = {"Authorization": "JWT {}".format(access_tokens.get('token').get('access_token'))}
-        # check if provider is registered
-
-        url = "https://{}/api/v2/admin/instrument/".format(domain)
-        response = requests.get(url, data, verify=verify_ssl, headers=headers)
-        aux = response.json()
-        instruments = aux.get('results')
-
-        instrument_id = None
-
-        for instrument in instruments:
-            if selected_instrument_acronym == instrument.get('acronym'):
-                instrument_id = instrument.get('id')
-
-                url = 'https://{}/api/v2/admin/instrument/{}/provider/'.format(domain, instrument_id)
-                response = requests.get(url, verify=verify_ssl, headers=headers)
-                aux = response.json()
-                providers = aux.get('results')
-                provider_found = False
-                if providers:
-                    for prov in providers:
-                        if prov.get('acronym') == module.lower():
-                            # url = 'https://{}/api/v2/admin/instrument/{}/provider/{}/'.format(domain, instrument_id, prov.get('id'))
-                            # response = requests.delete(url, headers=headers, verify=verify_ssl)
-                            data = {"module": 'provider_{}'.format(str(prov.get('id')).zfill(3))}
-                            url = '/supervisor/api/admin/config/role_secret/'
-                            response = self.make_request_to_supervisor_service('POST', url, data)
-                            return response.json()
-                            #return self.tesla.get_module_credentials('provider_{}'.format(str(prov.get('id')).zfill(3)))
-
-                # provider not exists
-                # download json of instrument
-                response = requests.get('https://raw.githubusercontent.com/tesla-ce/core/main/providers/{}_{}.json'.
-                                        format(selected_instrument_acronym, module.lower()), headers=headers,
-                                        verify=verify_ssl)
-
-                provider_json = response.json()
-                # Register a FR provider
-                provider_json['enabled'] = True
-                provider_json['validation_active'] = True
-
-                if 'instrument' in provider_json:
-                    del provider_json['instrument']
-
-                url = 'https://{}/api/v2/admin/instrument/{}/provider/'.format(domain, instrument_id)
-
-                provider_register = requests.post(url, json=provider_json, headers=headers, verify=verify_ssl)
-
-                url = 'https://{}/api/v2/admin/instrument/{}/'.format(domain, instrument_id)
-                fr_inst_enable_resp = requests.patch(url, json={'enabled': True}, headers=headers,
-                                                     verify=verify_ssl)
-
-                return provider_register.get('credentials')
+    def register_vle(self, module):
+        tesla_api = TeSLAAPI(config=self.tesla.get_config())
+        return tesla_api.register_vle(module)

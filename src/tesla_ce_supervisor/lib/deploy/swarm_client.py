@@ -221,8 +221,8 @@ class SwarmDeploy(BaseDeploy):
 
         if 'secrets' in service_def_dict:
             for sec in service_def_dict['secrets']:
+                secret_id = sec.upper()
                 try:
-                    secret_id = sec.upper()
                     secret = self.client.secrets.get(secret_id)
                     secrets_rename.append(SecretReference(secret_id=secret.attrs['ID'],
                                                           secret_name=secret.name))
@@ -852,8 +852,7 @@ class SwarmDeploy(BaseDeploy):
         image = None
         networks = []
         extra_hosts = {}
-        # todo: autoremove true
-        auto_remove = False
+        auto_remove = True
 
         if container == 'API':
             image = 'teslace/core:local'
@@ -887,299 +886,6 @@ class SwarmDeploy(BaseDeploy):
         except docker.errors.ContainerError as err:
             return CommandStatus(command=command, status=False, info=str(err))
 
-    def _deploy_api(self, credentials) -> dict:
-        """
-           Deploy API
-        """
-        context = {
-            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'API_VAULT_ROLE_ID': credentials.get('role_id'),
-            'API_VAULT_SECRET_ID': credentials.get('secret_id'),
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {},
-            'DEBUG': settings.DEBUG,
-            'VAULT_SSL_VERIFY': False,
-        }
-
-        modules = get_modules()
-        del modules['lapi']
-        del modules['beat']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-
-        return self._create_swarm_service('api', 'core/api/swarm/core.yaml', context)
-
-    def _remove_api(self) -> dict:
-        context = {
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'API_VAULT_ROLE_ID': '',
-            'API_VAULT_SECRET_ID': '',
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {}
-        }
-
-        modules = get_modules()
-        del modules['lapi']
-        del modules['beat']
-        del modules['worker']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-
-        return self._remove_swarm_service('api', 'core/api/swarm/core.yaml', context)
-
-    def _get_api_script(self, credentials) -> SetupOptions:
-        """
-            Get the script to deploy Supervisor
-        """
-        context = {
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'API_VAULT_ROLE_ID': credentials.get('role_id'),
-            'API_VAULT_SECRET_ID': credentials.get('secret_id'),
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {}
-        }
-
-        modules = get_modules()
-        del modules['lapi']
-        del modules['beat']
-        del modules['worker']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-
-        task_def = self._remove_empty_lines(render_to_string('core/api/swarm/core.yaml', context))
-
-        script = SetupOptions()
-        script.add_command(
-            command='docker stack -t tesla_api.yaml tesla',
-            description='Create tesla api'
-        )
-
-        script.add_file(
-            filename='tesla_api.yaml',
-            description='Stack description for tesla api',
-            content=task_def,
-            mimetype='application/yaml'
-        )
-
-        script.add_file(
-            filename='secrets/API_VAULT_ROLE_ID',
-            description='Secret API_VAULT_ROLE_ID',
-            content=credentials.get('role_id'),
-            mimetype='text/plain'
-        )
-
-        script.add_file(
-            filename='secrets/API_VAULT_SECRET_ID',
-            description='Secret API_VAULT_SECRET_ID',
-            content=credentials.get('secret_id'),
-            mimetype='text/plain'
-        )
-
-        return script
-
-    def _get_api_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE API
-        """
-        return self._create_status_obj('api')
-
-    def _get_beat_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE LAPI
-        """
-        return self._create_status_obj('beat')
-
-    def _get_api_workers_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE API
-        """
-        return self._create_status_obj('api_workers')
-
-    def _get_lapi_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE LAPI
-        """
-        return self._create_status_obj('lapi')
-
-    def _get_dashboard_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE LAPI
-        """
-        return self._create_status_obj('dashboard')
-
-    def _get_moodle_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE LAPI
-        """
-        return self._create_status_obj('moodle')
-
-    def _get_tks_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE LAPI
-        """
-        return self._create_status_obj('tks')
-
-    def _get_tfr_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE LAPI
-        """
-        return self._create_status_obj('tfr')
-
-    def _get_tpt_status(self) -> ServiceDeploymentInformation:
-        """
-            Get the deployment information for TeSLA CE LAPI
-        """
-        return self._create_status_obj('tpt')
-
-    def _deploy_beat(self, credentials) -> dict:
-        """
-           Deploy API workers
-        """
-        context = {
-            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'BEAT_VAULT_ROLE_ID': credentials.get('role_id'),
-            'BEAT_VAULT_SECRET_ID': credentials.get('secret_id'),
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {},
-            'DEBUG': settings.DEBUG,
-            'VAULT_SSL_VERIFY': False,
-        }
-
-        modules = get_modules()
-        del modules['api']
-        del modules['lapi']
-        del modules['worker']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-
-        return self._create_swarm_service('beat', 'core/api/swarm/core.yaml', context)
-
-    def _deploy_api_workers(self, credentials) -> dict:
-        """
-           Deploy API workers
-        """
-        context = {
-            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'API_VAULT_ROLE_ID': credentials.get('role_id'),
-            'API_VAULT_SECRET_ID': credentials.get('secret_id'),
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {}
-        }
-
-        modules = get_modules()
-        del modules['api']
-        del modules['lapi']
-        del modules['beat']
-        del modules['worker']
-        del modules['worker-all']
-        '''
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-        '''
-
-        context['services'] = [modules[module] for module in modules]
-
-        self._create_swarm_service('worker-enrolment', 'core/api/swarm/core.yaml', context)
-        self._create_swarm_service('worker-enrolment-storage', 'core/api/swarm/core.yaml', context)
-        self._create_swarm_service('worker-enrolment-validation', 'core/api/swarm/core.yaml', context)
-        self._create_swarm_service('worker-verification', 'core/api/swarm/core.yaml', context)
-        self._create_swarm_service('worker-alerts', 'core/api/swarm/core.yaml', context)
-        self._create_swarm_service('worker-reporting', 'core/api/swarm/core.yaml', context)
-
-    def _deploy_lapi(self, credentials) -> dict:
-        """
-           Deploy LAPI
-        """
-        context = {
-            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'LAPI_VAULT_ROLE_ID': credentials.get('role_id'),
-            'LAPI_VAULT_SECRET_ID': credentials.get('secret_id'),
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {},
-            'DEBUG': settings.DEBUG,
-            'VAULT_SSL_VERIFY': False,
-        }
-
-        modules = get_modules()
-        del modules['api']
-        del modules['beat']
-        del modules['worker']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-
-        return self._create_swarm_service('lapi', 'core/api/swarm/core.yaml', context)
-
     def _deploy_dashboard(self) -> dict:
         """
            Deploy API
@@ -1192,250 +898,20 @@ class SwarmDeploy(BaseDeploy):
 
         return self._create_swarm_service('dashboard', 'core/dashboard/swarm/dashboard.yaml', context)
 
-    def _deploy_moodle(self, credentials) -> dict:
+    def _get_dashboard_status(self) -> ServiceDeploymentInformation:
         """
-           Deploy API
+            Get the deployment information for TeSLA CE LAPI
         """
+        return self._create_status_obj('dashboard')
 
+    def _remove_dashboard(self) -> dict:
         context = {
             'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'MOODLE_VAULT_ROLE_ID': credentials.get('role_id'),
-            'MOODLE_VAULT_SECRET_ID': credentials.get('secret_id'),
-            'MOODLE_DB_HOST': self._config.get('MOODLE_DB_HOST'),
-            'MOODLE_DB_USER': self._config.get('MOODLE_DB_USER'),
-            'MOODLE_DB_NAME': self._config.get('MOODLE_DB_NAME'),
-            'MOODLE_DB_PORT': self._config.get('MOODLE_DB_PORT'),
-            'MOODLE_DB_PASSWORD': self._config.get('MOODLE_DB_PASSWORD'),
-            'MOODLE_DB_PREFIX': self._config.get('MOODLE_DB_PREFIX'),
-            'MOODLE_CRON_INTERVAL': self._config.get('MOODLE_CRON_INTERVAL'),
-            'MOODLE_FULL_NAME': self._config.get('MOODLE_FULL_NAME'),
-            'MOODLE_SHORT_NAME': self._config.get('MOODLE_SHORT_NAME'),
-            'MOODLE_SUMMARY': self._config.get('MOODLE_SUMMARY'),
-            'MOODLE_ADMIN_USER': self._config.get('MOODLE_ADMIN_USER'),
-            'MOODLE_ADMIN_EMAIL': self._config.get('MOODLE_ADMIN_EMAIL'),
-            'MOODLE_ADMIN_PASSWORD': self._config.get('MOODLE_ADMIN_PASSWORD'),
-        }
-
-        return self._create_swarm_service('moodle', 'core/api/swarm/core.yaml', context)
-
-    def _deploy_instrument_provider(self, credentials, module) -> dict:
-        """
-           Deploy API
-        """
-
-        context = {
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
             'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
             'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'API_VAULT_ROLE_ID': credentials.get('role_id'),
-            'API_VAULT_SECRET_ID': credentials.get('secret_id'),
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {}
         }
 
-        modules = get_modules()
-        del modules['api']
-        del modules['lapi']
-        del modules['beat']
-        del modules['worker']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-
-        return self._create_swarm_service('tfr', 'core/api/swarm/core.yaml', context)
-
-    def _remove_beat(self) -> dict:
-        context = {
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'BEAT_VAULT_ROLE_ID': '',
-            'BEAT_VAULT_SECRET_ID': '',
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {}
-        }
-
-        modules = get_modules()
-        del modules['api']
-        del modules['lapi']
-        del modules['worker']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-        return self._remove_swarm_service('beat', 'core/api/swarm/core.yaml', context)
-
-    def _get_beat_script(self, credentials) -> SetupOptions:
-        """
-            Get the script to deploy Supervisor
-        """
-        context = {
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'BEAT_VAULT_ROLE_ID': credentials.get('role_id'),
-            'BEAT_VAULT_SECRET_ID': credentials.get('secret_id'),
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {}
-        }
-
-        modules = get_modules()
-        del modules['api']
-        del modules['lapi']
-        del modules['worker']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-
-        task_def = self._remove_empty_lines(render_to_string('core/api/swarm/core.yaml', context))
-
-        script = SetupOptions()
-        script.add_command(
-            command='docker stack -t tesla_beat.yaml tesla',
-            description='Create tesla beat'
-        )
-
-        script.add_file(
-            filename='tesla_beat.yaml',
-            description='Stack description for tesla beat',
-            content=task_def,
-            mimetype='application/yaml'
-        )
-
-        script.add_file(
-            filename='secrets/BEAT_VAULT_ROLE_ID',
-            description='Secret BEAT_VAULT_ROLE_ID',
-            content=credentials.get('role_id'),
-            mimetype='text/plain'
-        )
-
-        script.add_file(
-            filename='secrets/BEAT_VAULT_SECRET_ID',
-            description='Secret BEAT_VAULT_SECRET_ID',
-            content=credentials.get('secret_id'),
-            mimetype='text/plain'
-        )
-
-        return script
-
-    def _get_lapi_script(self, credentials) -> SetupOptions:
-        """
-            Get the script to deploy Supervisor
-        """
-        context = {
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'LAPI_VAULT_ROLE_ID': credentials.get('role_id'),
-            'LAPI_VAULT_SECRET_ID': credentials.get('secret_id'),
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {}
-        }
-
-        modules = get_modules()
-        del modules['api']
-        del modules['beat']
-        del modules['worker']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-
-        task_def = self._remove_empty_lines(render_to_string('core/api/swarm/core.yaml', context))
-
-        script = SetupOptions()
-        script.add_command(
-            command='docker stack -t tesla_lapi.yaml tesla',
-            description='Create tesla lapi'
-        )
-
-        script.add_file(
-            filename='tesla_lapi.yaml',
-            description='Stack description for tesla lapi',
-            content=task_def,
-            mimetype='application/yaml'
-        )
-
-        script.add_file(
-            filename='secrets/LAPI_VAULT_ROLE_ID',
-            description='Secret LAPI_VAULT_ROLE_ID',
-            content=credentials.get('role_id'),
-            mimetype='text/plain'
-        )
-
-        script.add_file(
-            filename='secrets/LAPI_VAULT_SECRET_ID',
-            description='Secret LAPI_VAULT_SECRET_ID',
-            content=credentials.get('secret_id'),
-            mimetype='text/plain'
-        )
-
-        return script
-
-    def _remove_lapi(self) -> dict:
-        context = {
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-            'LAPI_VAULT_ROLE_ID': '',
-            'LAPI_VAULT_SECRET_ID': '',
-            'VAULT_URL': self._config.get('VAULT_URL'),
-            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
-            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
-            'services': {}
-        }
-
-        modules = get_modules()
-        del modules['api']
-        del modules['beat']
-        del modules['worker']
-        del modules['worker-all']
-        del modules['worker-enrolment']
-        del modules['worker-enrolment-storage']
-        del modules['worker-enrolment-validation']
-        del modules['worker-verification']
-        del modules['worker-alerts']
-        del modules['worker-reporting']
-
-        context['services'] = [modules[module] for module in modules]
-
-        return self._remove_swarm_service('lapi', 'core/api/swarm/core.yaml', context)
+        return self._remove_swarm_service('dashboard', 'core/dashboard/swarm/dashboard.yaml', context)
 
     def _get_dashboard_script(self) -> dict:
         """
@@ -1464,16 +940,7 @@ class SwarmDeploy(BaseDeploy):
 
         return script
 
-    def _remove_dashboard(self) -> dict:
-        context = {
-            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
-            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
-            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
-        }
-
-        return self._remove_swarm_service('dashboard', 'core/dashboard/swarm/dashboard.yaml', context)
-
-    def _deploy_worker_module(self, credentials, deploy_module) -> dict:
+    def _deploy_core_module(self, credentials, deploy_module) -> dict:
         """
            Deploy API
         """
@@ -1495,7 +962,8 @@ class SwarmDeploy(BaseDeploy):
         context[deploy_module.upper()+'_VAULT_SECRET_ID'] = credentials.get('secret_id')
 
         remove_modules = ['api', 'lapi', 'beat', 'worker-all', 'worker-enrolment', 'worker-enrolment-storage',
-                          'worker-enrolment-validation', 'worker-verification', 'worker-alerts', 'worker-reporting']
+                          'worker-enrolment-validation', 'worker-verification', 'worker-alerts', 'worker-reporting',
+                          'worker']
 
         deploy_module_lower = deploy_module.lower()
         remove_modules.remove(deploy_module_lower)
@@ -1508,7 +976,7 @@ class SwarmDeploy(BaseDeploy):
 
         return self._create_swarm_service(deploy_module_lower, 'core/api/swarm/core.yaml', context)
 
-    def _remove_worker_module(self, deploy_module) -> dict:
+    def _remove_core_module(self, deploy_module) -> dict:
         """
            Deploy API
         """
@@ -1543,8 +1011,187 @@ class SwarmDeploy(BaseDeploy):
 
         return self._remove_swarm_service(deploy_module_lower, 'core/api/swarm/core.yaml', context)
 
-    def _get_worker_status(self, module) -> ServiceDeploymentInformation:
+    def _get_core_status(self, module) -> ServiceDeploymentInformation:
         """
             Get the deployment information for TeSLA CE Moodle
         """
         return self._create_status_obj(module.lower())
+
+    def _get_core_module_script(self, credentials, script_module):
+        """
+           Deploy API
+        """
+        context = {
+            'DEPLOYMENT_SECRETS_PATH': self._config.get('DEPLOYMENT_SECRETS_PATH'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_IMAGE': self._config.get('DEPLOYMENT_IMAGE'),
+            'DEPLOYMENT_VERSION': self._config.get('DEPLOYMENT_VERSION'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'services': {},
+            'DEBUG': settings.DEBUG,
+            'VAULT_SSL_VERIFY': False,
+        }
+
+        context[script_module.upper()+'_VAULT_ROLE_ID'] = credentials.get('role_id')
+        context[script_module.upper()+'_VAULT_SECRET_ID'] = credentials.get('secret_id')
+
+        remove_modules = ['api', 'lapi', 'beat', 'worker-all', 'worker-enrolment', 'worker-enrolment-storage',
+                          'worker-enrolment-validation', 'worker-verification', 'worker-alerts', 'worker-reporting',
+                          'worker']
+
+        deploy_module_lower = script_module.lower()
+        remove_modules.remove(deploy_module_lower)
+
+        modules = get_modules()
+        for rm_module in remove_modules:
+            del modules[rm_module]
+
+        context['services'] = [modules[module] for module in modules]
+
+        task_def = self._remove_empty_lines(render_to_string('core/api/swarm/core.yaml', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='docker stack -t tesla_{}.yaml tesla'.format(script_module.lower()),
+            description='Create new service for {}'.format(script_module.lower())
+        )
+
+        script.add_file(
+            filename='tesla_{}.yaml'.format(script_module.lower()),
+            description='Stack description for {}'.format(script_module.lower()),
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/{}_VAULT_ROLE_ID'.format(script_module.upper()),
+            description='Secret {}_VAULT_ROLE_ID'.format(script_module.upper()),
+            content=credentials.get('role_id'),
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/{}_VAULT_SECRET_ID'.format(script_module.upper()),
+            description='Secret {}_VAULT_SECRET_ID'.format(script_module.upper()),
+            content=credentials.get('secret_id'),
+            mimetype='text/plain'
+        )
+
+        return script
+
+    def _deploy_instrument_provider(self, credentials, provider) -> dict:
+        """
+           Deploy API
+        """
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'provider': provider,
+            'DEBUG': settings.DEBUG,
+            'SSL_VERIFY': False
+        }
+        context["{}_ROLE_ID".format(provider.get('acronym').upper())] = credentials.get('role_id')
+        context["{}_SECRET_ID".format(provider.get('acronym').upper())] = credentials.get('secret_id')
+
+        provider_name = "{}_provider".format(provider.get('acronym').lower())
+
+        return self._create_swarm_service(provider_name, 'core/provider/swarm/provider.yaml', context)
+
+    def _remove_instrument_provider(self, provider) -> dict:
+        """
+           Deploy API
+        """
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'provider': provider,
+            'DEBUG': settings.DEBUG,
+            'SSL_VERIFY': False
+        }
+        context["{}_ROLE_ID".format(provider.get('acronym').upper())] = ''
+        context["{}_SECRET_ID".format(provider.get('acronym').upper())] = ''
+
+        provider_name = "{}_provider".format(provider.get('acronym').lower())
+
+        return self._remove_swarm_service(provider_name, 'core/provider/swarm/provider.yaml', context)
+
+    def _get_instrument_provider_status(self, module):
+        return self._create_status_obj("{}_provider".format(module.lower()))
+
+    def _get_instrument_provider_script(self, module, credentials, provider):
+        """
+            Get the script to deploy Instrument provider
+        """
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'provider': provider,
+            'DEBUG': settings.DEBUG,
+            'SSL_VERIFY': False
+        }
+        context["{}_ROLE_ID".format(provider.get('acronym').upper())] = credentials.get('role_id')
+        context["{}_SECRET_ID".format(provider.get('acronym').upper())] = credentials.get('secret_id')
+
+        task_def = self._remove_empty_lines(render_to_string('core/provider/swarm/provider.yaml', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='docker stack -t tesla_{}_provider.yaml tesla'.format(provider.get('acronym')),
+            description='Create new service for {}'.format(provider.get('acronym'))
+        )
+
+        script.add_file(
+            filename='tesla_{}_provider.yaml'.format(provider.get('acronym')),
+            description='Stack description for {} provider'.format(provider.get('acronym')),
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/{}_ROLE_ID'.format(provider.get('acronym').upper()),
+            description='Secret {}_ROLE_ID'.format(provider.get('acronym').upper()),
+            content=credentials.get('role_id'),
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/{}_SECRET_ID'.format(provider.get('acronym').upper()),
+            description='Secret {}_SECRET_ID'.format(provider.get('acronym').upper()),
+            content=credentials.get('secret_id'),
+            mimetype='text/plain'
+        )
+
+        return script
+
+    def _get_moodle_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE LAPI
+        """
+        return self._create_status_obj('moodle')
+
+    def _deploy_moodle(self, credentials) -> dict:
+        """
+           Deploy API
+        """
+
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'MOODLE_ROLE_ID': credentials.get('role_id'),
+            'MOODLE_SECRET_ID': credentials.get('secret_id'),
+            'MOODLE_DB_HOST': self._config.get('MOODLE_DB_HOST'),
+            'MOODLE_DB_USER': self._config.get('MOODLE_DB_USER'),
+            'MOODLE_DB_NAME': self._config.get('MOODLE_DB_NAME'),
+            'MOODLE_DB_PORT': self._config.get('MOODLE_DB_PORT'),
+            'MOODLE_DB_PASSWORD': self._config.get('MOODLE_DB_PASSWORD'),
+            'MOODLE_DB_PREFIX': self._config.get('MOODLE_DB_PREFIX'),
+            'MOODLE_CRON_INTERVAL': self._config.get('MOODLE_CRON_INTERVAL'),
+            'MOODLE_FULL_NAME': self._config.get('MOODLE_FULL_NAME'),
+            'MOODLE_SHORT_NAME': self._config.get('MOODLE_SHORT_NAME'),
+            'MOODLE_SUMMARY': self._config.get('MOODLE_SUMMARY'),
+            'MOODLE_ADMIN_USER': self._config.get('MOODLE_ADMIN_USER'),
+            'MOODLE_ADMIN_EMAIL': self._config.get('MOODLE_ADMIN_EMAIL'),
+            'MOODLE_ADMIN_PASSWORD': self._config.get('MOODLE_ADMIN_PASSWORD'),
+        }
+
+        return self._create_swarm_service('moodle', 'core/moodle/swarm/moodle.yaml', context)
