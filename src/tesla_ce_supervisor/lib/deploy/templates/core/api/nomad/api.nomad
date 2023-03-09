@@ -132,14 +132,14 @@ job "tesla_ce_api" {
       }
     }
     service {
-      name = "api"
+      name = "tesla_ce_api"
       port = 5000
 
       tags = [
         "tesla-ce",
         "api",
         "traefik.enable=true",
-        "traefik.http.routers.supervisor.rule=Host(`${var.base_domain}`) && PathPrefix(`/api`)",
+        "traefik.http.routers.api.rule=Host(`${var.base_domain}`) && PathPrefix(`/api`)",
         "traefik.consulcatalog.connect=true",
       ]
 

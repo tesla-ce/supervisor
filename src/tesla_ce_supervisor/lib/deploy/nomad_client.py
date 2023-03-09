@@ -153,7 +153,7 @@ class NomadDeploy(BaseDeploy):
                 status.status = 'error'
         return status
 
-    def _crete_nomad_job(self, name: str, template: str, context: dict) -> dict:
+    def _create_nomad_job(self, name: str, template: str, context: dict) -> dict:
         task_def = self._remove_empty_lines(render_to_string(template, context))
 
         try:
@@ -169,6 +169,25 @@ class NomadDeploy(BaseDeploy):
             raise TeslaDeployNomadException(err.nomad_resp.text) from err
 
         return response
+
+    def _get_core_module_context(self, module: str, credentials: dict):
+        return {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'tesla_ce_image': self._config.get('DEPLOYMENT_IMAGE') + ':{}'.format(
+                self._config.get('DEPLOYMENT_VERSION', 'latest')
+            ),
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
+            'TESLA_ADMIN_MAIL': self._config.get('TESLA_ADMIN_MAIL'),
+            'VAULT_URL': self._config.get('VAULT_URL'),
+            'VAULT_MOUNT_PATH_KV': self._config.get('VAULT_MOUNT_PATH_KV'),
+            'VAULT_MOUNT_PATH_APPROLE': self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+            'VAULT_ROLE_ID': credentials.get('role_id'),
+            'VAULT_SECRET_ID': credentials.get('secret_id'),
+            'base_domain': self._config.get('TESLA_DOMAIN'),
+            'CORE_MODULE': module.lower(),
+        }
 
     def write_scripts(self) -> None:
         """
@@ -189,7 +208,7 @@ class NomadDeploy(BaseDeploy):
             'TESLA_ADMIN_MAIL': self._config.get('TESLA_ADMIN_MAIL')
         }
 
-        return self._crete_nomad_job('traefik', 'lb/traefik/nomad/traefik.nomad', context)
+        return self._create_nomad_job('traefik', 'lb/traefik/nomad/traefik.nomad', context)
 
     def _remove_lb(self) -> dict:
         """
@@ -245,7 +264,7 @@ class NomadDeploy(BaseDeploy):
             'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN')
         }
 
-        return self._crete_nomad_job('vault', 'services/vault/nomad/vault.nomad', context)
+        return self._create_nomad_job('vault', 'services/vault/nomad/vault.nomad', context)
 
     def _remove_vault(self) -> dict:
         """
@@ -304,7 +323,7 @@ class NomadDeploy(BaseDeploy):
             'STORAGE_SECRET_KEY': self._config.get('STORAGE_SECRET_KEY'),
         }
 
-        return self._crete_nomad_job('minio', 'services/minio/nomad/minio.nomad', context)
+        return self._create_nomad_job('minio', 'services/minio/nomad/minio.nomad', context)
 
     def _remove_minio(self) -> dict:
         """
@@ -362,7 +381,7 @@ class NomadDeploy(BaseDeploy):
             'REDIS_PASSWORD': self._config.get('REDIS_PASSWORD'),
         }
 
-        return self._crete_nomad_job('redis', 'services/redis/nomad/redis.nomad', context)
+        return self._create_nomad_job('redis', 'services/redis/nomad/redis.nomad', context)
 
     def _remove_redis(self) -> dict:
         """
@@ -436,7 +455,7 @@ class NomadDeploy(BaseDeploy):
             'DB_NAME': self._config.get('DB_NAME'),
         }
 
-        return self._crete_nomad_job(name, template, context)
+        return self._create_nomad_job(name, template, context)
 
     def _remove_database(self) -> dict:
         """
@@ -522,7 +541,7 @@ class NomadDeploy(BaseDeploy):
             'RABBITMQ_ERLANG_COOKIE': self._config.get('RABBITMQ_ERLANG_COOKIE'),
         }
 
-        return self._crete_nomad_job('rabbitmq', 'services/rabbitmq/nomad/rabbitmq.nomad', context)
+        return self._create_nomad_job('rabbitmq', 'services/rabbitmq/nomad/rabbitmq.nomad', context)
 
     def _remove_rabbitmq(self) -> dict:
         """
@@ -583,7 +602,7 @@ class NomadDeploy(BaseDeploy):
             'SUPERVISOR_ADMIN_PASSWORD': self._config.get('SUPERVISOR_ADMIN_PASSWORD'),
             'SUPERVISOR_ADMIN_EMAIL': self._config.get('TESLA_ADMIN_MAIL'),
         }
-        return self._crete_nomad_job('tesla_ce_supervisor', 'supervisor/nomad/supervisor.nomad', context)
+        return self._create_nomad_job('tesla_ce_supervisor', 'supervisor/nomad/supervisor.nomad', context)
 
     def _remove_supervisor(self) -> dict:
         """
@@ -627,16 +646,139 @@ class NomadDeploy(BaseDeploy):
         """
             Get the deployment information for TeSLA CE Supervisor
         """
-        return self._create_status_obj('supervisor')
+        return self._create_status_obj('tesla_ce_supervisor')
 
     def test_connection(self) -> ConnectionStatus:
         pass
 
     def test_deployer(self) -> dict:
-        return {}
+        result = False
+        info = ''
+        try:
+            members = self._client.agent.get_members()
+            result = len(members) > 0
+        except Exception as err:
+            info = str(err)
+
+        return {"result": result, "info": info}
 
     def execute_command_inside_container(self, container, command) -> CommandStatus:
         """
             Execute command inside container
         """
         raise NotImplementedError()
+
+    def _remove_dashboard(self) -> dict:
+        """
+            Remove deployed TeSLA CE Dashboard
+        """
+        return self._client.job.deregister_job('tesla_ce_dashboard', True)
+
+    def _deploy_dashboard(self) -> dict:
+        """
+            Deploy TeSLA CE Dashboard
+        """
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'dashboard_image': 'teslace/frontend-angular:latest',
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN')
+        }
+        return self._create_nomad_job('tesla_ce_dashboard', 'core/dashboard/nomad/dashboard.nomad', context)
+
+    def _get_dashboard_script(self) -> SetupOptions:
+        """
+            Get the script to deploy TeSLA CE Dashboard
+        """
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'dashboard_image': 'teslace/frontend-angular:latest',
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN')
+        }
+        task_def = self._remove_empty_lines(render_to_string('core/dashboard/nomad/dashboard.nomad', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='nomad job run tesla-ce-dashboard.nomad',
+            description='Create new Nomad job for TeSLA CE Dashboard'
+        )
+        script.add_file(
+            filename='tesla-ce-dashboard.nomad',
+            description='Job description for TeSLA CE Dashboard',
+            content=task_def,
+            mimetype='application/hcl'
+        )
+
+        return script
+
+    def _get_dashboard_status(self) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE Dashboard
+        """
+        return self._create_status_obj('tesla_ce_dashboard')
+
+    def _deploy_core_module(self, module: str, credentials: dict):
+        return self._create_nomad_job(module,
+                                      f'core/{module.lower()}/nomad/{module.lower()}.nomad',
+                                      self._get_core_module_context(module, credentials)
+                                      )
+
+    def _get_core_module_script(self, credentials: dict, module: str) -> SetupOptions:
+        """
+            Get deployment scripts for a TeSLA CE core module
+            :param credentials: Dictionary with role_id and secret_id
+            :param module: Name of the module
+            :return: Setup options
+        """
+        task_def = self._remove_empty_lines(render_to_string(
+            f'core/{module.lower()}/nomad/{module.lower()}.nomad',
+            self._get_core_module_context(module, credentials))
+        )
+
+        script = SetupOptions()
+        script.add_command(
+            command=f'nomad job run tesla-ce-{module.lower()}.nomad',
+            description=f'Create new Nomad job for TeSLA CE {module.upper()} module'
+        )
+        script.add_file(
+            filename=f'tesla-ce-{module.lower()}.nomad',
+            description=f'Job description for TeSLA CE {module.upper()} module',
+            content=task_def,
+            mimetype='application/hcl'
+        )
+
+        return script
+
+    def _remove_core_module(self, module) -> dict:
+        """
+            Remove deployed TeSLA CE core module
+        """
+        return self._client.job.deregister_job(f'tesla_ce_{module.lower()}', True)
+
+    def _get_core_status(self, module) -> ServiceDeploymentInformation:
+        """
+            Get the deployment information for TeSLA CE Core module
+        """
+        return self._create_status_obj(module.lower())
+
+    def _deploy_instrument_provider(self, credentials, module) -> dict:
+        pass
+
+    def _get_instrument_provider_script(self, module, credentials, provider) -> SetupOptions:
+        pass
+
+    def _get_instrument_provider_status(self, module) -> ServiceDeploymentInformation:
+        pass
+
+    def _remove_instrument_provider(self, provider) -> dict:
+        pass
+
+    def _deploy_moodle(self, credentials) -> dict:
+        pass
+
+    def _get_moodle_status(self) -> ServiceDeploymentInformation:
+        pass
+
