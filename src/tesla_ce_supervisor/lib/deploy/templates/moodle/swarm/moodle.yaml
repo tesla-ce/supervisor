@@ -31,17 +31,15 @@ services:
       MOODLE_ADMINUSER: "{{ MOODLE_ADMIN_USER }}"
       MOODLE_ADMINPASS_FILE: "/run/secrets/MOODLE_ADMIN_PASSWORD"
       MOODLE_ADMINEMAIL: "{{ MOODLE_ADMIN_EMAIL }}"
-      ROLE_ID_FILE: "/run/secrets/ROLE_ID"
-      SECRET_ID_FILE: "/run/secrets/SECRET_ID"
+      ROLE_ID_FILE: "/run/secrets/MOODLE_ROLE_ID"
+      SECRET_ID_FILE: "/run/secrets/MOODLE_SECRET_ID"
       API_URL: "https://{{ TESLA_DOMAIN }}"
       LTI_URL: "https://lti.{{ TESLA_DOMAIN }}"
     secrets:
       - MOODLE_DB_PASSWORD
       - MOODLE_ADMIN_PASSWORD
-      - source: MOODLE_ROLE_ID
-        target: ROLE_ID
-      - source: MOODLE_SECRET_ID
-        target: SECRET_ID
+      - MOODLE_ROLE_ID
+      - MOODLE_SECRET_ID
     volumes:
       - moodle_volume:/var/moodledata
     networks:

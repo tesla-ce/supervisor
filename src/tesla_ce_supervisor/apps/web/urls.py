@@ -17,6 +17,7 @@ urlpatterns = [
          name='setup_tesla_deploy_workers'),
     path('tesladeployinstruments', views.setup.deploy_tesla_instruments.deploy_tesla_instruments_view,
          name='setup_tesla_deploy_instruments'),
+    path('teslaconfiguremoodle', views.setup.configure_tesla_moodle_view, name='setup_tesla_config_moodle'),
     path('tesladeploymoodle', views.setup.deploy_tesla_moodle.deploy_tesla_moodle_view,
          name='setup_tesla_deploy_moodle'),
     

@@ -239,6 +239,12 @@ class BaseDeploy(abc.ABC):
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
+    def _remove_moodle(self) -> dict:
+        """
+            Remove deployed TeSLA CE Moodle
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
     @abc.abstractmethod
     def _remove_core_module(self, module) -> dict:
         """
@@ -317,6 +323,13 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
+    def _get_moodle_script(self, credentials) -> SetupOptions:
+        """
+            Get the script to deploy TeSLA CE Instrument provider script
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abc.abstractmethod
     def _get_dashboard_status(self) -> ServiceDeploymentInformation:
         """
             Get the deployment information for TeSLA CE Dashboard
@@ -338,7 +351,7 @@ class BaseDeploy(abc.ABC):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     @abc.abstractmethod
-    def _get_core_status(self, module) -> ServiceDeploymentInformation:
+    def _get_core_module_status(self, module) -> ServiceDeploymentInformation:
         """
             Get the deployment information for TeSLA CE Core module
         """
@@ -433,7 +446,7 @@ class BaseDeploy(abc.ABC):
         elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
                                 "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
                                 "WORKER-REPORTING", "API", "LAPI", "BEAT"]:
-            return self._get_core_status(module.upper())
+            return self._get_core_module_status(module.upper())
         elif module.upper() in ["TKS", "TPT", "TFR"]:
             return self._get_instrument_provider_status(module.upper())
 
@@ -469,6 +482,10 @@ class BaseDeploy(abc.ABC):
             return self._get_core_module_script(credentials, module.upper())
         elif module.upper() in ["TFR", "TPT", "TKS"]:
             return self._get_instrument_provider_script(module.upper(), credentials, provider)
+        elif module.upper() == "MOODLE":
+            return self._get_moodle_script(credentials)
+
+
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
 
@@ -534,5 +551,8 @@ class BaseDeploy(abc.ABC):
             return self._remove_core_module(module.upper())
         elif module.upper() in ["TKS", "TPT", "TFR"]:
             return self._remove_instrument_provider(provider)
+        elif module.upper() == "MOODLE":
+            return self._remove_moodle()
+
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))

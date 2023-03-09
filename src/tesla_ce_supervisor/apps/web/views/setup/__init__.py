@@ -1,5 +1,6 @@
 from .basic_info import tesla_basic_info
 from .configure_tesla import configure_tesla_view
+from .configure_tesla_moodle import configure_tesla_moodle_view
 from .deploy_tesla_core import deploy_tesla_core_view
 from .deploy_tesla_workers import deploy_tesla_workers_view
 from .deploy_tesla_instruments import deploy_tesla_instruments_view
@@ -13,6 +14,7 @@ from . import services
 
 __all__ = [
     'configure_tesla_view',
+    'configure_tesla_moodle_view',
     'deploy_tesla_core_view',
     'deploy_tesla_workers_view',
     'deploy_tesla_instruments_view',

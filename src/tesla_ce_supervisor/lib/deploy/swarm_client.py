@@ -18,6 +18,7 @@ from ..models.check import ServiceDeploymentInformation, ConnectionStatus, Comma
 from ..setup_options import SetupOptions
 from ..tesla.conf import Config
 from ..tesla.modules import get_modules
+from .exceptions import TeslaDeployException
 
 
 class SwarmDeploy(BaseDeploy):
@@ -557,7 +558,7 @@ class SwarmDeploy(BaseDeploy):
             template = None
 
         if db_image is None:
-            raise TeslaDeployNomadException('Invalid database engine')
+            raise TeslaDeployException('Invalid database engine')
 
         context = {
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
@@ -974,7 +975,7 @@ class SwarmDeploy(BaseDeploy):
 
         context['services'] = [modules[module] for module in modules]
 
-        return self._create_swarm_service(deploy_module_lower, 'core/api/swarm/core.yaml', context)
+        return self._create_swarm_service(deploy_module_lower, 'core/module/swarm/core.yaml', context)
 
     def _remove_core_module(self, deploy_module) -> dict:
         """
@@ -1009,9 +1010,9 @@ class SwarmDeploy(BaseDeploy):
 
         context['services'] = [modules[module] for module in modules]
 
-        return self._remove_swarm_service(deploy_module_lower, 'core/api/swarm/core.yaml', context)
+        return self._remove_swarm_service(deploy_module_lower, 'core/module/swarm/core.yaml', context)
 
-    def _get_core_status(self, module) -> ServiceDeploymentInformation:
+    def _get_core_module_status(self, module) -> ServiceDeploymentInformation:
         """
             Get the deployment information for TeSLA CE Moodle
         """
@@ -1051,7 +1052,7 @@ class SwarmDeploy(BaseDeploy):
 
         context['services'] = [modules[module] for module in modules]
 
-        task_def = self._remove_empty_lines(render_to_string('core/api/swarm/core.yaml', context))
+        task_def = self._remove_empty_lines(render_to_string('core/module/swarm/core.yaml', context))
 
         script = SetupOptions()
         script.add_command(
@@ -1097,7 +1098,7 @@ class SwarmDeploy(BaseDeploy):
 
         provider_name = "{}_provider".format(provider.get('acronym').lower())
 
-        return self._create_swarm_service(provider_name, 'core/provider/swarm/provider.yaml', context)
+        return self._create_swarm_service(provider_name, 'provider/swarm/provider.yaml', context)
 
     def _remove_instrument_provider(self, provider) -> dict:
         """
@@ -1114,7 +1115,7 @@ class SwarmDeploy(BaseDeploy):
 
         provider_name = "{}_provider".format(provider.get('acronym').lower())
 
-        return self._remove_swarm_service(provider_name, 'core/provider/swarm/provider.yaml', context)
+        return self._remove_swarm_service(provider_name, 'provider/swarm/provider.yaml', context)
 
     def _get_instrument_provider_status(self, module):
         return self._create_status_obj("{}_provider".format(module.lower()))
@@ -1132,7 +1133,7 @@ class SwarmDeploy(BaseDeploy):
         context["{}_ROLE_ID".format(provider.get('acronym').upper())] = credentials.get('role_id')
         context["{}_SECRET_ID".format(provider.get('acronym').upper())] = credentials.get('secret_id')
 
-        task_def = self._remove_empty_lines(render_to_string('core/provider/swarm/provider.yaml', context))
+        task_def = self._remove_empty_lines(render_to_string('provider/swarm/provider.yaml', context))
 
         script = SetupOptions()
         script.add_command(
@@ -1194,4 +1195,98 @@ class SwarmDeploy(BaseDeploy):
             'MOODLE_ADMIN_PASSWORD': self._config.get('MOODLE_ADMIN_PASSWORD'),
         }
 
-        return self._create_swarm_service('moodle', 'core/moodle/swarm/moodle.yaml', context)
+        return self._create_swarm_service('moodle', 'moodle/swarm/moodle.yaml', context)
+
+    def _remove_moodle(self) -> dict:
+        """
+           Deploy API
+        """
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'MOODLE_ROLE_ID': '',
+            'MOODLE_SECRET_ID': '',
+            'MOODLE_DB_HOST': self._config.get('MOODLE_DB_HOST'),
+            'MOODLE_DB_USER': self._config.get('MOODLE_DB_USER'),
+            'MOODLE_DB_NAME': self._config.get('MOODLE_DB_NAME'),
+            'MOODLE_DB_PORT': self._config.get('MOODLE_DB_PORT'),
+            'MOODLE_DB_PASSWORD': self._config.get('MOODLE_DB_PASSWORD'),
+            'MOODLE_DB_PREFIX': self._config.get('MOODLE_DB_PREFIX'),
+            'MOODLE_CRON_INTERVAL': self._config.get('MOODLE_CRON_INTERVAL'),
+            'MOODLE_FULL_NAME': self._config.get('MOODLE_FULL_NAME'),
+            'MOODLE_SHORT_NAME': self._config.get('MOODLE_SHORT_NAME'),
+            'MOODLE_SUMMARY': self._config.get('MOODLE_SUMMARY'),
+            'MOODLE_ADMIN_USER': self._config.get('MOODLE_ADMIN_USER'),
+            'MOODLE_ADMIN_EMAIL': self._config.get('MOODLE_ADMIN_EMAIL'),
+            'MOODLE_ADMIN_PASSWORD': self._config.get('MOODLE_ADMIN_PASSWORD'),
+        }
+        return self._remove_swarm_service('moodle', 'moodle/swarm/moodle.yaml', context)
+
+    def _get_moodle_script(self, credentials):
+        """
+            Get the script to deploy Instrument provider
+        """
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
+            'MOODLE_ROLE_ID': '',
+            'MOODLE_SECRET_ID': '',
+            'MOODLE_DB_HOST': self._config.get('MOODLE_DB_HOST'),
+            'MOODLE_DB_USER': self._config.get('MOODLE_DB_USER'),
+            'MOODLE_DB_NAME': self._config.get('MOODLE_DB_NAME'),
+            'MOODLE_DB_PORT': self._config.get('MOODLE_DB_PORT'),
+            'MOODLE_DB_PASSWORD': self._config.get('MOODLE_DB_PASSWORD'),
+            'MOODLE_DB_PREFIX': self._config.get('MOODLE_DB_PREFIX'),
+            'MOODLE_CRON_INTERVAL': self._config.get('MOODLE_CRON_INTERVAL'),
+            'MOODLE_FULL_NAME': self._config.get('MOODLE_FULL_NAME'),
+            'MOODLE_SHORT_NAME': self._config.get('MOODLE_SHORT_NAME'),
+            'MOODLE_SUMMARY': self._config.get('MOODLE_SUMMARY'),
+            'MOODLE_ADMIN_USER': self._config.get('MOODLE_ADMIN_USER'),
+            'MOODLE_ADMIN_EMAIL': self._config.get('MOODLE_ADMIN_EMAIL'),
+            'MOODLE_ADMIN_PASSWORD': self._config.get('MOODLE_ADMIN_PASSWORD'),
+        }
+
+        task_def = self._remove_empty_lines(render_to_string('moodle/swarm/moodle.yaml', context))
+
+        script = SetupOptions()
+        script.add_command(
+            command='docker stack -t tesla_moodle.yaml tesla',
+            description='Create new service for moodle'
+        )
+
+        script.add_file(
+            filename='tesla_moodle.yaml',
+            description='Stack description for moodle',
+            content=task_def,
+            mimetype='application/yaml'
+        )
+
+        script.add_file(
+            filename='secrets/MOODLE_ROLE_ID',
+            description='Secret MOODLE_ROLE_ID',
+            content=credentials.get('role_id'),
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/MOODLE_SECRET_ID',
+            description='Secret MOODLE_SECRET_ID',
+            content=credentials.get('secret_id'),
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/MOODLE_DB_PASSWORD',
+            description='Secret MOODLE_DB_PASSWORD',
+            content=self._config.get('MOODLE_DB_PASSWORD'),
+            mimetype='text/plain'
+        )
+
+        script.add_file(
+            filename='secrets/MOODLE_ADMIN_PASSWORD',
+            description='Secret MOODLE_ADMIN_PASSWORD',
+            content=self._config.get('MOODLE_ADMIN_PASSWORD'),
+            mimetype='text/plain'
+        )
+
+        return script
