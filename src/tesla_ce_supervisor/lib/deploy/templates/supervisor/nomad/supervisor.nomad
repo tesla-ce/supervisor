@@ -70,7 +70,7 @@ job "tesla_ce_supervisor" {
   #        value     = "node"
   #}
 
-  # Create a 'minio' group. Each task in the group will be
+  # Create a 'supervisor' group. Each task in the group will be
   # scheduled onto the same machine.
   group "supervisor" {
     # Control the number of instances of this group.

@@ -1,6 +1,8 @@
 import os
 import typing
 import nomad
+import datetime
+from time import sleep
 from django.template.loader import render_to_string
 from .base import BaseDeploy, ServiceDeploymentInformation
 from .exceptions import TeslaDeployNomadTemplateException, TeslaDeployNomadException
@@ -662,11 +664,73 @@ class NomadDeploy(BaseDeploy):
 
         return {"result": result, "info": info}
 
-    def execute_command_inside_container(self, image, command) -> CommandStatus:
+    def execute_command_inside_container(self, image: str, command: str, environment: dict = None, timeout: int = 120) -> CommandStatus:
         """
             Execute command inside container
         """
-        raise NotImplementedError()
+        command_parts = command.split(' ')
+        command_str = command_parts[0]
+        argument_list = []
+        if len(command_parts) > 1:
+            argument_list = command_parts[1:]
+
+        context = {
+            'count': 1,
+            'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
+            'nomad_region': self.nomad_conf.nomad_region,
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'command_image': image,
+            'command': command_str,
+            'command_arguments': str(argument_list).replace("'", '"'),
+        }
+        if environment is not None:
+            context = context.update(environment)
+
+        # Remove any previous allocation
+        if len(self._client.job.get_allocations('tesla_ce_supervisor_command')) > 0:
+            self._client.job.deregister_job('tesla_ce_supervisor_command', True)
+
+        # Register the new job
+        self._create_nomad_job('tesla_ce_supervisor_command', 'supervisor/nomad/run_command.nomad', context)
+
+        # Wait until job finishes
+        tic = datetime.datetime.utcnow()
+        info = {
+            'started': tic.isoformat(),
+            'finished': None,
+            'error': None
+        }
+        try:
+            summary = self._client.job.get_summary("tesla_ce_supervisor_command")
+            finished = summary['Summary']['supervisor_command']['Complete'] + summary['Summary']['supervisor_command']['Failed']
+            job_ok = True
+            while finished < 1:
+                sleep(0.1)
+                if (datetime.datetime.utcnow() - tic).total_seconds() > timeout:
+                    job_ok = False
+                    info['error'] = 'timeout'
+                    break
+                summary = self._client.job.get_summary("tesla_ce_supervisor_command")
+                finished = summary['Summary']['supervisor_command']['Complete'] + summary['Summary']['supervisor_command']['Failed']
+        except Exception as exc:
+            job_ok = False
+            info['error'] = str(exc)
+
+        # Store final time
+        info['finished'] = datetime.datetime.utcnow().isoformat()
+
+        # Check final status
+        if job_ok:
+            job_ok = summary['Summary']['supervisor_command']['Complete'] > 0
+            info['error'] = ''
+
+        try:
+            if len(self._client.job.get_allocations('tesla_ce_supervisor_command')) > 0:
+                self._client.job.deregister_job('tesla_ce_supervisor_command', True)
+        except Exception:
+            pass
+
+        return CommandStatus(command=command, status=job_ok, info=info)
 
     def _remove_dashboard(self) -> dict:
         """

@@ -846,7 +846,7 @@ class SwarmDeploy(BaseDeploy):
 
         return {"result": result, "info": info}
 
-    def execute_command_inside_container(self, image, command, environment) -> CommandStatus:
+    def execute_command_inside_container(self, image: str, command: str, environment: dict=None, timeout: int = 120) -> CommandStatus:
         """
             Execute command inside container
         """
