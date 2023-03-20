@@ -1,27 +1,11 @@
-import abc
-import base64
-import typing
-
-from django.http import HttpResponse, JsonResponse
-from rest_framework.views import APIView
-from tesla_ce_supervisor.lib.deploy.base import ModuleCode
-from tesla_ce_supervisor.lib.client import SupervisorClient
+from django.http import JsonResponse
+from .base import BaseAPISupervisor
 
 
-class BaseAPIDeploy(APIView, abc.ABC):
+class BaseAPIDeploy(BaseAPISupervisor):
     """
         Base class for deployment
     """
-    module: typing.Optional[ModuleCode] = None
-    _client = None
-
-    @property
-    def client(self):
-        if self._client is None:
-            self._client = SupervisorClient.get_instance()
-
-        return self._client
-
     def get(self, request):
         json_resp = self.client.check_module(self.module)
         return JsonResponse(json_resp)

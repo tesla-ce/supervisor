@@ -128,12 +128,12 @@ class DeployClient:
         """
         return self._client.remove(module, provider)
 
-    def get_script(self, module: ModuleCode, credentials=None, provider=None) -> SetupOptions:
+    def get_script(self, module: ModuleCode, credentials=None, provider=None, tesla=None) -> SetupOptions:
         """
             Get deployment script
             :param module: Name of the module
         """
-        return self._client.get_script(module, credentials, provider)
+        return self._client.get_script(module, credentials, provider, tesla)
 
     def get_status(self, module: ModuleCode) -> ServiceDeploymentInformation:
         """

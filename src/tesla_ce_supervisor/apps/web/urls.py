@@ -20,7 +20,7 @@ urlpatterns = [
     path('teslaconfiguremoodle', views.setup.configure_tesla_moodle_view, name='setup_tesla_config_moodle'),
     path('tesladeploymoodle', views.setup.deploy_tesla_moodle.deploy_tesla_moodle_view,
          name='setup_tesla_deploy_moodle'),
-    
+    path('finished', views.setup.finished.finished_view,name='setup_finished'),
     path('step1', views.setup.steps.step1,  name='setup_step1'),
     path('step2', views.setup.steps.step2,  name='setup_step2'),
     path('step3', views.setup.steps.step3,  name='setup_step3'),

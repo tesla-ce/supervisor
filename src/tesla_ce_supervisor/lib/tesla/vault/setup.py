@@ -16,6 +16,7 @@
 import random
 import string
 import time
+import json
 
 import hvac
 from hvac.exceptions import InvalidPath
@@ -513,3 +514,309 @@ class VaultSetup:
         self._create_jwt_key(MODULE_KEY_STR_TEMPLATE.format(module_name))
 
         return module_name
+
+    def create_module_entity_manual(self, module, extra_data=None, module_name=None):
+        """
+            Create or update Vault entity and policies for a given module
+
+            :param module: Module description tuple
+            :type module: dict
+            :param extra_data: Additional arguments to add to entity metadata
+            :type extra_data: dict
+            :param module_name: Name for the new module. If not provided the name in the module is used.
+            :type module_name: str
+        """
+        commands = []
+        # Set the module name
+        if module_name is None:
+            module_name = module['module']
+
+        # Create the module policy
+        self._create_module_policy(module_name)
+
+        # Build configuration map and required policies
+        config, policies = self._build_config_and_policies(module)
+
+        # Create the metadata
+        entity_metadata = {
+            'module': module_name,
+            'description': module['description'],
+            'config': 'modules/{}/config'.format(module_name),
+            'apps': 'modules/{}/apps'.format(module_name),
+            'services': 'modules/{}/services'.format(module_name),
+            'domain': '{}.{}'.format(module_name, self._config.get('TESLA_DOMAIN')),
+        }
+
+        # Add queues in case they are available
+        if 'queues' in module['deployment']:
+            entity_metadata['queues'] = ','.join(module['deployment']['queues'])
+
+        # Add extra data
+        if extra_data is not None:
+            for data_key in extra_data:
+                entity_metadata[data_key] = extra_data[data_key]
+
+        # Write entity configuration keys
+        commands.append({
+            'command': 'vault kv put -mount={} modules/{}/metadata data="{}"'.format(
+                self._config.get('VAULT_MOUNT_PATH_KV'),
+                module_name,
+                entity_metadata
+            ),
+            'description': 'Vault config metadata {}'.format(module_name)
+        })
+
+        commands.append({
+            'command': 'vault kv put -mount={} modules/{}/config data="{}"'.format(
+                self._config.get('VAULT_MOUNT_PATH_KV'),
+                module_name,
+                list(config)
+            ),
+            'description': 'Vault config config {}'.format(module_name)
+        })
+
+        commands.append({
+            'command': 'vault kv put -mount={} modules/{}/apps data="{}"'.format(
+                self._config.get('VAULT_MOUNT_PATH_KV'),
+                module_name,
+                module['apps']
+            ),
+            'description': 'Vault config apps {}'.format(module_name)
+        })
+
+        commands.append({
+            'command': 'vault kv put -mount={} modules/{}/services data="{}"'.format(
+                self._config.get('VAULT_MOUNT_PATH_KV'),
+                module_name,
+                module['services']
+            ),
+            'description': 'Vault config services {}'.format(module_name)
+        })
+
+        commands.append({
+            'command': 'vault write {}/auth/approle/role/{} -token-policies={}'.format(
+                self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+                module_name,
+                list(policies)
+            ),
+            'description': 'Vault create role for {}'.format(module_name)
+        })
+
+        # Create Celery credentials for all modules
+        # TODO: Use per module credentials
+        if 'celery' in module['services']:
+            prefix = module_name
+            if module['module'].startswith('provider'):
+                prefix = 'provider'
+
+
+            commands.append({
+                'command': 'vault kv put -mount={} config/celery/credentials/{}_user data="{}"'.format(
+                    self._config.get('VAULT_MOUNT_PATH_KV'),
+                    prefix,
+                    self._config.get('CELERY_BROKER_USER')
+                ),
+                'description': 'Vault config user to authenticate with broker {}'.format(module_name)
+            })
+
+            commands.append({
+                'command': 'vault kv put -mount={} config/celery/credentials/{}_password data="{}"'.format(
+                    self._config.get('VAULT_MOUNT_PATH_KV'),
+                    prefix,
+                    self._config.get('CELERY_BROKER_PASSWORD')
+                ),
+                'description': 'Vault config user to authenticate with broker {}'.format(module_name)
+            })
+
+        return commands
+
+    def check_vault_status(self):
+        result = {
+            'vault_tesla_ce_version': None,
+            'update_available': False,
+            'kv': {
+                'installed': False,
+                'read': False,
+                'write': False
+            },
+            'transit': {
+                'installed': False,
+                'read': False,
+                'sign': False
+            },
+            'approle': {
+                'installed': False,
+                'read': False
+            },
+            'policies': {
+                'read': False,
+                'is_valid': False
+            },
+            'unsealed': False,
+            'initialized': False,
+            'steps': [],
+            'command_status': False
+        }
+
+        try:
+            result['initialized'] = self._client.sys.is_initialized()
+        except hvac.exceptions.VaultError as err:
+            result['steps'].append({"msg": str(err), "status": False})
+
+        if result['initialized'] is False:
+            return result
+
+        try:
+            result['unsealed'] = not self._client.sys.is_sealed()
+        except hvac.exceptions.VaultError as err:
+            result['steps'].append({"msg": str(err), "status": False})
+
+        if result['unsealed'] is False:
+            return result
+
+        # KV checks
+        try:
+            result['kv']['installed'] = self._is_secret_engine_enabled('{}/'.format(self._kv_mount_point))
+        except hvac.exceptions.VaultError as err:
+            result['steps'].append({"msg": str(err), "status": False})
+
+        if result['kv']['installed'] is True:
+            # check if KEY exists
+            response_version = None
+            response_aval_version = None
+
+            try:
+                response_version = self._client.secrets.kv.v2.read_secret_version(
+                    path='{}/{}'.format('system', 'version')
+                )
+
+                response_aval_version = self._client.secrets.kv.v2.read_secret_version(
+                    path='{}/{}'.format('system', 'available_version')
+                )
+
+                result['kv']['read'] = True
+
+            except hvac.exceptions.Forbidden:
+                result['kv']['read'] = False
+                result['steps'].append({"msg": "KV read is forbidden with provided credentials", "status": False})
+            except hvac.exceptions.Unauthorized:
+                result['steps'].append({"msg": "KV read is unauthorized with provided credentials", "status": False})
+            except hvac.exceptions.InvalidPath:
+                # it is the first time to execute this check
+                result['kv']['read'] = True
+            except hvac.exceptions.VaultError as err:
+                result['steps'].append({"msg": str(err), "status": False})
+
+        # Transit checks
+        try:
+            result['transit']['installed'] = self._is_secret_engine_enabled('{}/'.format(self._transit_mount_point))
+        except hvac.exceptions.VaultError as err:
+            result['steps'].append({"msg": str(err), "status": False})
+
+        if result['transit']['installed'] is True:
+            check_keys = ['jwt_default', 'jwt_learners', 'jwt_instructors', 'jwt_users', 'jwt_modules']
+            for module in get_modules():
+                check_keys.append(MODULE_KEY_STR_TEMPLATE.format(module))
+
+            result['transit']['read'] = True
+            result['transit']['sign'] = True
+            for check_key in check_keys:
+                # read checks
+                try:
+                    response = self._client.secrets.transit.read_key(check_key, mount_point=self._transit_mount_point)
+                except hvac.exceptions.Forbidden:
+                    result['transit']['read'] = False
+                    result['steps'].append({"msg": "Transit read is forbidden with provided credentials. Error key {}.".format(MODULE_KEY_STR_TEMPLATE.format(module)), "status": False})
+                except hvac.exceptions.Unauthorized:
+                    result['steps'].append({"msg": "Transit read is unauthorized with provided credentials. Error key {}.".format(MODULE_KEY_STR_TEMPLATE.format(module)), "status": False})
+                except hvac.exceptions.VaultError as err:
+                    result['steps'].append({"msg": str(err), "status": False})
+
+                # write/sign checks
+                try:
+                    response = self._client.secrets.transit.encrypt_data(check_key, "testing", mount_point=self._transit_mount_point)
+
+                except hvac.exceptions.Forbidden:
+                    result['transit']['sign'] = False
+                    result['steps'].append({"msg": "Transit encrypt is forbidden with provided credentials. Error key {}.".format(MODULE_KEY_STR_TEMPLATE.format(module)), "status": False})
+                except hvac.exceptions.Unauthorized:
+                    result['steps'].append({"msg": "Transit encrypt is unauthorized with provided credentials. Error key {}.".format(MODULE_KEY_STR_TEMPLATE.format(module)), "status": False})
+                except hvac.exceptions.VaultError as err:
+                    result['steps'].append({"msg": str(err), "status": False})
+
+        # check policies
+        policies = self._adapt_policies_path(get_policies())
+        result['policies']['read'] = True
+        for policy in policies:
+            try:
+                self._client.sys.read_policy(
+                    name='{}{}'.format(self._policy_prefix, policy)
+                )
+            except hvac.exceptions.Forbidden:
+                result['policies']['read'] = False
+                result['steps'].append({"msg": "Policy name {}{} is forbidden with provided credentials.".format(self._policy_prefix, policy), "status": False})
+            except hvac.exceptions.Unauthorized:
+                result['steps'].append({"msg": "Policy name {}{} is unauthorized with provided credentials.".format(self._policy_prefix, policy), "status": False})
+            except hvac.exceptions.VaultError as err:
+                result['steps'].append({"msg": str(err), "status": False})
+
+        result['policies']['info'] = self.check_policies()
+        result['policies']['is_valid'] = result['policies']['info']['is_valid']
+
+        # check approle
+        try:
+            result['approle']['installed'] = self._is_auth_method_enabled('{}/'.format(self._approle_mount_point))
+        except hvac.exceptions.VaultError as err:
+            result['steps'].append({"msg": str(err), "status": False})
+
+
+        if result['approle']['installed'] is True:
+            result['approle']['read'] = True
+            modules = get_modules()
+            for aux_module in modules:
+                try:
+                    module = modules[aux_module]['module']
+                    response = self._client.auth.approle.read_role_id(role_name=module)
+                except hvac.exceptions.Forbidden:
+                    result['approle']['read'] = False
+                    result['steps'].append({"msg": "Approle read for module {} is forbidden with provided credentials.".format(module['module']), "status": False})
+                except hvac.exceptions.Unauthorized:
+                    result['steps'].append({"msg": "Approle read for module {} is unauthorized with provided credentials.".format(module['module']), "status": False})
+                except hvac.exceptions.VaultError as err:
+                    result['steps'].append({"msg": str(err), "status": False})
+
+        result['command_status'] = True
+        return result
+
+    def check_policies(self):
+        """
+            Creates the policies to grant access to services
+        """
+        # Create generic policies
+        policies = self._adapt_policies_path(get_policies())
+
+        result = {
+            "policies": [],
+            "is_valid": True
+        }
+        for policy in policies:
+            try:
+                vault_policy = self._client.sys.read_policy(
+                    name='{}{}'.format(self._policy_prefix, policy)
+                )
+
+                vault_policy_data = json.loads(vault_policy['data']['rules'])
+
+                result['policies'].append({
+                    "policy": '{}{}'.format(self._policy_prefix, policy),
+                    "expected": policies[policy],
+                    "current": vault_policy_data,
+                    "exist": True,
+                    "is_valid": (policies[policy] == vault_policy_data)
+                })
+
+            except hvac.exceptions.InvalidPath:
+                # policy not found
+                result['is_valid'] = False
+
+        return result

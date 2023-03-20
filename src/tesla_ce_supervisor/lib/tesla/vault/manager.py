@@ -78,6 +78,7 @@ class VaultManager:
             return True
         except ConnectionError as conn_err:
             raise TeslaVaultException('Vault is not responding at {}.'.format(self.vault_url)) from conn_err
+
     def is_ready(self):
         return self._is_ready
 
@@ -615,3 +616,13 @@ class VaultManager:
         # Create the setup object
         setup = VaultSetup(self._client, self._config)
         return setup.get_policies_definition()
+
+    def create_module_entity_manual(self, module, extra_data=None, module_name=None):
+        # Create the setup object
+        setup = VaultSetup(self._client, self._config)
+        return setup.create_module_entity_manual(module, extra_data, module_name)
+
+    def check_vault_status(self):
+        # Create the setup object
+        setup = VaultSetup(self._client, self._config)
+        return setup.check_vault_status()

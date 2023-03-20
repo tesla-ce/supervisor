@@ -850,7 +850,6 @@ class SwarmDeploy(BaseDeploy):
         """
             Execute command inside container
         """
-        image = None
         networks = []
         extra_hosts = {}
         auto_remove = True
@@ -1192,6 +1191,7 @@ class SwarmDeploy(BaseDeploy):
             'MOODLE_ADMIN_USER': self._config.get('MOODLE_ADMIN_USER'),
             'MOODLE_ADMIN_EMAIL': self._config.get('MOODLE_ADMIN_EMAIL'),
             'MOODLE_ADMIN_PASSWORD': self._config.get('MOODLE_ADMIN_PASSWORD'),
+            'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH')
         }
 
         return self._create_swarm_service('moodle', 'moodle/swarm/moodle.yaml', context)

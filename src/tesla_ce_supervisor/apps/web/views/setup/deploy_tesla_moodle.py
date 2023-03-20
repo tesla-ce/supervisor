@@ -34,7 +34,7 @@ def deploy_tesla_moodle_view(request):
 
     if request.method == 'POST':
         # Configuration will be generated as part of the deployment
-        client.tesla.get_config().set('DEPLOYMENT_STATUS', 13)
+        client.tesla.get_config().set('DEPLOYMENT_STATUS', 14)
         client.tesla.persist_configuration()
         return JsonResponse({'redirect_url': get_url_from_status(client)})
 

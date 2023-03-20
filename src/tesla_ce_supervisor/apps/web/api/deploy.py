@@ -1,29 +1,15 @@
-import abc
 import base64
-import typing
 import json
 
-from django.http import HttpResponse, JsonResponse
-from rest_framework.views import APIView
-from tesla_ce_supervisor.lib.deploy.base import ModuleCode
-from tesla_ce_supervisor.lib.client import SupervisorClient
+from django.http import JsonResponse
 from tesla_ce_supervisor.lib.exceptions import TeslaException, ProviderExistsException, VLEExistsException
+from .base import BaseAPISupervisor
 
 
-class BaseAPIDeploy(APIView, abc.ABC):
+class BaseAPIDeploy(BaseAPISupervisor):
     """
         Base class for deployment
     """
-    module: typing.Optional[ModuleCode] = None
-    _client = None
-
-    @property
-    def client(self):
-        if self._client is None:
-            self._client = SupervisorClient.get_instance()
-
-        return self._client
-
     def get_credentials(self):
         credentials = None
         if self.module.lower() in ['api', 'beat', 'worker-all', 'worker-enrolment', 'worker-enrolment-storage',
@@ -73,6 +59,14 @@ class BaseAPIDeploy(APIView, abc.ABC):
         try:
             credentials = self.get_credentials()
             [provider, instrument_id] = self.get_provider()
+            if self.module.lower() == 'moodle':
+                data = {
+                    'db_name': self.client.tesla.get_config().get('MOODLE_DB_NAME'),
+                    'db_user': self.client.tesla.get_config().get('MOODLE_DB_USER'),
+                    'db_password': self.client.tesla.get_config().get('MOODLE_DB_PASSWORD')
+                }
+                self.client.make_request_to_supervisor_service('POST', '/supervisor/api/admin/config/create_database/',
+                                                               data)
             response = self.client.deploy.deploy(self.module, credentials, provider)
             self.client.tesla.persist_configuration()
 

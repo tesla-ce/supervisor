@@ -38,6 +38,8 @@ def get_url_from_status(client: SupervisorClient) -> str:
         new_url = reverse('setup_tesla_config_moodle')
     elif status == 13:  # Configuration wizard 1
         new_url = reverse('setup_tesla_deploy_moodle')
+    elif status == 14:
+        new_url = reverse('setup_finished')
     else:
         new_url = reverse('setup_home')
     return new_url

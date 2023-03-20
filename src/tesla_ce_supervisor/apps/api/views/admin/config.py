@@ -1,27 +1,9 @@
 import json
 
-from django.shortcuts import render
-from django.http import Http404, JsonResponse
-from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet
+from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework import status
-from tesla_ce_supervisor.lib.client import SupervisorClient
-from rest_framework import viewsets
-
-# Create your views here.
-
-
-class BaseViewsets(viewsets.ViewSet):
-    _client = None
-
-    @property
-    def client(self):
-        if self._client is None:
-            self._client = SupervisorClient.get_instance()
-
-        return self._client
+from .base import BaseViewsets, BaseConfigViewsets
 
 
 class StatusViewSet(BaseViewsets):
@@ -40,7 +22,7 @@ class ConnectionViewSet(BaseViewsets):
         return Response(content)
 
 
-class ConfigViewSet(BaseViewsets):
+class ConfigViewSet(BaseConfigViewsets):
     def retrieve(self, request, pk=None):
         module = pk.upper()
         result = self.client.configure_service(module, request)
@@ -72,3 +54,17 @@ class ConfigViewSet(BaseViewsets):
         module = request.data.get('module').lower()
         credentials = self.client.tesla.get_module_credentials(module)
         return Response(json.dumps(credentials))
+
+    @action(detail=False, methods=['post'])
+    def create_database(self, request):
+        db_name = request.data.get('db_name')
+        db_user = request.data.get('db_user')
+        db_password = request.data.get('db_password')
+        self.client.create_database(db_name, db_user, db_password)
+
+        return Response()
+
+    @action(detail=False, methods=['get'])
+    def all_config(self, request):
+        result = self.client.tesla.get_config().get_config()
+        return JsonResponse(result)

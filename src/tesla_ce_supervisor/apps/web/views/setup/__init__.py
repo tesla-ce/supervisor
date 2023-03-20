@@ -6,6 +6,7 @@ from .deploy_tesla_workers import deploy_tesla_workers_view
 from .deploy_tesla_instruments import deploy_tesla_instruments_view
 from .deploy_tesla_moodle import deploy_tesla_moodle_view
 from .environment import environment as env_view
+from .finished import finished_view
 from .home import home as home_view
 from .load_balancer import lb_view
 from . import steps
@@ -21,6 +22,7 @@ __all__ = [
     'deploy_tesla_moodle_view',
     'tesla_basic_info',
     'env_view',
+    'finished_view',
     'home_view',
     'lb_view',
     'supervisor_view',

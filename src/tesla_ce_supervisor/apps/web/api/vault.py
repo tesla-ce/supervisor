@@ -1,6 +1,4 @@
-import typing
-
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from tesla_ce_supervisor.lib.client import SupervisorClient
 from tesla_ce_supervisor.lib.exceptions import TeslaException

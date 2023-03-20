@@ -166,7 +166,12 @@ class TeslaClient:
         if force_db is True:
             self._config.persist_db()
 
+    def check_vault_status(self):
+        self._config.set('VAULT_MANAGEMENT', True)
+        return VaultManager(self._config).check_vault_status()
+
     def get_vault_policies(self):
+        self._config.set('VAULT_MANAGEMENT', True)
         policies = VaultManager(self._config).get_policies_definition()
         return policies
 
@@ -177,9 +182,21 @@ class TeslaClient:
         self._config.set('VAULT_MANAGEMENT', True)
         vault_client = VaultManager(self._config)
 
-        if module.find('vle_') != -1:
-            # todo: Register the VLE
-            # vle_info = vault_client.register_vle(module)
-            pass
-
         return vault_client.get_module_credentials(module)
+
+    def get_version(self):
+        """
+            Get current version
+            :return: Version value
+        """
+        version_file = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'VERSION'))
+        with open(version_file, 'r') as v_file:
+            version = v_file.read()
+        version = version.strip()
+        return version
+
+    def create_module_entity_manual(self, module, extra_data=None, module_name=None):
+        self._config.set('VAULT_MANAGEMENT', True)
+        vault_client = VaultManager(self._config)
+
+        return vault_client.create_module_entity_manual(module, extra_data, module_name)

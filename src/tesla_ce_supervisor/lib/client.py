@@ -1,5 +1,7 @@
 import datetime
 import json
+import pyminizip
+from io import BytesIO
 import os
 import typing
 import socket
@@ -470,7 +472,7 @@ class SupervisorClient:
         if self.supervisor_service_access_token is not None:
             headers = {
                 'Content-type': 'application/json',
-                'Authentication': 'JWT {}'.format(self.supervisor_service_access_token['access'])
+                'Authorization': 'Bearer {}'.format(self.supervisor_service_access_token['access'])
             }
 
             url = '{}{}'.format(self.get_supervisor_url(), url)
@@ -478,10 +480,6 @@ class SupervisorClient:
             response = requests.request(method=method, url=url, data=json.dumps(data), headers=headers, verify=False)
 
             return response
-
-    def use_https(self):
-        # todo
-        pass
 
     def configure_service(self, module: str, request: dict):
         config = request.data.get('config')
@@ -706,6 +704,7 @@ class SupervisorClient:
             image = self.tesla.get_config().get('DEPLOYMENT_IMAGE') + ':{}'.format(
                 self.tesla.get_config().get('DEPLOYMENT_VERSION', 'latest')
             )
+            image = 'teslace/core:local'
 
             command_status = self.deploy.execute_command_inside_container(image, command, environment)
             result = command_status.status
@@ -741,8 +740,8 @@ class SupervisorClient:
 
     def get_supervisor_url(self):
         # todo modify this server
-        #if settings.SETUP_MODE == 'DEV':
-        #    return 'http://localhost:8081'
+        if settings.SETUP_MODE == 'DEV':
+            return 'http://localhost:8081'
 
         return "https://{}".format(self.tesla.get_config().get('TESLA_DOMAIN'))
 
@@ -757,3 +756,116 @@ class SupervisorClient:
     def register_vle(self, module):
         tesla_api = TeSLAAPI(config=self.tesla.get_config())
         return tesla_api.register_vle(module)
+
+    def create_database(self, new_db_name, new_db_user, new_db_password):
+        db_host = self.tesla.get_config().get('db_host')
+        db_port = self.tesla.get_config().get('db_port')
+
+        if self.tesla.get_config().get('db_engine') == 'mysql':
+            try:
+                conn = MySQLdb.connect(
+                    host=db_host,
+                    port=db_port,
+                    user=self.tesla.get_config().get('db_root_user'),
+                    password=self.tesla.get_config().get('db_root_password'),
+                    connect_timeout=5
+                )
+                cursor = conn.cursor()
+            except MySQLdb.Error as err:
+                pass
+
+            # create database
+            try:
+                cursor.execute('CREATE DATABASE IF NOT EXISTS {};'.format(new_db_name))
+            except MySQLdb.Error as err:
+                pass
+
+            # create user and grant permissions
+            try:
+                cursor.execute('GRANT ALL PRIVILEGES ON {}.* TO \'{}\'@\'%\' IDENTIFIED BY \'{}\';'.format(
+                    new_db_name,
+                    new_db_user,
+                    new_db_password
+                ))
+            except MySQLdb.Error as err:
+                pass
+
+            # flush all
+            try:
+                cursor.execute('FLUSH PRIVILEGES;')
+            except MySQLdb.Error as err:
+                pass
+
+            try:
+                conn.commit()
+                cursor.close()
+                conn.close()
+            except MySQLdb.Error as err:
+                pass
+
+        elif self.tesla.get_config().get('db_engine') == 'postgresql':
+            try:
+                conn = psycopg2.connect(
+                    host=db_host,
+                    port=db_port,
+                    user=self.tesla.get_config().get('db_root_user'),
+                    password=self.tesla.get_config().get('db_root_password'),
+                    connect_timeout=5
+                )
+                cursor = conn.cursor()
+
+            except psycopg2.Error as err:
+                pass
+
+            # create database
+            try:
+                cursor.execute(
+                    'SELECT \'CREATE DATABASE {}\' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = \'{}\')\\gexec'.format(
+                        new_db_name, new_db_name)
+                )
+            except MySQLdb.Error as err:
+                pass
+
+            # create user
+            try:
+                cursor.execute("CREATE USER {} WITH ENCRYPTED PASSWORD '{}';".format(
+                    new_db_user,
+                    new_db_password
+                ))
+            except MySQLdb.Error as err:
+                pass
+
+            # grant permissions
+            try:
+                cursor.execute('GRANT ALL PRIVILEGES ON DATABASE {} TO {};'.format(
+                    new_db_name,
+                    new_db_user
+                ))
+            except MySQLdb.Error as err:
+                pass
+
+            try:
+                conn.commit()
+                cursor.close()
+                conn.close()
+            except MySQLdb.Error as err:
+                pass
+
+    def get_tesla_ce_zip(self, password):
+        # get internal supervisor configuration (for vault tokens and vault keys)
+        response = self.make_request_to_supervisor_service('GET', '/supervisor/api/admin/config/all_config/', {})
+        remote_config = response.json()
+        for section in remote_config:
+            for item_key in remote_config[section]:
+                config_key = "{}_{}".format(section, item_key).upper()
+                if remote_config[section][item_key]['value'] is not None and \
+                        (self.tesla.get_config().get(config_key) == '' or
+                         self.tesla.get_config().get(config_key) is None):
+                    self.tesla.get_config().set(config_key, remote_config[section][item_key]['value'])
+
+        self.tesla.persist_configuration()
+        export_file = "{}.zip".format(self.get_config_path())
+        pyminizip.compress(self.get_config_path(), None, export_file, password, 9)
+
+        with open(export_file, mode='rb') as file:
+            return file.read()

@@ -7,6 +7,8 @@ from .exceptions import TeslaDeployException
 from ..setup_options import SetupOptions
 from ..tesla.conf import Config
 from ..models.check import ServiceDeploymentInformation, ConnectionStatus, CommandStatus
+from tesla_ce_supervisor.lib.tesla.modules import get_modules
+
 
 ModuleCode = typing.Union[
     typing.Literal['LB'],
@@ -364,6 +366,126 @@ class BaseDeploy(abc.ABC):
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
+    def _get_module_config_manual_vault(self, step, tesla) -> SetupOptions:
+        """
+            Get the deployment information for Vault manual config
+        """
+        # 'vault_init_kv', 'vault_init_transit', 'vault_init_roles', 'vault_init_policies','vault_unseal'
+        vault_commands = []
+        files = []
+
+        if step == 'vault_unseal':
+            vault_commands.append({
+                'command': 'vault operator unseal',
+                'description': 'Vault unseal'
+            })
+
+        elif step == 'vault_init_kv':
+            vault_commands.append({
+                'command': 'vault secrets enable kv -path={} -version=2'.format(self._config.get('VAULT_MOUNT_PATH_KV')),
+                'description': 'Vault enable KV v2'
+            })
+
+            vault_commands.append({
+                'command': 'vault kv put -mount={} {} {}={}'.format(
+                    self._config.get('VAULT_MOUNT_PATH_KV'),
+                    'system/version',
+                    'tesla-ce',
+                    tesla.get_version()
+                ),
+                'description': 'Vault system tesla-ce version'
+            })
+
+            config = self._config.get_config()
+            for section in config:
+                for key in config[section]:
+                    vault_commands.append({
+                        'command': 'vault kv put -mount={} config/{}/{} description="{}" value="{}"'.format(
+                            self._config.get('VAULT_MOUNT_PATH_KV'),
+                            section,
+                            key,
+                            config[section][key]['description'],
+                            config[section][key]['value']
+                        ),
+                        'description': 'Vault config {}'.format(config[section][key]['description'])
+                    })
+
+        elif step == 'vault_init_transit':
+            vault_commands.append({
+                'description': 'Vault enable Transit Secrets engine',
+                'command': 'vault secrets enable transit -path={}'.format(self._config.get('VAULT_MOUNT_PATH_TRANSIT'))
+            })
+
+            keys = ['jwt_default', 'jwt_learners', 'jwt_instructors', 'jwt_users', 'jwt_modules']
+            modules = get_modules()
+
+            for key in keys:
+                vault_commands.append({
+                    'description': 'Vault create key {}'.format(key),
+                    'command': 'vault write -f {}/{} -type="rsa-4096"'.format(self._config.get('VAULT_MOUNT_PATH_TRANSIT'), key)
+                })
+            for module in modules:
+                vault_commands.append({
+                    'description': 'Vault create key {}'.format(module),
+                    'command': 'vault write -f {}/{} -type="rsa-4096"'.format(self._config.get('VAULT_MOUNT_PATH_TRANSIT'), module)
+                })
+
+        elif step == 'vault_init_roles':
+            vault_commands.append({
+                'command': 'vault auth enable approle -path={} -max-lease-ttl={} -default-lease-ttl={}'.format(
+                    self._config.get('VAULT_MOUNT_PATH_APPROLE'),
+                    self._config.get('VAULT_APPROLE_DEFAULT_TTL', '12j'),
+                    self._config.get('VAULT_APPROLE_MAX_TTL', '24h')
+                ),
+                'description': 'Vault enable AppRole secrets engine'
+            })
+            # self.setup_roles()
+            modules = get_modules()
+            for module in modules:
+                aux_commands = tesla.create_module_entity_manual(modules[module])
+                vault_commands = vault_commands + aux_commands
+
+        elif step == 'vault_init_policies':
+            '''
+            self._client.sys.create_or_update_policy(
+                name='{}{}'.format(self._policy_prefix, policy),
+                policy=policies[policy],
+            )            
+            '''
+            policies = tesla.get_vault_policies()
+            for policy in policies:
+                vault_commands.append({
+                    'command': 'vault policy write {} {}.hcl'.format(policy, policy),
+                    'description': 'Vault policy {}'.format(policy)
+                })
+                files.append({
+                    'filename': '{}.hcl'.format(policy),
+                    'description': 'Policy {}'.format(policy),
+                    'content': policies[policy]
+                })
+
+            # self.setup_policies()
+
+        script = SetupOptions()
+        for command in vault_commands:
+            script.add_command(
+                command=command['command'],
+                description=command['description']
+            )
+
+        for file in files:
+
+            script.add_file(
+                filename=file['filename'],
+                description=file['description'],
+                content=file['content'],
+                mimetype='text/plain'
+            )
+
+        return script
+
+
+
     def generate_deployment_credentials(self, module: ModuleCode):
         """
             Generate required credentials for a given module
@@ -452,7 +574,7 @@ class BaseDeploy(abc.ABC):
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
 
-    def get_script(self, module: ModuleCode, credentials=None, provider=None) -> SetupOptions:
+    def get_script(self, module: ModuleCode, credentials=None, provider=None, tesla=None) -> SetupOptions:
         """
             Get deployment script
             :param credentials:
@@ -485,7 +607,20 @@ class BaseDeploy(abc.ABC):
         elif module.upper() == "MOODLE":
             return self._get_moodle_script(credentials)
 
+        elif module.lower() in ['vault_init_kv', 'vault_init_transit', 'vault_init_roles', 'vault_init_policies', 'vault_unseal']:
+            return self._get_module_config_manual_vault(module.lower(), tesla)
 
+        '''
+            'vault_init_kv': {name: 'Vault init KV', status: base_url_connection + 'task/config/vault_init_kv', config: base_url_connection + 'config/tesla/vault_init_kv'},
+            'vault_init_transit': {name: 'Vault init Transit', status: base_url_connection + 'task/config/vault_init_transit', config: base_url_connection + 'config/tesla/vault_init_transit'},
+            'vault_init_roles':  {name: 'Vault init Roles', status: base_url_connection + 'task/config/vault_init_roles', config: base_url_connection + 'config/tesla/vault_init_roles'},
+            'vault_init_policies': {name: 'Vault init Policies', status: base_url_connection + 'task/config/vault_init_policies', config: base_url_connection + 'config/tesla/vault_init_policies'},
+            'vault_unseal': {name: 'Vault Unseal', status: base_url_connection + 'task/config/vault_unseal', config: base_url_connection + 'config/tesla/vault_unseal'},
+            'migrate_database': {name: 'Migrate database', status: base_url_connection + 'task/config/migrate_database', config: base_url_connection + 'config/tesla/migrate_database'},
+            'collect_static': {name: 'Collect static', status: base_url_connection + 'task/config/collect_static', config: base_url_connection + 'config/tesla/collect_static'},
+            'load_fixtures': {name: 'Load fixtures', status: base_url_connection + 'task/config/load_fixtures', config: base_url_connection + 'config/tesla/load_fixtures'},
+            'create_superuser': {name: 'Create superuser', status: base_url_connection + 'task/config/create_superuser', config: base_url_connection + 'config/tesla/create_superuser'}
+        '''
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
 
@@ -556,3 +691,4 @@ class BaseDeploy(abc.ABC):
 
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
+

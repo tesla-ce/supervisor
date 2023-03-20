@@ -1,25 +1,13 @@
-import abc
-import typing
-
-from django.http import HttpResponse, JsonResponse
-from rest_framework import status
-from rest_framework.views import APIView
-from tesla_ce_supervisor.lib.deploy.base import ModuleCode
-from tesla_ce_supervisor.lib.client import SupervisorClient
-from tesla_ce_supervisor.lib.exceptions import TeslaException
+import base64
+from django.http import JsonResponse
+from .base import BaseAPISupervisor
 
 
-class BaseAPIDeploy(APIView, abc.ABC):
+class BaseAPIDeploy(BaseAPISupervisor):
     """
         Base class for deployment
     """
-    module: typing.Optional[ModuleCode] = None
-
-    @property
-    def client(self):
-        return SupervisorClient()
-
-    def get(self, request, step=None, format=None):
+    def post(self, request, step=None, format=None):
         data = {}
         if self.module == 'SUPERVISOR':
             data = {"config": self.client.tesla.get_config().get_config()}
@@ -30,6 +18,17 @@ class BaseAPIDeploy(APIView, abc.ABC):
         if response is not None:
             return JsonResponse(response.json())
         return JsonResponse({})
+
+    def get(self, request, step=None, format=None):
+        #credentials = self.get_credentials()
+        #[provider, instrument_id] = self.get_provider()
+
+        response = self.client.get_deployer().get_script(step, tesla=self.client.tesla)
+
+        json_resp = response.to_json()
+        if 'zip' in request.query_params and request.query_params['zip'] == '1':
+            json_resp['zip'] = 'data:application/zip;base64,{}'.format(base64.b64encode(response.get_zip()).decode())
+        return JsonResponse(json_resp)
 
 
 class APIConfigVault(BaseAPIDeploy):

@@ -43,3 +43,4 @@ redis
 pika
 
 boto3
+pyminizip
