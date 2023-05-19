@@ -704,7 +704,7 @@ class SupervisorClient:
             image = self.tesla.get_config().get('DEPLOYMENT_IMAGE') + ':{}'.format(
                 self.tesla.get_config().get('DEPLOYMENT_VERSION', 'latest')
             )
-            image = 'teslace/core:local'
+            image = 'teslace/core:edge'
 
             command_status = self.deploy.execute_command_inside_container(image, command, environment)
             result = command_status.status
@@ -741,6 +741,7 @@ class SupervisorClient:
     def get_supervisor_url(self):
         # todo modify this server
         if settings.SETUP_MODE == 'DEV':
+            return "https://{}".format(self.tesla.get_config().get('TESLA_DOMAIN'))
             return 'http://localhost:8081'
 
         return "https://{}".format(self.tesla.get_config().get('TESLA_DOMAIN'))
