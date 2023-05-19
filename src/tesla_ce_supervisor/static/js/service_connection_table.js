@@ -93,7 +93,7 @@ $('.connection-action').click(function() {
 });
 
 function config_action_service(service) {
-    $.get(
+    $.post(
         connection_service_desc[service]['config'],
         function(data) {
             set_connection_ready(service, data['ready']);

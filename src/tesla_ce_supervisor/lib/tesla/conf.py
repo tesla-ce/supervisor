@@ -604,7 +604,7 @@ class Config:
     def _modify_config_consul(self) -> None:
         # rename all services with localhost in host config
         self.set('VAULT_URL', 'http://localhost:8200')
-        self.set('DB_HOST', 'localhost')
+        self.set('DB_HOST', '127.0.0.1')
         self.set('REDIS_HOST', 'localhost')
         self.set('STORAGE_URL', 'http://localhost:9000')
         self.set('CELERY_BROKER_HOST', 'localhost')

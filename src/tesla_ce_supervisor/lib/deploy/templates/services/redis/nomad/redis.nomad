@@ -96,7 +96,7 @@ job "redis" {
         image = var.image
         ports = ["redis"]
         args = [
-          "--requirepass \"${ var.password })\""
+          "--requirepass \"${ var.password }\""
         ]
         volumes = [
           "${var.storage_path}:/data"
