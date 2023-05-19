@@ -34,7 +34,7 @@ variable "command_arguments" {
 }
 
 variable "supervisor_remote_url" {
-  type = list(string)
+  type = string
   default = "{{ SUPERVISOR_REMOTE_URL|safe }}"
 }
 
