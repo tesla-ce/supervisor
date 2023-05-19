@@ -84,7 +84,7 @@ job "tesla_ce_supervisor_command" {
         "SUPERVISOR_DATA"        = "/data"
         "SECRETS_PATH"           = "/secrets"
         "TESLA_DOMAIN"           = var.base_domain
-        "DJANGO_SETTINGS_MODULE" = "tesla_ce_supervisor.settings"
+        "DJANGO_SETTINGS_MODULE" = "tesla_ce.settings"
         "DJANGO_CONFIGURATION"   = "Setup"
         "SETUP_MODE"             = "SETUP"
       }
