@@ -33,6 +33,11 @@ variable "command_arguments" {
   default = {{ command_arguments|safe }}
 }
 
+variable "supervisor_remote_url" {
+  type = list(string)
+  default = {{ SUPERVISOR_REMOTE_URL|safe }}
+}
+
 job "tesla_ce_supervisor_command" {
   # Run the job in the global region, which is the default.
   region = var.region
@@ -87,8 +92,8 @@ job "tesla_ce_supervisor_command" {
         "DJANGO_SETTINGS_MODULE" = "tesla_ce.settings"
         "DJANGO_CONFIGURATION"   = "Setup"
         "SETUP_MODE"             = "SETUP"
+        "SUPERVISOR_REMOTE_URL"  = var.supervisor_remote_url
       }
-
 
       resources {
         cpu    = 300
