@@ -35,7 +35,7 @@ variable "command_arguments" {
 
 variable "supervisor_remote_url" {
   type = list(string)
-  default = {{ SUPERVISOR_REMOTE_URL|safe }}
+  default = "{{ SUPERVISOR_REMOTE_URL|safe }}"
 }
 
 job "tesla_ce_supervisor_command" {
