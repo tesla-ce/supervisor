@@ -684,7 +684,7 @@ class NomadDeploy(BaseDeploy):
             'command_arguments': str(argument_list).replace("'", '"'),
         }
         if environment is not None:
-            context = context.update(environment)
+            context.update(environment)
 
         # Remove any previous allocation
         if len(self._client.job.get_allocations('tesla_ce_supervisor_command')) > 0:
@@ -724,12 +724,15 @@ class NomadDeploy(BaseDeploy):
             job_ok = summary['Summary']['supervisor_command']['Complete'] > 0
             info['error'] = ''
 
+        # Remove the job
+        '''
+        # todo: remove this comment
         try:
             if len(self._client.job.get_allocations('tesla_ce_supervisor_command')) > 0:
                 self._client.job.deregister_job('tesla_ce_supervisor_command', True)
         except Exception:
             pass
-
+        '''
         return CommandStatus(command=command, status=job_ok, info=info)
 
     def _remove_dashboard(self) -> dict:
