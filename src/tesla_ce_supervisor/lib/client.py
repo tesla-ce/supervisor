@@ -693,8 +693,6 @@ class SupervisorClient:
             token = self.get_api_signed_token()
 
             url = self.get_supervisor_url()
-            # todo: remove this line
-            url = 'http://localhost:8081'
 
             command = '/venv/bin/tesla_ce remote_setup --command={}'.format(step)
             environment = {
