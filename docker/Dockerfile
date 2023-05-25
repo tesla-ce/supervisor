@@ -1,8 +1,3 @@
-# https://linuxhint.com/generate-random-string-bash/
-# https://github.com/docker-library/postgres/blob/master/Dockerfile-alpine.template
-
-#FROM python:3.7-alpine
-#FROM python:3-alpine3.13
 FROM python:3-alpine
 ENV SUPERVISOR_DATA '/data'
 ENV PGDATA '/data/postgres/pgdata'
