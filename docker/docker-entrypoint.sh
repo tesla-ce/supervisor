@@ -2,7 +2,7 @@
 
 set -e
 
-if [ "$SETUP_MODE" == 'PRODUCTION' ]; then
+if [ "$SETUP_MODE" != 'SETUP' ]; then
   if [ ! -f $POSTGRES_PASSWORD_FILE ]; then
     cat /proc/sys/kernel/random/uuid | sed 's/[-]//g' > $POSTGRES_PASSWORD_FILE
   fi

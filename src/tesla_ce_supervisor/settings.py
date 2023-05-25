@@ -193,7 +193,7 @@ WSGI_APPLICATION = 'tesla_ce_supervisor.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-if SETUP_MODE == 'DEV':
+if SETUP_MODE == 'DEV' or SETUP_MODE == 'SETUP':
     DATABASES = {
         'default': {
             'ENGINE': 'django_prometheus.db.backends.sqlite3',
