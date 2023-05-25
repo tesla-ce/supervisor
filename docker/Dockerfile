@@ -1,6 +1,26 @@
+# https://linuxhint.com/generate-random-string-bash/
+# https://github.com/docker-library/postgres/blob/master/Dockerfile-alpine.template
+
 #FROM python:3.7-alpine
 #FROM python:3-alpine3.13
 FROM python:3-alpine
+ENV SUPERVISOR_DATA '/data'
+ENV PGDATA '/data/postgres/pgdata'
+ENV POSTGRES_PASSWORD_FILE '/data/secrets/DB_ROOT_PASSWORD'
+
+ENV POSTGRES_DB 'supervisor'
+ENV POSTGRES_USER 'supervisor'
+ENV GOSU_VERSION 1.16
+ENV POSTGRES_HOST '127.0.0.1'
+ENV POSTGRES_PORT '5432'
+
+RUN mkdir -p $SUPERVISOR_DATA && mkdir -p $PGDATA && mkdir -p /data/secrets
+
+RUN set -eux; \
+	addgroup -g 70 -S postgres; \
+	adduser -u 70 -S -D -G postgres -H -h $PGDATA -s /bin/sh postgres; \
+	mkdir -p /var/lib/postgresql; \
+	chown -R postgres:postgres $PGDATA
 
 # Install build deps, then run `pip install`, then remove unneeded build deps all in a single step.
 RUN set -ex \
@@ -36,6 +56,34 @@ RUN set -ex \
     && apk add --virtual .python-rundeps $runDeps \
     && apk del .build-deps
 
+# postgres configuration
+RUN set -eux; \
+	\
+	apk add --no-cache --virtual .gosu-deps \
+		ca-certificates \
+		dpkg \
+		gnupg \
+	; \
+	\
+	dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
+	wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch"; \
+	wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch.asc"; \
+	\
+# verify the signature
+	export GNUPGHOME="$(mktemp -d)"; \
+	gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4; \
+	gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu; \
+	gpgconf --kill all; \
+	rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc; \
+	\
+# clean up fetch dependencies
+	apk del --no-network .gosu-deps; \
+	\
+	chmod +x /usr/local/bin/gosu
+
+RUN mkdir /docker-entrypoint-initdb.d
+
+
 # Install production dependencies
 RUN set -ex \
     && apk add --no-cache \
@@ -53,7 +101,8 @@ RUN set -ex \
             uwsgi \
             uwsgi-python3 \
             mariadb-connector-c \
-            sqlite
+            sqlite \
+            postgresql
 
 # Copy your application code to the container (make sure you create a .dockerignore file if any large files or directories should be excluded)
 RUN mkdir /tesla/
@@ -65,7 +114,14 @@ RUN /venv/bin/pip install -r requirements.txt
 
 # Copy and prepare the entrypoint script for front-end
 ADD docker/docker-entrypoint.sh /bin
+ADD docker/postgres_docker-entrypoint.sh /bin
+ADD docker/wait_for_it.sh /bin
 RUN dos2unix /bin/docker-entrypoint.sh && chmod +x /bin/docker-entrypoint.sh
+RUN dos2unix /bin/postgres_docker-entrypoint.sh && chmod +x /bin/postgres_docker-entrypoint.sh
+RUN dos2unix /bin/wait_for_it.sh && chmod +x /bin/wait_for_it.sh
+
+
+
 
 # uWSGI will listen on this port
 EXPOSE 5000
@@ -97,6 +153,8 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 # Generate static files
 ENV STATICS_PATH=/tesla/static
 RUN SETUP_MODE=BUILD /venv/bin/python manage.py collectstatic --noinput
+
+STOPSIGNAL SIGINT
 
 CMD ["/usr/bin/supervisord"]
 ENTRYPOINT ["docker-entrypoint.sh"]

@@ -193,14 +193,26 @@ WSGI_APPLICATION = 'tesla_ce_supervisor.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django_prometheus.db.backends.sqlite3',
-        'NAME': DATA_DIRECTORY / 'supervisor.sqlite3',
-        'ATOMIC_REQUESTS': True
+if SETUP_MODE == 'DEV':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django_prometheus.db.backends.sqlite3',
+            'NAME': DATA_DIRECTORY / 'supervisor.sqlite3',
+            'ATOMIC_REQUESTS': True
+        }
     }
-}
 
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django_prometheus.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'supervisor'),
+            'USER': os.getenv('POSTGRES_USER', 'supervisor'),
+            'HOST': os.getenv('POSTGRES_HOST', '127.0.0.1'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+            'PASSWORD': _read_secret(os.path.join(os.environ.get('SUPERVISOR_DATA', '/data'), 'secrets'), 'DB_ROOT_PASSWORD'),
+        }
+    }
 
 
 
