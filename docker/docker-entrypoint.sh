@@ -3,6 +3,7 @@
 set -e
 
 if [ ! -f $POSTGRES_PASSWORD_FILE ]; then
+  mkdir -p /data/secrets
   cat /proc/sys/kernel/random/uuid | sed 's/[-]//g' > $POSTGRES_PASSWORD_FILE
 fi
 
