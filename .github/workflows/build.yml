@@ -18,9 +18,11 @@ jobs:
       - uses: actions/checkout@v3
       - name: Get version values
         id: vars
-        run: |          
-          echo ::set-output name=version::$(cat VERSION)                              
-          echo ::set-output name=tag::${GITHUB_REF#refs/*/}                
+        run: |
+          echo "{version}={$(cat VERSION)}" >> $GITHUB_OUTPUT
+          echo "{tag}={${GITHUB_REF#refs/*/}}" >> $GITHUB_OUTPUT
+        #echo ::set-output name=version::$(cat VERSION)
+        #echo ::set-output name=tag::${GITHUB_REF#refs/*/}
       - name: Show captured versions
         run: |
           echo 'Version in source code: ${{ steps.vars.outputs.version }}'
@@ -41,7 +43,8 @@ jobs:
       - name: Store version
         id: vars
         run: |
-          echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+          echo "{tag}={${GITHUB_REF#refs/*/}}" >> $GITHUB_OUTPUT
+        # echo ::set-output name=tag::${GITHUB_REF#refs/*/}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Login to DockerHub
