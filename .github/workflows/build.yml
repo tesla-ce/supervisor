@@ -48,8 +48,8 @@ jobs:
       - name: store version
         id: vars
         run: |
-          echo "tag=${github_ref#refs/*/}" >> $GITHUB_OUTPUT
-        # echo ::set-output name=tag::${github_ref#refs/*/}
+          echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+        # echo ::set-output name=tag::${GITHUB_REF#refs/*/}
       - name: Show captured versions
         run: |
           echo 'Tag captured: ${{ steps.vars.outputs.tag }}'
