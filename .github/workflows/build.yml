@@ -13,14 +13,17 @@ on:
       - created
 jobs:
   check:
-    runs-on: ubuntu-latest    
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.vars.outputs.version }}
+      tag: ${{ steps.vars.outputs.tag }}
     steps: 
       - uses: actions/checkout@v3
       - name: Get version values
         id: vars
         run: |
-          echo "{version}={$(cat VERSION)}" >> $GITHUB_OUTPUT
-          echo "{tag}={${GITHUB_REF#refs/*/}}" >> $GITHUB_OUTPUT
+          echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
         #echo ::set-output name=version::$(cat VERSION)
         #echo ::set-output name=tag::${GITHUB_REF#refs/*/}
       - name: Show captured versions
@@ -34,41 +37,41 @@ jobs:
           expected: ${{ steps.vars.outputs.tag }}
           actual: ${{ steps.vars.outputs.version }}
           comparison: exact
-  docker_tag:
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-      - name: Store version
-        id: vars
-        run: |
-          echo "{tag}={${GITHUB_REF#refs/*/}}" >> $GITHUB_OUTPUT
-        # echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
-        id: docker_build
-        uses: docker/build-push-action@v2.5.0
-        with:
-          push: true
-          tags: teslace/supervisor:${{ steps.vars.outputs.tag }}, teslace/supervisor:latest
-          file: docker/Dockerfile
-      - name: Image digest
-        run: echo ${{ steps.docker_build.outputs.digest }}
-      - name: Login to TeSLA CE Registry
-        uses: docker/login-action@v1
-        with:
-            username: ${{ secrets.TESLA_CE_REGISTRY_USERNAME }}
-            password: ${{ secrets.TESLA_CE_REGISTRY_TOKEN }}
-            registry: registry.tesla-ce.eu
-      - name: Push to TeSLA CE registry
-        run: |
-          docker pull teslace/supervisor:${{ steps.vars.outputs.tag }}                    
-          docker tag teslace/supervisor:${{ steps.vars.outputs.tag }} registry.tesla-ce.eu/tesla-ce/supervisor:latest
-          docker push registry.tesla-ce.eu/tesla-ce/supervisor:latest
+#  docker_tag:
+#    needs: check
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Set up QEMU
+#        uses: docker/setup-qemu-action@v1
+#      - name: Store version
+#        id: vars
+#        run: |
+#          echo "{tag}={${GITHUB_REF#refs/*/}}" >> $GITHUB_OUTPUT
+#        # echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v1
+#      - name: Login to DockerHub
+#        uses: docker/login-action@v1
+#        with:
+#          username: ${{ secrets.DOCKERHUB_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#      - name: Build and push
+#        id: docker_build
+#        uses: docker/build-push-action@v2.5.0
+#        with:
+#          push: true
+#          tags: teslace/supervisor:${{ steps.vars.outputs.tag }}, teslace/supervisor:latest
+#          file: docker/Dockerfile
+#      - name: Image digest
+#        run: echo ${{ steps.docker_build.outputs.digest }}
+#      - name: Login to TeSLA CE Registry
+#        uses: docker/login-action@v1
+#        with:
+#            username: ${{ secrets.TESLA_CE_REGISTRY_USERNAME }}
+#            password: ${{ secrets.TESLA_CE_REGISTRY_TOKEN }}
+#            registry: registry.tesla-ce.eu
+#      - name: Push to TeSLA CE registry
+#        run: |
+#          docker pull teslace/supervisor:${{ steps.vars.outputs.tag }}
+#          docker tag teslace/supervisor:${{ steps.vars.outputs.tag }} registry.tesla-ce.eu/tesla-ce/supervisor:latest
+#          docker push registry.tesla-ce.eu/tesla-ce/supervisor:latest
