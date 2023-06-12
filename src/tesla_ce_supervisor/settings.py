@@ -272,3 +272,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # django secret
 # admin password
 # tesla.config.cfg [ only privileged mode ]
+
+'''
+For testing expired tokens
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(seconds=1),
+}
+'''

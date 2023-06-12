@@ -852,7 +852,7 @@ class SwarmDeploy(BaseDeploy):
         """
         networks = []
         extra_hosts = {}
-        auto_remove = True
+        auto_remove = False
 
         # image = 'teslace/core:local'
         environment['DJANGO_SETTINGS_MODULE'] = 'tesla_ce.settings'
@@ -867,6 +867,9 @@ class SwarmDeploy(BaseDeploy):
             extra_hosts = json.loads(os.getenv('ADD_HOSTS', ''))
 
         try:
+            # first pull image
+            self.client.images.pull(image)
+
             container = self.client.containers.create(image, command=command, environment=environment,
                                                       auto_remove=auto_remove, extra_hosts=extra_hosts)
 
@@ -1289,3 +1292,20 @@ class SwarmDeploy(BaseDeploy):
         )
 
         return script
+
+    def reboot_module(self, module: str, wait_ready: bool = True):
+        """
+            Reboot module
+        """
+
+        service_id = '{}_{}'.format(self.config.get('SWARM_SERVICE_PREFIX'), module)
+        try:
+            # Check if service exist
+            service = self.client.services.get(service_id)
+
+            service.force_update()
+
+        except docker.errors.NotFound:
+            return False
+
+        return True

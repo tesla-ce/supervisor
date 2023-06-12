@@ -159,3 +159,9 @@ class DeployClient:
         :return:
         """
         return self._client.execute_command_inside_container(image, command, environment)
+
+    def reboot_module(self, module: str, wait_ready=True):
+        """
+            Reboot module
+        """
+        return self._client.reboot_module(module, wait_ready)

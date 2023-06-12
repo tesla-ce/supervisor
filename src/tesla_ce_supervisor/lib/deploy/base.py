@@ -366,6 +366,13 @@ class BaseDeploy(abc.ABC):
         """
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
+    @abc.abstractmethod
+    def reboot_module(self, module: str, wait_ready=True):
+        """
+            Reboot module
+        """
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
     def _get_module_config_manual_vault(self, step, tesla) -> SetupOptions:
         """
             Get the deployment information for Vault manual config
@@ -691,4 +698,3 @@ class BaseDeploy(abc.ABC):
 
 
         raise TeslaDeployException(INVALID_MODULE_MESSAGE.format(module))
-

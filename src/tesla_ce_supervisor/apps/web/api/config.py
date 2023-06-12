@@ -15,6 +15,11 @@ class BaseAPIDeploy(BaseAPISupervisor):
             data = {"step": step}
 
         response = self.client.make_request_to_supervisor_service('GET', '/supervisor/api/admin/config/{}/'.format(self.module), data)
+
+        if self.module == 'SUPERVISOR':
+            # todo: reboot supervisor service
+            self.client.get_deployer().reboot_module('supervisor', wait_ready=True)
+
         if response is not None:
             return JsonResponse(response.json())
         return JsonResponse({})

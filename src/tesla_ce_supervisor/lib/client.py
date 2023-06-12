@@ -475,9 +475,13 @@ class SupervisorClient:
                 'Authorization': 'Bearer {}'.format(self.supervisor_service_access_token['access'])
             }
 
-            url = '{}{}'.format(self.get_supervisor_url(), url)
+            aux_url = '{}{}'.format(self.get_supervisor_url(), url)
 
-            response = requests.request(method=method, url=url, data=json.dumps(data), headers=headers, verify=False)
+            response = requests.request(method=method, url=aux_url, data=json.dumps(data), headers=headers, verify=False)
+
+            if response.status_code == 401:
+                self.supervisor_service_access_token = None
+                return self.make_request_to_supervisor_service(method, url, data)
 
             return response
 
