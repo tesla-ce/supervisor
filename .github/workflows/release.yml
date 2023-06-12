@@ -1,15 +1,11 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Python package & Edge version
+name: Release version
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   release:
-    types: 
+    types:
       - created
 jobs:
   check:
@@ -17,7 +13,7 @@ jobs:
     outputs:
       version: ${{ steps.vars.outputs.version }}
       tag: ${{ steps.vars.outputs.tag }}
-    steps: 
+    steps:
       - uses: actions/checkout@v3
       - name: Get version values
         id: vars
@@ -27,7 +23,7 @@ jobs:
       - name: Show captured versions
         run: |
           echo 'Version in source code: ${{ steps.vars.outputs.version }}'
-          echo 'Release version: ${{ steps.vars.outputs.tag }}'                    
+          echo 'Release version: ${{ steps.vars.outputs.tag }}'
       - name: Check version tag
         uses: nick-invision/assert-action@v1.1.0
         if: github.event_name == 'release'
@@ -36,7 +32,7 @@ jobs:
           actual: ${{ steps.vars.outputs.version }}
           comparison: exact
 
-  docker_edge:
+  docker_tag:
     needs: check
     runs-on: ubuntu-latest
     outputs:
@@ -60,7 +56,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: teslace/supervisor:${{ steps.vars.outputs.tag }}, teslace/supervisor:edge
+          tags: teslace/supervisor:${{ steps.vars.outputs.tag }}, teslace/supervisor:latest
           file: docker/Dockerfile
       - name: image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
@@ -73,5 +69,5 @@ jobs:
       - name: push to tesla ce registry
         run: |
           docker pull teslace/supervisor:${{ steps.vars.outputs.tag }}
-          docker tag teslace/supervisor:${{ steps.vars.outputs.tag }} registry.tesla-ce.eu/tesla-ce/supervisor:edge
-          docker push registry.tesla-ce.eu/tesla-ce/supervisor:edge
+          docker tag teslace/supervisor:${{ steps.vars.outputs.tag }} registry.tesla-ce.eu/tesla-ce/supervisor:latest
+          docker push registry.tesla-ce.eu/tesla-ce/supervisor:latest
