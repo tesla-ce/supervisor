@@ -518,7 +518,7 @@ class SupervisorClient:
             db_host = self.tesla.get_config().get('db_host')
             db_port = self.tesla.get_config().get('db_port')
             db_user = self.tesla.get_config().get('db_user')
-            db_password = self.tesla.get_config().get('db_user')
+            db_password = self.tesla.get_config().get('db_password')
 
             if self.tesla.get_config().get('db_engine') == 'mysql':
                 try:

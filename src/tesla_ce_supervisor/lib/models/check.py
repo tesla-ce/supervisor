@@ -233,9 +233,10 @@ class ConnectionStatus:
         try:
             username = self.config.get('rabbitmq_admin_user')
             password = self.config.get('rabbitmq_admin_password')
+            host = self.config.get('rabbitmq_host')
             credentials = pika.PlainCredentials(username, password)
             parameters = pika.ConnectionParameters(credentials=credentials)
-            connection = pika.BlockingConnection(parameters)
+            connection = pika.BlockingConnection(host, parameters)
             valid = True
 
             # todo: what test what can I do with rabbitmq to be ready?
