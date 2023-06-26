@@ -21,6 +21,8 @@ def main_background_loop():
         #   - check database
         #   - check redis
         #   - check rabbitmq
+        #   - check minio
+        #   - check supervisor
 
     except Exception:
         logger.error('Something goes wrong...')
