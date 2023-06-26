@@ -854,3 +854,13 @@ class NomadDeploy(BaseDeploy):
 
     def _get_moodle_script(self, credentials) -> SetupOptions:
         pass
+    
+    def reboot_module(self, module: str, wait_ready: bool = True):
+        """
+            Reboot module
+        """
+        # SDK not permit restart module. We need to remove and deploy again.
+        self._remove_supervisor()
+        self._deploy_supervisor()
+
+        return True

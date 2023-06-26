@@ -744,7 +744,7 @@ class SupervisorClient:
         # todo modify this server
         if settings.SETUP_MODE == 'DEV':
             return "https://{}".format(self.tesla.get_config().get('TESLA_DOMAIN'))
-            return 'http://localhost:8081'
+            #return 'http://localhost:8081'
 
         return "https://{}".format(self.tesla.get_config().get('TESLA_DOMAIN'))
 
