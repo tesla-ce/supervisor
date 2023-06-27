@@ -261,7 +261,7 @@ class NomadDeploy(BaseDeploy):
             'count': 1,
             'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
             'nomad_region': self.nomad_conf.nomad_region,
-            'vault_image': 'vault',
+            'vault_image': 'hashicorp/vault',
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
             'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN')
         }
@@ -282,7 +282,7 @@ class NomadDeploy(BaseDeploy):
             'count': 1,
             'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
             'nomad_region': self.nomad_conf.nomad_region,
-            'vault_image': 'vault',
+            'vault_image': 'hashicorp/vault',
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
             'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN')
         }
