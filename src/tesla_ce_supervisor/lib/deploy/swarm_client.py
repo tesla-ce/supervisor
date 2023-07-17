@@ -887,7 +887,8 @@ class SwarmDeploy(BaseDeploy):
             return CommandStatus(command=command, status=status, info={})
         except docker.errors.ContainerError as err:
             return CommandStatus(command=command, status=False, info=str(err))
-
+        except docker.errors.APIError as err:
+            return CommandStatus(command=command, status=False, info=str(err))
     def _deploy_dashboard(self) -> dict:
         """
            Deploy API

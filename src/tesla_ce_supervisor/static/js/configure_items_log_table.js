@@ -37,17 +37,17 @@ function print_status(status) {
 }
 
 function button_trace(trace) {
-    const aux_trace = JSON.stringify(trace);
+
+    const escaped = new Option(trace).innerHTML
+    const aux_trace = JSON.stringify(escape(escaped));
     return "<button onclick='show_trace("+aux_trace+");' class='btn btn-sm btn-secondary' type='button'><i class='bi bi-filetype-json'></i></button>";
 }
 function show_trace(trace) {
-    print_trace(trace);
+    print_trace(unescape(trace));
     $("#trace_modal").modal('show');
 }
 function print_trace(trace) {
-    console.log(trace);
     const aux_trace = JSON.parse(trace);
-    console.log(aux_trace);
     const html = "<pre>"+JSON.stringify(aux_trace, undefined, 3)+"</pre>";
     $("#trace_modal .modal-body").html(html);
 
