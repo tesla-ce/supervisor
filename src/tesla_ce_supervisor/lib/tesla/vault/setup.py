@@ -13,11 +13,13 @@
 #      You should have received a copy of the GNU Affero General Public License
 #      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """ Vault setup module """
+import base64
 import random
 import string
 import time
 import json
 
+from django.utils import timezone
 import hvac
 from hvac.exceptions import InvalidPath
 from hvac.exceptions import InvalidRequest
@@ -724,6 +726,7 @@ class VaultSetup:
                 # read checks
                 try:
                     response = self._client.secrets.transit.read_key(check_key, mount_point=self._transit_mount_point)
+                    jwt_signing_key = response['data']
                 except hvac.exceptions.Forbidden:
                     result['transit']['read'] = False
                     result['steps'].append({"msg": "Transit read is forbidden with provided credentials. Error key {}.".format(MODULE_KEY_STR_TEMPLATE.format(module)), "status": False})
@@ -733,9 +736,52 @@ class VaultSetup:
                     result['steps'].append({"msg": str(err), "status": False})
 
                 # write/sign checks
+                if jwt_signing_key is not None:
+                    # Sign the token
+                    try:
+                        key = check_key
+                        # Build the header
+                        header = {
+                            'alg': "RS256",
+                            'typ': "JWT",
+                            'ver': '{}:v{}'.format(key, jwt_signing_key['latest_version'])
+                        }
+
+                        # Get current time and expiration
+                        current_time = timezone.now()
+                        expiration_time = current_time + timezone.timedelta(minutes=2)
+
+                        # Build payload with basic fields
+                        vault_url = self._config.get('VAULT_URL')
+                        payload = {
+                            'iss': vault_url,
+                            'iat': int(current_time.timestamp()),
+                            'exp': int(expiration_time.timestamp()),
+                            'group': key,
+                        }
+                        b64_header = base64.urlsafe_b64encode(json.dumps(header).encode('utf8')).decode('ascii')
+                        b64_payload = base64.urlsafe_b64encode(json.dumps(payload).encode('utf8')).decode('ascii')
+                        b64_message = base64.b64encode('{}.{}'.format(b64_header, b64_payload).encode('utf8')).decode('ascii')
+
+                        sign_data_response = self._client.secrets.transit.sign_data(
+                            name=check_key,
+                            hash_input=b64_message,
+                            hash_algorithm='sha2-256',
+                            signature_algorithm='pkcs1v15',
+                            key_version=jwt_signing_key['latest_version'],
+                            mount_point=self._transit_mount_point,
+                        )
+                    except hvac.exceptions.Forbidden:
+                        result['transit']['sign'] = False
+                        result['steps'].append({"msg": "Transit encrypt is forbidden with provided credentials. Error key {}.".format(MODULE_KEY_STR_TEMPLATE.format(module)), "status": False})
+                    except hvac.exceptions.Unauthorized:
+                        result['steps'].append({"msg": "Transit encrypt is unauthorized with provided credentials. Error key {}.".format(MODULE_KEY_STR_TEMPLATE.format(module)), "status": False})
+                    except hvac.exceptions.VaultError as err:
+                        result['steps'].append({"msg": str(err), "status": False})
+
+                '''
                 try:
                     response = self._client.secrets.transit.encrypt_data(check_key, "testing", mount_point=self._transit_mount_point)
-
                 except hvac.exceptions.Forbidden:
                     result['transit']['sign'] = False
                     result['steps'].append({"msg": "Transit encrypt is forbidden with provided credentials. Error key {}.".format(MODULE_KEY_STR_TEMPLATE.format(module)), "status": False})
@@ -743,6 +789,7 @@ class VaultSetup:
                     result['steps'].append({"msg": "Transit encrypt is unauthorized with provided credentials. Error key {}.".format(MODULE_KEY_STR_TEMPLATE.format(module)), "status": False})
                 except hvac.exceptions.VaultError as err:
                     result['steps'].append({"msg": str(err), "status": False})
+                '''
 
         # check policies
         policies = self._adapt_policies_path(get_policies())
