@@ -286,8 +286,8 @@ class SwarmDeploy(BaseDeploy):
             self.client.images.pull(image)
             self.client.services.create(image=image, command=command, **service_def_dict)
         except docker.errors.DockerException as err:
-            print(err)
-            pass
+            return {"error": str(err)}
+
         return {}
 
     def write_scripts(self) -> None:
@@ -1001,7 +1001,8 @@ class SwarmDeploy(BaseDeploy):
         context[deploy_module.upper()+'_VAULT_SECRET_ID'] = ''
 
         remove_modules = ['api', 'lapi', 'beat', 'worker-all', 'worker-enrolment', 'worker-enrolment-storage',
-                          'worker-enrolment-validation', 'worker-verification', 'worker-alerts', 'worker-reporting']
+                          'worker-enrolment-validation', 'worker-verification', 'worker-alerts', 'worker-reporting',
+                          'worker']
 
         deploy_module_lower = deploy_module.lower()
         remove_modules.remove(deploy_module_lower)
@@ -1098,9 +1099,50 @@ class SwarmDeploy(BaseDeploy):
         context["{}_ROLE_ID".format(provider.get('acronym').upper())] = credentials.get('role_id')
         context["{}_SECRET_ID".format(provider.get('acronym').upper())] = credentials.get('secret_id')
 
+        if provider.get('acronym').upper() == 'TPT':
+            context['TPT_URL'] = "https://{}/tpt".format(self._config.get('TESLA_DOMAIN'))
+
         provider_name = "{}_provider".format(provider.get('acronym').lower())
 
-        return self._create_swarm_service(provider_name, 'provider/swarm/provider.yaml', context)
+        if provider.get('acronym').upper() != 'TPT':
+            return self._create_swarm_service(provider_name, 'provider/swarm/provider.yaml', context)
+
+        # TPT case
+        # deploy tesla tpt
+        self._create_swarm_service(provider_name, 'provider/swarm/provider.yaml', context)
+
+        # tpt db
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'provider': provider,
+            'DEBUG': settings.DEBUG,
+            'SSL_VERIFY': False,
+            'DB_DATABASE': self._config.get('TPT_SERVICE_DB_DATABASE'),
+            'DB_USER': self._config.get('TPT_SERVICE_DB_USER'),
+            'TPT_SERVICE_DB_PASSWORD': self._config.get('TPT_SERVICE_DB_PASSWORD'),
+        }
+
+        self._create_swarm_service('tpt_service_db', 'tpt_service/swarm/db.yaml', context)
+
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'provider': provider,
+            'DEBUG': settings.DEBUG,
+            'SSL_VERIFY': False,
+            'DB_NAME': self._config.get('TPT_SERVICE_DB_DATABASE'),
+            'DB_USER': self._config.get('TPT_SERVICE_DB_USER'),
+            'DB_ADDRESS': self._config.get('TPT_SERVICE_DB_ADDRESS'),
+            'DB_SCHEMA': self._config.get('TPT_SERVICE_DB_SCHEMA'),
+            'DB_PORT': self._config.get('TPT_SERVICE_DB_PORT'),
+            'DB_ENGINE': self._config.get('TPT_SERVICE_DB_ENGINE'),
+            'TPT_SERVICE_DB_PASSWORD': self._config.get('TPT_SERVICE_DB_PASSWORD'),
+            'TPT_SERVICE_API_SECRET': self._config.get('TPT_SERVICE_API_SECRET'),
+            'TPT_SERVICE_TPT_SECRET': credentials.get('secret_id'),
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB')
+        }
+
+        self._create_swarm_service('tpt_service', 'tpt_service/swarm/service.yaml', context)
+        return {}
 
     def _remove_instrument_provider(self, provider) -> dict:
         """
@@ -1117,7 +1159,44 @@ class SwarmDeploy(BaseDeploy):
 
         provider_name = "{}_provider".format(provider.get('acronym').lower())
 
-        return self._remove_swarm_service(provider_name, 'provider/swarm/provider.yaml', context)
+        if provider.get('acronym').upper() != 'TPT':
+            return self._remove_swarm_service(provider_name, 'provider/swarm/provider.yaml', context)
+
+        self._remove_swarm_service(provider_name, 'provider/swarm/provider.yaml', context)
+
+        # tpt db
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'provider': provider,
+            'DEBUG': settings.DEBUG,
+            'SSL_VERIFY': False,
+            'DB_DATABASE': self._config.get('TPT_SERVICE_DB_DATABASE'),
+            'DB_USER': self._config.get('TPT_SERVICE_DB_USER'),
+            'TPT_SERVICE_DB_PASSWORD': self._config.get('TPT_SERVICE_DB_PASSWORD'),
+        }
+
+        self._remove_swarm_service('tpt_service_db', 'tpt_service/swarm/db.yaml', context)
+
+        context = {
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
+            'provider': provider,
+            'DEBUG': settings.DEBUG,
+            'SSL_VERIFY': False,
+            'DB_NAME': self._config.get('TPT_SERVICE_DB_DATABASE'),
+            'DB_USER': self._config.get('TPT_SERVICE_DB_USER'),
+            'DB_ADDRESS': self._config.get('TPT_SERVICE_DB_ADDRESS'),
+            'DB_SCHEMA': self._config.get('TPT_SERVICE_DB_SCHEMA'),
+            'DB_PORT': self._config.get('TPT_SERVICE_DB_PORT'),
+            'DB_ENGINE': self._config.get('TPT_SERVICE_DB_ENGINE'),
+            'TPT_SERVICE_DB_PASSWORD': self._config.get('TPT_SERVICE_DB_PASSWORD'),
+            'TPT_SERVICE_API_SECRET': self._config.get('TPT_SERVICE_API_SECRET'),
+            'TPT_SERVICE_TPT_SECRET': None,
+
+        }
+
+        self._remove_swarm_service('tpt_service', 'tpt_service/swarm/service.yaml', context)
+        return {}
+
 
     def _get_instrument_provider_status(self, module):
         return self._create_status_obj("{}_provider".format(module.lower()))

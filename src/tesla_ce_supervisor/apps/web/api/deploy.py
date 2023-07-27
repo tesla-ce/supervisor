@@ -14,7 +14,7 @@ class BaseAPIDeploy(BaseAPISupervisor):
         credentials = None
         if self.module.lower() in ['api', 'beat', 'worker-all', 'worker-enrolment', 'worker-enrolment-storage',
                                    'worker-enrolment-validation', 'worker-verification', 'worker-alerts',
-                                   'worker-reporting', 'lapi']:
+                                   'worker-reporting', 'lapi', 'worker']:
             data = {"module": self.module.lower()}
             response = self.client.make_request_to_supervisor_service('POST', '/supervisor/api/admin/config/role_secret/', data)
             credentials = json.loads(response.json())
@@ -67,6 +67,12 @@ class BaseAPIDeploy(BaseAPISupervisor):
                 }
                 self.client.make_request_to_supervisor_service('POST', '/supervisor/api/admin/config/create_database/',
                                                                data)
+
+            if self.module.lower() == 'tpt':
+                # create tpt_webhook
+                data = {"step": "register_tpt_webhook"}
+                response = self.client.make_request_to_supervisor_service('GET', '/supervisor/api/admin/config/{}/'.format('TESLA'), data)
+
             response = self.client.deploy.deploy(self.module, credentials, provider)
             self.client.tesla.persist_configuration()
 
@@ -144,6 +150,13 @@ class APIDeployBeat(BaseAPIDeploy):
         Manage TeSLA CE Beat deployment
     """
     module = 'BEAT'
+
+
+class APIDeployAPIWorker(BaseAPIDeploy):
+    """
+        Manage TeSLA CE API worker deployment
+    """
+    module = 'WORKER'
 
 
 class APIDeployAPIWorkerAll(BaseAPIDeploy):

@@ -4,6 +4,7 @@ const connection_step_desc = {
     'api': {name: 'API', deploy: base_url + 'deploy/tesla/api', status: base_url + 'check/tesla/api'},
     'beat': {name: 'Beat', deploy: base_url + 'deploy/tesla/beat', status: base_url + 'check/tesla/beat'},
     'worker-all': {name: 'Worker all', deploy: base_url + 'deploy/tesla/worker-all', status: base_url + 'check/tesla/worker-all'},
+    'worker': {name: 'Worker', deploy: base_url + 'deploy/tesla/worker', status: base_url + 'check/tesla/worker'},
     'worker-enrolment': {name: 'Worker enrolment', deploy: base_url + 'deploy/tesla/worker-enrolment', status: base_url + 'check/tesla/worker-enrolment'},
     'worker-enrolment-storage': {name: 'Worker enrolment storage', deploy: base_url + 'deploy/tesla/worker-enrolment-storage', status: base_url + 'check/tesla/worker-enrolment-storage'},
     'worker-enrolment-validation': {name: 'Worker enrolment validation', deploy: base_url + 'deploy/tesla/worker-enrolment-validation', status: base_url + 'check/tesla/worker-enrolment-validation'},

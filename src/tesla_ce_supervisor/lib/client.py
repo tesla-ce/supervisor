@@ -419,7 +419,7 @@ class SupervisorClient:
             return self.check_beat().to_json()
         elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
                                 "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
-                                "WORKER-REPORTING"]:
+                                "WORKER-REPORTING", "WORKER"]:
             return self.check_workers_module(module.upper()).to_json()
 
         elif module == 'LAPI':

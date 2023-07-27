@@ -44,7 +44,8 @@ class TaskClient:
             'migrate_database',
             'collect_static',
             'load_fixtures',
-            'create_superuser'
+            'create_superuser',
+            'register_tpt_webhook'
         ]
 
         # by default type is CONFIG

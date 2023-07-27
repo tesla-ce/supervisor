@@ -492,7 +492,6 @@ class BaseDeploy(abc.ABC):
         return script
 
 
-
     def generate_deployment_credentials(self, module: ModuleCode):
         """
             Generate required credentials for a given module
@@ -547,6 +546,11 @@ class BaseDeploy(abc.ABC):
 
             if self._config.get('SUPERVISOR_SECRET') is None:
                 self._config.set('SUPERVISOR_SECRET', self._config.get_uuid())
+        elif module.upper() == "TPT":
+            if self._config.get('TPT_SERVICE_API_SECRET') is None:
+                self._config.set('TPT_SERVICE_API_SECRET', self._config.get_uuid())
+            if self._config.get('TPT_SERVICE_DB_PASSWORD') is None:
+                self._config.set('TPT_SERVICE_DB_PASSWORD', self._config.get_uuid())
 
     def get_status(self, module: ModuleCode) -> ServiceDeploymentInformation:
         """
@@ -574,7 +578,7 @@ class BaseDeploy(abc.ABC):
             return self._get_moodle_status()
         elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
                                 "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
-                                "WORKER-REPORTING", "API", "LAPI", "BEAT"]:
+                                "WORKER-REPORTING", "API", "LAPI", "BEAT", "WORKER"]:
             return self._get_core_module_status(module.upper())
         elif module.upper() in ["TKS", "TPT", "TFR"]:
             return self._get_instrument_provider_status(module.upper())
@@ -607,7 +611,7 @@ class BaseDeploy(abc.ABC):
             return self._get_dashboard_script()
         elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
                                 "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
-                                "WORKER-REPORTING", "API", "LAPI", "BEAT"]:
+                                "WORKER-REPORTING", "API", "LAPI", "BEAT", "WORKER"]:
             return self._get_core_module_script(credentials, module.upper())
         elif module.upper() in ["TFR", "TPT", "TKS"]:
             return self._get_instrument_provider_script(module.upper(), credentials, provider)
@@ -655,7 +659,7 @@ class BaseDeploy(abc.ABC):
             return self._deploy_supervisor()
         elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
                                 "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
-                                "WORKER-REPORTING", "API", "BEAT", "LAPI"]:
+                                "WORKER-REPORTING", "API", "BEAT", "LAPI", "WORKER"]:
             return self._deploy_core_module(credentials, module.upper())
         elif module.upper() == "DASHBOARD":
             return self._deploy_dashboard()
@@ -689,7 +693,7 @@ class BaseDeploy(abc.ABC):
             return self._remove_dashboard()
         elif module.upper() in ["WORKER-ALL", "WORKER-ENROLMENT", "WORKER-ENROLMENT-STORAGE",
                                 "WORKER-ENROLMENT-VALIDATION", "WORKER-VERIFICATION", "WORKER-ALERTS",
-                                "WORKER-REPORTING", "API", "BEAT", "LAPI"]:
+                                "WORKER-REPORTING", "API", "BEAT", "LAPI", "WORKER"]:
             return self._remove_core_module(module.upper())
         elif module.upper() in ["TKS", "TPT", "TFR"]:
             return self._remove_instrument_provider(provider)

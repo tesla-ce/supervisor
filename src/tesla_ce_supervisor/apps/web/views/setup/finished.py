@@ -10,7 +10,7 @@ def finished_view(request):
     client = SupervisorClient.get_instance()
 
     context = {
-        'domain': client.tesla.get("TESLA_DOMAIN")
+        'domain': client.tesla.get_config().get("TESLA_DOMAIN")
     }
 
     if request.method == 'POST':

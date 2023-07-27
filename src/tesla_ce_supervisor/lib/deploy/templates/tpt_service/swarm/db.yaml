@@ -1,0 +1,33 @@
+version: '3.5'
+services:
+  tpt_service_db:
+    image: postgres:latest
+    environment:
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+      POSTGRES_DB: "{{ DB_DATABASE }}"
+      POSTGRES_USER: "{{ DB_USER}}"
+      POSTGRES_PASSWORD_FILE: "/run/secrets/TPT_SERVICE_DB_PASSWORD"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      replicas: 1
+    secrets:
+      - TPT_SERVICE_DB_PASSWORD
+    networks:
+      - tesla_private
+    volumes:
+      - tpt_db:/var/lib/postgresql/data
+secrets:
+  TPT_SERVICE_DB_PASSWORD:
+    file: ./secrets/TPT_SERVICE_DB_PASSWORD
+
+networks:
+  tesla_public:
+    external: true
+
+volumes:
+  tpt_db:
+    driver_opts:
+      type: none
+      device: /var/tesla/tpt_db
+      o: bind

@@ -81,6 +81,13 @@ class APICheckBeat(BaseAPIDeploy):
     module = 'BEAT'
 
 
+class APICheckAPIWorker(BaseAPIDeploy):
+    """
+        Manage TeSLA CE API worker deployment
+    """
+    module = 'WORKER'
+
+
 class APICheckAPIWorkerAll(BaseAPIDeploy):
     """
         Manage TeSLA CE API worker all deployment

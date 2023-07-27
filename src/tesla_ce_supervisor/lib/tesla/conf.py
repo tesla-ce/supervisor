@@ -184,6 +184,16 @@ class Config:
             ('admin_user', 'Administrator username', 'str', 'admin', None, True),
             ('admin_password', 'Administrator password', 'str', None, None, True),
             ('admin_email', 'Administrator email', 'str', None, None, True),
+        )),
+        ('tpt_service', 'TeSLA TPT Service configuration.', (
+            ('api_secret', 'API secret shared with TeSLA CE API', 'str', None, None, True),
+            ('db_password', 'Database password', 'str', None, None, True),
+            ('db_user', 'Database user', 'str', 'tpt_user', None, True),
+            ('db_address', 'Database address', 'str', 'localhost', None, True),
+            ('db_database', 'Database name', 'str', 'tpt_db', None, True),
+            ('db_port', 'Database port', 'int', 5432, None, True),
+            ('db_schema', 'Database schema', 'str', 'tpt_schema', None, True),
+            ('db_engine', 'Database engine', 'str', 'postgresql+psycopg2', None, True)
         ))
     )
 
@@ -600,6 +610,7 @@ class Config:
         self.set('STORAGE_URL', 'https://storage.{}'.format(self.get('TESLA_DOMAIN')))
         self.set('CELERY_BROKER_HOST', '{}_rabbitmq'.format(self.get('SWARM_SERVICE_PREFIX')))
         self.set('RABBITMQ_HOST', '{}_rabbitmq'.format(self.get('SWARM_SERVICE_PREFIX')))
+        self.set('TPT_SERVICE_DB_ADDRESS', '{}_tpt_service_db'.format(self.get('SWARM_SERVICE_PREFIX')))
 
     def _modify_config_consul(self) -> None:
         # rename all services with localhost in host config

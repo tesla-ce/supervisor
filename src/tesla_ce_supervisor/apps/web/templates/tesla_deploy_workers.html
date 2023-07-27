@@ -34,7 +34,7 @@
 
                                 <p>Next steps will be executed in TeSLA environment:
                                     {% if options.deployment_specialized_workers %}
-                                        {% include "items/service_tesla_deploy_table.html" with steps="beat;worker-enrolment;worker-enrolment-storage;worker-enrolment-validation;worker-verification;worker-alerts;worker-reporting"|split:";" %}
+                                        {% include "items/service_tesla_deploy_table.html" with steps="beat;worker;worker-enrolment;worker-enrolment-storage;worker-enrolment-validation;worker-verification;worker-alerts;worker-reporting"|split:";" %}
                                     {% else %}
                                         {% include "items/service_tesla_deploy_table.html" with steps="beat;worker-all"|split:";" %}
                                     {% endif %}

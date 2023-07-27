@@ -1,0 +1,60 @@
+version: '3.5'
+services:
+  tpt_service:
+    image: teslace/provider-pt-tpt-service:edge
+    deploy:
+      restart_policy:
+        condition: on-failure
+      replicas: 1
+      {% if DEPLOYMENT_LB == "traefik" %}
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.tpt_service.rule=Host(`{{ TESLA_DOMAIN }}`) && PathPrefix(`/tpt`)"
+        - "traefik.http.routers.tpt_service.entrypoints=https"
+        - "traefik.http.routers.tpt_service.tls.certresolver=tesla-tlschallenge"
+        - "traefik.http.services.tpt_service-service.loadbalancer.server.port=80"
+        - "traefik.http.routers.tpt_service.service=tpt_service-service"
+      {% endif %}
+    environment:
+      DB_ADDRESS: "{{ DB_ADDRESS}}"
+      DB_NAME: "{{ DB_NAME }}"
+      DB_USER: "{{ DB_USER}}"
+      DB_PASSWORD_FILE: "/run/secrets/TPT_SERVICE_DB_PASSWORD"
+      DB_SCHEMA: "{{ DB_SCHEMA }}"
+      DB_PORT: {{ DB_PORT }}
+      DB_ENGINE: "{{ DB_ENGINE }}"
+      DEBUG: 0
+      DOMAIN: "https://{{ TESLA_DOMAIN }}/tpt"
+      API_URL: "https://{{ TESLA_DOMAIN }}"
+      ENDPOINT_SEND_RESULT: /api/webhooks/
+      API_SECRET_FILE: "/run/secrets/TPT_SERVICE_API_SECRET"
+      TPT_SECRET_FILE: "/run/secrets/TPT_SERVICE_TPT_SECRET"
+    secrets:
+      - TPT_SERVICE_API_SECRET
+      - TPT_SERVICE_TPT_SECRET
+      - TPT_SERVICE_DB_PASSWORD
+    networks:
+      - tesla_private
+      - tesla_public
+    volumes:
+      - tpt_data:/code/tpt_service/data
+secrets:
+  TPT_SERVICE_API_SECRET:
+    file: ./secrets/TPT_SERVICE_API_SECRET
+  TPT_SERVICE_TPT_SECRET:
+    file: ./secrets/TPT_SERVICE_TPT_SECRET
+  TPT_SERVICE_DB_PASSWORD:
+    file: ./secrets/TPT_SERVICE_DB_PASSWORD
+
+networks:
+  tesla_private:
+    external: true
+  tesla_public:
+    external: true
+
+volumes:
+  tpt_data:
+    driver_opts:
+      type: none
+      device: /var/tesla/tpt_data
+      o: bind

@@ -16,11 +16,17 @@ services:
         - "traefik.http.routers.{{ acronym }}.service={{ acronym }}-service"
       {% endif %}
     environment:
+      PYTHONUNBUFFERED: 1
       ROLE_ID_FILE: "/run/secrets/{{ provider.acronym|upper }}_ROLE_ID"
       SECRET_ID_FILE: "/run/secrets/{{ provider.acronym|upper }}_SECRET_ID"
       API_URL: "https://{{ TESLA_DOMAIN }}"
+      LOG_TASK_TRACE: 1
       {% if DEBUG == True %}
       SSL_VERIFY: {{ SSL_VERIFY }}
+      {% endif %}
+      {% if TPT_URL %}
+      TPT_URL: "{{ TPT_URL }}"
+      SECRET_FILE: "/run/secrets/{{ provider.acronym|upper }}_SECRET_ID"
       {% endif %}
 
     {% for credential in credentials %}
