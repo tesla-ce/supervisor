@@ -18,6 +18,11 @@ variable "image" {
   default = "{{ tesla_ce_image }}"
 }
 
+variable "vault_url" {
+  type = string
+  default = "{{ VAULT_URL }}"
+}
+
 variable "vault_mount_path_kv" {
   type = string
   default = "{{ VAULT_MOUNT_PATH_KV }}"
@@ -43,7 +48,7 @@ variable "base_domain" {
   default = "{{ TESLA_DOMAIN }}"
 }
 
-job "tesla_ce_{{ CORE_MODULE }}" {
+job "{{ CORE_MODULE }}" {
   # Run the job in the global region, which is the default.
   region = var.region
 
@@ -97,14 +102,23 @@ job "tesla_ce_{{ CORE_MODULE }}" {
     }
 
     # Define a task to run
-    task "tesla_ce_api" {
+    task "{{ CORE_MODULE }}" {
       # Use Docker to run the task.
       driver = "docker"
 
       # Configure Docker driver with the image
       config {
         image = var.image
+
+        {% if IS_PUBLIC is True and DEPLOYMENT_LB == "traefik" %}
         ports = ["web"]
+        {% elif CORE_MODULE == 'worker' %}
+        command = "/venv/bin/celery"
+        args = ["-A", "tesla_ce", "worker", "-l", "info"]
+        {% elif CORE_MODULE == 'beat' %}
+        command = "/venv/bin/celery"
+        args = ["-A", "tesla_ce", "beat", "-l", "info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
+        {% endif %}
       }
 
       env = {
@@ -127,29 +141,40 @@ job "tesla_ce_{{ CORE_MODULE }}" {
       }
 
       resources {
-        cpu    = 300
-        memory = 300
+        cpu    = 600
+        memory = 600
       }
     }
     service {
-      name = "tesla_ce_{{ CORE_MODULE }}"
+      name = "{{ CORE_MODULE }}"
       port = 5000
 
       tags = [
         "tesla-ce",
         "{{ CORE_MODULE }}",
+        {% if IS_PUBLIC is True and DEPLOYMENT_LB == "traefik" %}
         "traefik.enable=true",
-        "traefik.http.routers.api.rule=Host(`${var.base_domain}`) && PathPrefix(`/{{ CORE_MODULE }}`)",
+        "traefik.http.routers.{{ CORE_MODULE }}.rule=Host(`${var.base_domain}`) && PathPrefix(`/{{ CORE_MODULE }}`)",
         "traefik.consulcatalog.connect=true",
+        {% endif %}
       ]
 
       check {
+      {% if IS_PUBLIC is True and DEPLOYMENT_LB == "traefik" %}
         expose   = true
         type     = "http"
         path     = "/nginx/status"
         port     = "web"
         interval = "10s"
         timeout  = "2s"
+      {% else %}
+        task     = "{{ CORE_MODULE }}"
+        type     = "script"
+        command  = "/venv/bin/tesla_ce"
+        args     = ["check", ]
+        interval = "10s"
+        timeout  = "2s"
+      {% endif %}
       }
 
       connect {

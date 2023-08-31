@@ -47,7 +47,7 @@ job "tesla_ce_dashboard" {
 
   # Create a 'dashboard' group. Each task in the group will be
   # scheduled onto the same machine.
-  group "dashboard" {
+  group "tesla_ce_dashboard" {
     # Control the number of instances of this group.
     # Defaults to 1
     count = var.count
@@ -97,7 +97,7 @@ job "tesla_ce_dashboard" {
       }
     }
     service {
-      name = "tesla_ce_dashboard"
+      name = "dashboard"
       tags = [
         "tesla-ce",
         "dashboard",

@@ -18,7 +18,7 @@ class TaskClient:
         try:
             if task_id is None:
                 task_id = 1
-            return TaskLog.objects.filter(id__gt=task_id).order_by('-created_at')[:20]
+            return TaskLog.objects.filter(id__gte=task_id).order_by('-created_at')[:20]
         except TaskLog.DoesNotExist:
             pass
 

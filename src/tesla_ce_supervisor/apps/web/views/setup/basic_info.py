@@ -28,6 +28,8 @@ def tesla_basic_info(request):
         if form.is_valid():
             form.update_config(client.tesla.get_config())
             client.tesla.get_config().set('DEPLOYMENT_STATUS', 3)
+            client.tesla.get_config().set('DJANGO_ALLOWED_HOSTS', client.tesla.get_config().get('TESLA_DOMAIN'))
+
             client.tesla.persist_configuration()
             return JsonResponse({'redirect_url': get_url_from_status(client)})
         return JsonResponse({'errors': form.errors})

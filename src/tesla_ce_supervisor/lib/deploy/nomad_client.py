@@ -140,7 +140,7 @@ class NomadDeploy(BaseDeploy):
     def _create_status_obj(self, name: str) -> ServiceDeploymentInformation:
         # Check if job exists
         job_info = None
-        if len(self._client.jobs.get_jobs(name)) == 1:
+        if len(self._client.jobs.get_jobs(name)) >= 1:
             job_info = self._client.job.get_deployment(name)
         status = ServiceDeploymentInformation(name, 'nomad', job_info)
         if job_info is not None:
@@ -188,7 +188,10 @@ class NomadDeploy(BaseDeploy):
             'VAULT_ROLE_ID': credentials.get('role_id'),
             'VAULT_SECRET_ID': credentials.get('secret_id'),
             'base_domain': self._config.get('TESLA_DOMAIN'),
+            'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
             'CORE_MODULE': module.lower(),
+            'IS_PUBLIC': module.lower() in ['api', 'lapi'],
+            'DEPLOYMENT_LB': self._config.get('DEPLOYMENT_LB'),
         }
 
     def write_scripts(self) -> None:
@@ -787,9 +790,9 @@ class NomadDeploy(BaseDeploy):
         """
         return self._create_status_obj('tesla_ce_dashboard')
 
-    def _deploy_core_module(self, module: str, credentials: dict):
-        return self._create_nomad_job(module,
-                                      f'core/{module.lower()}/nomad/{module.lower()}.nomad',
+    def _deploy_core_module(self, credentials: dict, module: str):
+        return self._create_nomad_job(module.lower(),
+                                      'core/module/nomad/module.nomad',
                                       self._get_core_module_context(module, credentials)
                                       )
 
@@ -801,7 +804,7 @@ class NomadDeploy(BaseDeploy):
             :return: Setup options
         """
         task_def = self._remove_empty_lines(render_to_string(
-            f'core/{module.lower()}/nomad/{module.lower()}.nomad',
+            'core/module/nomad/module.nomad',
             self._get_core_module_context(module, credentials))
         )
 
@@ -823,7 +826,7 @@ class NomadDeploy(BaseDeploy):
         """
             Remove deployed TeSLA CE core module
         """
-        return self._client.job.deregister_job(f'tesla_ce_{module.lower()}', True)
+        return self._client.job.deregister_job(module.lower(), True)
 
     def _get_core_module_status(self, module) -> ServiceDeploymentInformation:
         """

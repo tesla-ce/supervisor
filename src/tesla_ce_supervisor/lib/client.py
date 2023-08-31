@@ -856,6 +856,14 @@ class SupervisorClient:
 
     def get_tesla_ce_zip(self, password):
         # get internal supervisor configuration (for vault tokens and vault keys)
+        self.get_and_save_remote_config()
+        export_file = "{}.zip".format(self.get_config_path())
+        pyminizip.compress(self.get_config_path(), None, export_file, password, 9)
+
+        with open(export_file, mode='rb') as file:
+            return file.read()
+
+    def get_and_save_remote_config(self):
         response = self.make_request_to_supervisor_service('GET', '/supervisor/api/admin/config/all_config/', {})
         remote_config = response.json()
         for section in remote_config:
@@ -867,8 +875,3 @@ class SupervisorClient:
                     self.tesla.get_config().set(config_key, remote_config[section][item_key]['value'])
 
         self.tesla.persist_configuration()
-        export_file = "{}.zip".format(self.get_config_path())
-        pyminizip.compress(self.get_config_path(), None, export_file, password, 9)
-
-        with open(export_file, mode='rb') as file:
-            return file.read()

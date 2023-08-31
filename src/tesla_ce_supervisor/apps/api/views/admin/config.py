@@ -27,6 +27,7 @@ class ConfigViewSet(BaseConfigViewsets):
         module = pk.upper()
         result = self.client.configure_service(module, request)
 
+
         return JsonResponse(result)
 
     def list(self, request):

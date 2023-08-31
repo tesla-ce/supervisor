@@ -20,6 +20,9 @@ class BaseAPIDeploy(BaseAPISupervisor):
             # todo: reboot supervisor service
             self.client.get_deployer().reboot_module('supervisor', wait_ready=True)
 
+        if self.module == 'VAULT':
+            self.client.get_and_save_remote_config()
+
         if response is not None:
             return JsonResponse(response.json())
         return JsonResponse({})
