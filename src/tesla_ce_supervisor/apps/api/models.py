@@ -74,7 +74,11 @@ class SystemStatus(SingletonModel):
     status = models.SmallIntegerField(choices=SYSTEM_STATUS, null=False, default=0)
 
     def to_json(self):
-        return {"version": self.version, "last_config": self.last_config.isoformat(), "status": self.status}
+        last_config = self.last_config
+        if last_config is not None:
+            last_config = self.last_config.isoformat()
+
+        return {"version": self.version, "last_config": last_config, "status": self.status}
 
 class Configuration(models.Model):
     """
