@@ -1,7 +1,7 @@
 version: '3.5'
 services:
   tpt_service:
-    image: teslace/provider-pt-tpt-service:edge
+    image: teslace/provider-pt-tpt-service:latest
     deploy:
       restart_policy:
         condition: on-failure

@@ -706,7 +706,7 @@ class SupervisorClient:
             image = self.tesla.get_config().get('DEPLOYMENT_IMAGE') + ':{}'.format(
                 self.tesla.get_config().get('DEPLOYMENT_VERSION', 'latest')
             )
-            image = 'teslace/core:edge'
+            #image = 'teslace/core:edge'
 
             command_status = self.deploy.execute_command_inside_container(image, command, environment)
             result = command_status.status

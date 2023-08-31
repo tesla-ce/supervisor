@@ -48,7 +48,7 @@ variable "base_domain" {
   default = "{{ TESLA_DOMAIN }}"
 }
 
-job "tesla_ce_supervisor" {
+job "supervisor" {
   # Run the job in the global region, which is the default.
   region = var.region
 
@@ -102,7 +102,7 @@ job "tesla_ce_supervisor" {
     }
 
     # Define a task to run
-    task "tesla_ce_supervisor" {
+    task "supervisor" {
       # Use Docker to run the task.
       driver = "docker"
 

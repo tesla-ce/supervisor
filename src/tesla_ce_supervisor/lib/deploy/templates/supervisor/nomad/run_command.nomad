@@ -38,7 +38,7 @@ variable "supervisor_remote_url" {
   default = "{{ SUPERVISOR_REMOTE_URL|safe }}"
 }
 
-job "tesla_ce_supervisor_command" {
+job "supervisor_command" {
   # Run the job in the global region, which is the default.
   region = var.region
 

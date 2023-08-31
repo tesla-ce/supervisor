@@ -205,7 +205,7 @@ class NomadDeploy(BaseDeploy):
             'count': 1,
             'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
             'nomad_region': self.nomad_conf.nomad_region,
-            'traefik_image': 'traefik:v2.5',
+            'traefik_image': 'traefik:v2.9',
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
             'TESLA_ADMIN_MAIL': self._config.get('TESLA_ADMIN_MAIL')
         }
@@ -596,7 +596,7 @@ class NomadDeploy(BaseDeploy):
             'count': 1,
             'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
             'nomad_region': self.nomad_conf.nomad_region,
-            'supervisor_image': 'teslace/supervisor:latest',
+            'supervisor_image': 'teslace/supervisor:edge',
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
             'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
             'SUPERVISOR_SECRET': self._config.get('SUPERVISOR_SECRET'),
@@ -604,13 +604,13 @@ class NomadDeploy(BaseDeploy):
             'SUPERVISOR_ADMIN_PASSWORD': self._config.get('SUPERVISOR_ADMIN_PASSWORD'),
             'SUPERVISOR_ADMIN_EMAIL': self._config.get('TESLA_ADMIN_MAIL'),
         }
-        return self._create_nomad_job('tesla_ce_supervisor', 'supervisor/nomad/supervisor.nomad', context)
+        return self._create_nomad_job('supervisor', 'supervisor/nomad/supervisor.nomad', context)
 
     def _remove_supervisor(self) -> dict:
         """
             Remove deployed TeSLA CE Supervisor
         """
-        return self._client.job.deregister_job('tesla_ce_supervisor', True)
+        return self._client.job.deregister_job('supervisor', True)
 
     def _get_supervisor_script(self) -> SetupOptions:
         """
@@ -620,7 +620,7 @@ class NomadDeploy(BaseDeploy):
             'count': 1,
             'nomad_datacenters': str(self.nomad_conf.nomad_datacenters).replace("'", '"'),
             'nomad_region': self.nomad_conf.nomad_region,
-            'supervisor_image': 'teslace/supervisor:latest',
+            'supervisor_image': 'teslace/supervisor:edge',
             'DEPLOYMENT_DATA_PATH': self._config.get('DEPLOYMENT_DATA_PATH'),
             'TESLA_DOMAIN': self._config.get('TESLA_DOMAIN'),
             'SUPERVISOR_SECRET': self._config.get('SUPERVISOR_SECRET'),
@@ -687,11 +687,11 @@ class NomadDeploy(BaseDeploy):
             context.update(environment)
 
         # Remove any previous allocation
-        if len(self._client.job.get_allocations('tesla_ce_supervisor_command')) > 0:
-            self._client.job.deregister_job('tesla_ce_supervisor_command', True)
+        if len(self._client.job.get_allocations('supervisor_command')) > 0:
+            self._client.job.deregister_job('supervisor_command', True)
 
         # Register the new job
-        self._create_nomad_job('tesla_ce_supervisor_command', 'supervisor/nomad/run_command.nomad', context)
+        self._create_nomad_job('supervisor_command', 'supervisor/nomad/run_command.nomad', context)
 
         # Wait until job finishes
         tic = datetime.datetime.utcnow()
@@ -701,7 +701,7 @@ class NomadDeploy(BaseDeploy):
             'error': None
         }
         try:
-            summary = self._client.job.get_summary("tesla_ce_supervisor_command")
+            summary = self._client.job.get_summary("supervisor_command")
             finished = summary['Summary']['supervisor_command']['Complete'] + summary['Summary']['supervisor_command']['Failed']
             job_ok = True
             while finished < 1:
@@ -710,7 +710,7 @@ class NomadDeploy(BaseDeploy):
                     job_ok = False
                     info['error'] = 'timeout'
                     break
-                summary = self._client.job.get_summary("tesla_ce_supervisor_command")
+                summary = self._client.job.get_summary("supervisor_command")
                 finished = summary['Summary']['supervisor_command']['Complete'] + summary['Summary']['supervisor_command']['Failed']
         except Exception as exc:
             job_ok = False
@@ -728,8 +728,8 @@ class NomadDeploy(BaseDeploy):
         '''
         # todo: remove this comment
         try:
-            if len(self._client.job.get_allocations('tesla_ce_supervisor_command')) > 0:
-                self._client.job.deregister_job('tesla_ce_supervisor_command', True)
+            if len(self._client.job.get_allocations('supervisor_command')) > 0:
+                self._client.job.deregister_job('supervisor_command', True)
         except Exception:
             pass
         '''
