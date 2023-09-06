@@ -19,6 +19,9 @@
             {% csrf_token %}
             <div class="row">
                 {% include 'services/config_blocs/database.html' %}
+                {% include 'services/config_blocs/redis.html' %}
+                {% include 'services/config_blocs/minio.html' %}
+                {% include 'services/config_blocs/rabbitmq.html' %}
                 {% include 'services/config_blocs/vault.html' %}
             </div>
         </form>

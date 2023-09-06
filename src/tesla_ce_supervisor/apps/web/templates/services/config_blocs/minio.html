@@ -1,0 +1,50 @@
+{% load static %}
+{% load widget_tweaks %}
+<div class="col-sm-12">
+    <div class="card h-100">
+        <div class="card-body row">
+            <div class="col-md-4 align-content-center text-center">
+                <img src="{% static 'img/Logo-redis.svg' %}" class="img-fluid rounded-start logo" alt="Redis image">
+            </div>
+            <div class="col-md-8">
+                <h5 class="card-title">Storage configuration</h5>
+                <div class="form-group mb-2">
+                    <label for="storage_url">URL</label>
+                    {{ form_minio.storage_url|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: storage_urlHelp"|attr:"placeholder: URL"}}
+                    <small id="storage_urlHelp" class="form-text text-muted">Storage URL</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="storage_private_bucket">Private bucket</label>
+                    {{ form_minio.storage_private_bucket|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: storage_private_bucketHelp"|attr:"placeholder: Private bucket"}}
+                    <small id="storage_private_bucketHelp" class="form-text text-muted">Storage private bucket name</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="storage_public_bucket">Public bucket</label>
+                    {{ form_minio.storage_public_bucket|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: storage_public_bucketHelp"|attr:"placeholder: Public bucket"}}
+                    <small id="storage_public_bucketHelp" class="form-text text-muted">Storage public bucket name</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="storage_region">Region</label>
+                    {{ form_minio.storage_region|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: storage_regionHelp"|attr:"placeholder: Region"}}
+                    <small id="storage_regionHelp" class="form-text text-muted">Storage region</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="storage_access_key">Access key</label>
+                    {{ form_minio.storage_access_key|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: storage_access_keyHelp"|attr:"placeholder: Access key"}}
+                    <small id="storage_access_keyHelp" class="form-text text-muted">Storage region</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="storage_secret_key">Secret key</label>
+                    {{ form_minio.storage_secret_key|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: storage_secret_keyHelp"|attr:"placeholder: Secret key"}}
+                    <small id="storage_secret_keyHelp" class="form-text text-muted">Storage secret key</small>
+                </div>
+
+                <div class="form-group mb-2">
+                    <label for="storage_ssl_verify">SSL verify</label>
+                    {{ form_minio.storage_ssl_verify|add_class:"form-select"|attr:"type : url"|attr:"aria-describedby: storage_ssl_verifyHelp"|attr:"placeholder: SSL verify"}}
+                    <small id="storage_ssl_verifyHelp" class="form-text text-muted">Storage SSL verify</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

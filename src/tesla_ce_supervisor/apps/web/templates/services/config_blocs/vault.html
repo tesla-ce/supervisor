@@ -9,43 +9,85 @@
             <div class="col-md-8">
                 <h5 class="card-title">Vault configuration</h5>
                 <div class="form-group mb-2">
-                    <label for="nomad_addr">Address</label>
-                    {{ form.nomad_addr|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: nomad_addrHelp"|attr:"placeholder: Address"}}
-                    <small id="nomad_addrHelp" class="form-text text-muted">Full address with schema and port to connect with Nomad Client</small>
+                    <label for="vault_url">URL</label>
+                    {{ form_vault.url|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_urlHelp"|attr:"placeholder: URL"}}
+                    <small id="vault_urlHelp" class="form-text text-muted">Vault URL</small>
                 </div>
                 <div class="form-group mb-2">
-                    <label for="nomad_datacenters">Datacenters</label>
-                    {{ form.nomad_datacenters|add_class:"form-control"|attr:"aria-describedby: nomad_datacentersHelp"|attr:"placeholder: Datacenters"}}
-                    <small id="nomad_datacentersHelp" class="form-text text-muted">Comma-separated list of datacenters for deployment</small>
+                    <label for="vault_ssl_verify">SSL verify</label>
+                    {{ form_vault.ssl_verify|add_class:"form-select"|attr:"type : url"|attr:"aria-describedby: vault_ssl_verifyHelp"|attr:"placeholder: SSL verify"}}
+                    <small id="vault_ssl_verifyHelp" class="form-text text-muted">Vault SSL verify</small>
                 </div>
                 <div class="form-group mb-2">
-                    <label for="nomad_region">Region</label>
-                    {{ form.nomad_region|add_class:"form-control"|attr:"aria-describedby: nomad_regionHelp"|attr:"placeholder: Region"}}
-                    <small id="nomad_regionHelp" class="form-text text-muted">Region</small>
+                    <label for="vault_token">Token</label>
+                    {{ form_vault.token|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_tokenHelp"|attr:"placeholder: Token"}}
+                    <small id="vault_tokenHelp" class="form-text text-muted">Vault token</small>
                 </div>
                 <div class="form-group mb-2">
-                    <label>Authentication</label>
-                    <br>
-                    {% for radio in form.nomad_authOptions %}
-                        <div class="form-check form-check-inline">
-                            {{ radio.tag }}
-                            <label class="form-check-label" for="id_nomad_authOptions_{{ forloop.counter0 }}">{{ radio.choice_label }}</label>
-                        </div>
-                    {% endfor %}
+                    <label for="vault_keys">Keys</label>
+                    {{ form_vault.keys|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_keysHelp"|attr:"placeholder: Keys"}}
+                    <small id="vault_keysHelp" class="form-text text-muted">Vault keys</small>
                 </div>
-                <div class="form-group mb-2 ml-2" id="nomad_acl_token_div">
-                    <label for="nomad_acl_token">ACL Token</label>
-                    <div class="input-group">
-                        {{ form.nomad_acl_token|add_class:"form-control"|attr:"aria-describedby: nomad_acl_tokenHelp"|attr:"placeholder: Token"}}
-                        <div class="input-group-prepend">
-                            <div class="input-group-text toggle-password">
-                                <i class="bi bi-eye bi-eye-slash"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <small id="nomad_acl_tokenHelp" class="form-text text-muted">To use automatic deployment the token should be able to register new jobs.</small>
+                <div class="form-group mb-2">
+                    <label for="vault_backend">Backend</label>
+                    {{ form_vault.backend|add_class:"form-select"|attr:"type : url"|attr:"aria-describedby: vault_backendHelp"|attr:"placeholder: Backend"}}
+                    <small id="vault_backendHelp" class="form-text text-muted">Vault backend</small>
                 </div>
-                <a href="#" data-action="test_nomad" class="btn btn-success action-btn disabled">Test</a>
+                <div class="form-group mb-2">
+                    <label for="vault_db_host">Database host</label>
+                    {{ form_vault.vault_db_host|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_db_hostHelp"|attr:"placeholder: Database host"}}
+                    <small id="vault_db_hostHelp" class="form-text text-muted">Vault database host</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_db_port">Database port</label>
+                    {{ form_vault.vault_db_port|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_db_portHelp"|attr:"placeholder: Database port"}}
+                    <small id="vault_db_portHelp" class="form-text text-muted">Vault database port</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_db_port">Database name</label>
+                    {{ form_vault.vault_db_name|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_db_nameHelp"|attr:"placeholder: Database name"}}
+                    <small id="vault_db_nameHelp" class="form-text text-muted">Vault database name</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_db_user">Database user</label>
+                    {{ form_vault.vault_db_user|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_db_userHelp"|attr:"placeholder: Database user"}}
+                    <small id="vault_db_userHelp" class="form-text text-muted">Vault database name</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_db_password">Database password</label>
+                    {{ form_vault.vault_db_password|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_db_userHelp"|attr:"placeholder: Database password"}}
+                    <small id="vault_db_passwordHelp" class="form-text text-muted">Vault database name</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_mount_path_kv">Mount path KV</label>
+                    {{ form_vault.mount_path_kv|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_mount_path_kvHelp"|attr:"placeholder: Mount path KV"}}
+                    <small id="vault_mount_path_kvHelp" class="form-text text-muted">Vault mount path KV</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_mount_path_transit">Mount path transit</label>
+                    {{ form_vault.mount_path_transit|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_mount_path_transitHelp"|attr:"placeholder: Mount path transit"}}
+                    <small id="vault_mount_path_transitHelp" class="form-text text-muted">Vault mount path KV</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_mount_path_approle">Mount path approle</label>
+                    {{ form_vault.mount_path_approle|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_mount_path_approleHelp"|attr:"placeholder: Mount path approle"}}
+                    <small id="vault_mount_path_approleHelp" class="form-text text-muted">Vault mount path approle</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_policies_prefix">Policies prefix</label>
+                    {{ form_vault.policies_prefix|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_policies_prefixHelp"|attr:"placeholder: Policies prefix"}}
+                    <small id="vault_policies_prefixHelp" class="form-text text-muted">Vault policies prefix</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_approle_default_ttl">Approle default TTL</label>
+                    {{ form_vault.approle_default_ttl|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_approle_default_ttlHelp"|attr:"placeholder: Approle default TTL"}}
+                    <small id="vault_approle_default_ttlHelp" class="form-text text-muted">Vault approle default TTL</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="vault_approle_max_ttl">Approle max TTL</label>
+                    {{ form_vault.approle_max_ttl|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: vault_approle_max_ttlHelp"|attr:"placeholder: Approle max TTL"}}
+                    <small id="vault_approle_max_ttlHelp" class="form-text text-muted">Vault approle max TTL</small>
+                </div>
             </div>
         </div>
     </div>

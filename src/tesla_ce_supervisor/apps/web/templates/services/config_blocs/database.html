@@ -9,43 +9,40 @@
             <div class="col-md-8">
                 <h5 class="card-title">Database configuration</h5>
                 <div class="form-group mb-2">
-                    <label for="nomad_addr">Address</label>
-                    {{ form.nomad_addr|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: nomad_addrHelp"|attr:"placeholder: Address"}}
-                    <small id="nomad_addrHelp" class="form-text text-muted">Full address with schema and port to connect with Nomad Client</small>
+                    <label for="db_host">Host</label>
+                    {{ form_db.database_host|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: db_hostHelp"|attr:"placeholder: Host"}}
+                    <small id="db_hostHelp" class="form-text text-muted">Database host</small>
                 </div>
                 <div class="form-group mb-2">
-                    <label for="nomad_datacenters">Datacenters</label>
-                    {{ form.nomad_datacenters|add_class:"form-control"|attr:"aria-describedby: nomad_datacentersHelp"|attr:"placeholder: Datacenters"}}
-                    <small id="nomad_datacentersHelp" class="form-text text-muted">Comma-separated list of datacenters for deployment</small>
+                    <label for="db_port">Port</label>
+                    {{ form_db.database_port|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: db_portHelp"|attr:"placeholder: Port"}}
+                    <small id="db_portHelp" class="form-text text-muted">Database port</small>
                 </div>
                 <div class="form-group mb-2">
-                    <label for="nomad_region">Region</label>
-                    {{ form.nomad_region|add_class:"form-control"|attr:"aria-describedby: nomad_regionHelp"|attr:"placeholder: Region"}}
-                    <small id="nomad_regionHelp" class="form-text text-muted">Region</small>
+                    <label for="db_engine">Engine</label>
+                    {{ form_db.database_engine|add_class:"form-select"|attr:"type : url"|attr:"aria-describedby: db_engineHelp"|attr:"placeholder: Engine"}}
+                    <small id="db_engineHelp" class="form-text text-muted">Database engine</small>
                 </div>
                 <div class="form-group mb-2">
-                    <label>Authentication</label>
-                    <br>
-                    {% for radio in form.nomad_authOptions %}
-                        <div class="form-check form-check-inline">
-                            {{ radio.tag }}
-                            <label class="form-check-label" for="id_nomad_authOptions_{{ forloop.counter0 }}">{{ radio.choice_label }}</label>
-                        </div>
-                    {% endfor %}
+                    <label for="db_name">Name</label>
+                    {{ form_db.database_db_name|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: db_nameHelp"|attr:"placeholder: Name"}}
+                    <small id="db_nameHelp" class="form-text text-muted">Database name</small>
                 </div>
-                <div class="form-group mb-2 ml-2" id="nomad_acl_token_div">
-                    <label for="nomad_acl_token">ACL Token</label>
-                    <div class="input-group">
-                        {{ form.nomad_acl_token|add_class:"form-control"|attr:"aria-describedby: nomad_acl_tokenHelp"|attr:"placeholder: Token"}}
-                        <div class="input-group-prepend">
-                            <div class="input-group-text toggle-password">
-                                <i class="bi bi-eye bi-eye-slash"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <small id="nomad_acl_tokenHelp" class="form-text text-muted">To use automatic deployment the token should be able to register new jobs.</small>
+                <div class="form-group mb-2">
+                    <label for="db_user">User</label>
+                    {{ form_db.database_db_user|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: db_nameHelp"|attr:"placeholder: User"}}
+                    <small id="db_userHelp" class="form-text text-muted">Database user</small>
                 </div>
-                <a href="#" data-action="test_nomad" class="btn btn-success action-btn disabled">Test</a>
+                <div class="form-group mb-2">
+                    <label for="db_password">Password</label>
+                    {{ form_db.database_db_password|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: db_passwordHelp"|attr:"placeholder: Password"}}
+                    <small id="db_passwordHelp" class="form-text text-muted">Database password</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="db_root_password">Root password</label>
+                    {{ form_db.database_db_root_password|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: db_root_passwordHelp"|attr:"placeholder: Root password"}}
+                    <small id="db_root_passwordHelp" class="form-text text-muted">Database root password</small>
+                </div>
             </div>
         </div>
     </div>

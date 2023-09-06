@@ -1,0 +1,35 @@
+{% load static %}
+{% load widget_tweaks %}
+<div class="col-sm-12">
+    <div class="card h-100">
+        <div class="card-body row">
+            <div class="col-md-4 align-content-center text-center">
+                <img src="{% static 'img/Logo-redis.svg' %}" class="img-fluid rounded-start logo" alt="Redis image">
+            </div>
+            <div class="col-md-8">
+                <h5 class="card-title">Redis configuration</h5>
+                <div class="form-group mb-2">
+                    <label for="redis_host">Host</label>
+                    {{ form_redis.redis_host|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: redis_hostHelp"|attr:"placeholder: Host"}}
+                    <small id="redis_hostHelp" class="form-text text-muted">Redis host</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="redis_port">Port</label>
+                    {{ form_redis.redis_port|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: redis_portHelp"|attr:"placeholder: Port"}}
+                    <small id="redis_portHelp" class="form-text text-muted">Redis port</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="redis_password">Password</label>
+                    {{ form_redis.redis_password|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: redis_passwordHelp"|attr:"placeholder: Password"}}
+                    <small id="redis_passwordHelp" class="form-text text-muted">Redis password</small>
+                </div>
+
+                <div class="form-group mb-2">
+                    <label for="redis_database">Database</label>
+                    {{ form_redis.redis_database|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: redis_databaseHelp"|attr:"placeholder: Database"}}
+                    <small id="redis_databaseHelp" class="form-text text-muted">Database</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

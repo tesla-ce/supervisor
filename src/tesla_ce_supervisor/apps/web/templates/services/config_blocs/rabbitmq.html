@@ -1,0 +1,115 @@
+{% load static %}
+{% load widget_tweaks %}
+<div class="col-sm-12">
+    <div class="card h-100">
+        <div class="card-body row">
+            <div class="col-md-4 align-content-center text-center">
+                <img src="{% static 'img/Logo-redis.svg' %}" class="img-fluid rounded-start logo" alt="Redis image">
+            </div>
+            <div class="col-md-8">
+                <h5 class="card-title">RabbitMQ & Celery configuration</h5>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_erlang_cookie">Erlang cookie</label>
+                    {{ form_rabbitmq.rabbitmq_erlang_cookie|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: erlang_cookieHelp"|attr:"placeholder: Erlang cookie"}}
+                    <small id="erlang_cookieHelp" class="form-text text-muted">RabbitMQ Erlang cookie</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_admin_user">Admin user</label>
+                    {{ form_rabbitmq.rabbitmq_admin_user|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_admin_userHelp"|attr:"placeholder: Admin user"}}
+                    <small id="rabbitmq_admin_userHelp" class="form-text text-muted">RabbitMQ admin user</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_admin_password">Admin password</label>
+                    {{ form_rabbitmq.rabbitmq_admin_password|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_admin_passwordHelp"|attr:"placeholder: Admin password"}}
+                    <small id="rabbitmq_admin_passwordHelp" class="form-text text-muted">RabbitMQ admin password</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_admin_port">Admin port</label>
+                    {{ form_rabbitmq.rabbitmq_admin_port|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_admin_portHelp"|attr:"placeholder: Admin port"}}
+                    <small id="rabbitmq_admin_portHelp" class="form-text text-muted">RabbitMQ admin port</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_host">Host</label>
+                    {{ form_rabbitmq.rabbitmq_host|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_hostHelp"|attr:"placeholder: Host"}}
+                    <small id="rabbitmq_hostHelp" class="form-text text-muted">RabbitMQ host</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_port">Port</label>
+                    {{ form_rabbitmq.rabbitmq_port|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_portHelp"|attr:"placeholder: Port"}}
+                    <small id="rabbitmq_portHelp" class="form-text text-muted">RabbitMQ port</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_protocol">Broker protocol</label>
+                    {{ form_rabbitmq.rabbitmq_broker_protocol|add_class:"form-select"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_protocolHelp"|attr:"placeholder: Broker protocol"}}
+                    <small id="rabbitmq_broker_protocolHelp" class="form-text text-muted">Celery broker user</small>
+                </div>
+
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_user">Broker user</label>
+                    {{ form_rabbitmq.rabbitmq_broker_user|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_userHelp"|attr:"placeholder: Broker user"}}
+                    <small id="rabbitmq_broker_userHelp" class="form-text text-muted">Celery broker user</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_password">Broker password</label>
+                    {{ form_rabbitmq.rabbitmq_broker_password|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_passwordHelp"|attr:"placeholder: Broker password"}}
+                    <small id="rabbitmq_broker_passwordHelp" class="form-text text-muted">Celery broker password</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_host">Broker host</label>
+                    {{ form_rabbitmq.rabbitmq_broker_host|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_hostHelp"|attr:"placeholder: Broker host"}}
+                    <small id="rabbitmq_broker_hostHelp" class="form-text text-muted">Celery broker password</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_region">Broker region</label>
+                    {{ form_rabbitmq.rabbitmq_broker_region|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_regionHelp"|attr:"placeholder: Broker region"}}
+                    <small id="rabbitmq_broker_regionHelp" class="form-text text-muted">Celery broker region</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_port">Broker port</label>
+                    {{ form_rabbitmq.rabbitmq_broker_port|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_portHelp"|attr:"placeholder: Broker port"}}
+                    <small id="rabbitmq_broker_portHelp" class="form-text text-muted">Celery broker port</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_vhost">Broker vhost</label>
+                    {{ form_rabbitmq.rabbitmq_broker_vhost|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_vhostHelp"|attr:"placeholder: Broker vhost"}}
+                    <small id="rabbitmq_broker_vhostHelp" class="form-text text-muted">Celery broker vhost</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_queue_enrolment">Broker queue enrolment</label>
+                    {{ form_rabbitmq.rabbitmq_queue_enrolment|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_queue_enrolmentHelp"|attr:"placeholder: Broker queue enrolment"}}
+                    <small id="rabbitmq_broker_queue_enrolmentHelp" class="form-text text-muted">Celery broker queue enrolment</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_queue_enrolment_storage">Broker queue enrolment storage</label>
+                    {{ form_rabbitmq.rabbitmq_queue_enrolment_storage|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_queue_enrolment_storageHelp"|attr:"placeholder: Broker queue enrolment storage"}}
+                    <small id="rabbitmq_broker_queue_enrolment_storageHelp" class="form-text text-muted">Celery broker queue enrolment storage</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_queue_enrolment_validation">Broker queue enrolment validation</label>
+                    {{ form_rabbitmq.rabbitmq_queue_enrolment_validation|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_queue_enrolment_validationHelp"|attr:"placeholder: Broker queue enrolment validation"}}
+                    <small id="rabbitmq_broker_queue_enrolment_validationHelp" class="form-text text-muted">Celery broker queue enrolment validation</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_queue_verification">Broker queue verification</label>
+                    {{ form_rabbitmq.rabbitmq_queue_verification|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_queue_verificationHelp"|attr:"placeholder: Broker queue verification"}}
+                    <small id="rabbitmq_broker_queue_verificationHelp" class="form-text text-muted">Celery broker queue verification</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_queue_alerts">Broker queue alerts</label>
+                    {{ form_rabbitmq.rabbitmq_queue_alerts|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_queue_alertsHelp"|attr:"placeholder: Broker queue alerts"}}
+                    <small id="rabbitmq_broker_queue_alertsHelp" class="form-text text-muted">Celery broker queue alerts</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_queue_reporting">Broker queue reporting</label>
+                    {{ form_rabbitmq.rabbitmq_queue_reporting|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_queue_reportingHelp"|attr:"placeholder: Broker queue reporting"}}
+                    <small id="rabbitmq_broker_queue_reportingHelp" class="form-text text-muted">Celery broker queue reporting</small>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="rabbitmq_broker_queues">Broker queues</label>
+                    {{ form_rabbitmq.rabbitmq_queues|add_class:"form-control"|attr:"type : url"|attr:"aria-describedby: rabbitmq_broker_queuesHelp"|attr:"placeholder: Broker queues"}}
+                    <small id="rabbitmq_broker_queuesHelp" class="form-text text-muted">Celery broker queue reporting</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
