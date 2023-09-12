@@ -1,0 +1,15 @@
+version: "3"
+services:
+  supervisor:
+    build:
+        context: .
+        dockerfile: docker/Dockerfile
+    #image: teslace/supervisor:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+      #- /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - DJANGO_SETTINGS_MODULE=tesla_ce_supervisor.settings
+      - SETUP_MODE=SETUP

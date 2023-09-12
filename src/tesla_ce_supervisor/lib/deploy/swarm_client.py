@@ -59,8 +59,10 @@ class SwarmDeploy(BaseDeploy):
                 tls_config = docker.tls.TLSConfig(
                     client_cert=(client_cert_file, client_key_file), ca_cert=client_ca_file
                 )
-
-            self._client = docker.DockerClient(base_url=self.config.get('swarm_base_url'), tls=tls_config)
+            try:
+                self._client = docker.DockerClient(base_url=self.config.get('swarm_base_url'), tls=tls_config)
+            except docker.errors.DockerException as err:
+                pass
 
         assert self._client is not None
 

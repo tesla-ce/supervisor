@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.urls import path, include
 from django.conf import settings
-
+from django.views.generic.base import RedirectView
 from tesla_ce_supervisor.lib.client import SupervisorClient
 
 urlpatterns = [
@@ -25,8 +25,8 @@ urlpatterns = [
 
 if settings.SETUP_MODE == 'SETUP' or settings.SETUP_MODE == 'DEV':
     urlpatterns += [
-        path('setup/', include('tesla_ce_supervisor.apps.web.urls'))
-        #path('setup/', include('tesla_ce_supervisor.apps.setup.urls')),
+        path('setup/', include('tesla_ce_supervisor.apps.web.urls')),
+        path('', RedirectView.as_view(pattern_name='setup_home', permanent=True)),
     ]
 elif settings.SETUP_MODE == 'AUTO':
     client = SupervisorClient()

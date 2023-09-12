@@ -161,3 +161,5 @@ cython_debug/
 
 # TeSLA CE Supervisor data path
 /src/_data/
+data
+docs/docker-ca/*
