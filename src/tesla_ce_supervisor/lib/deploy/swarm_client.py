@@ -61,10 +61,9 @@ class SwarmDeploy(BaseDeploy):
                 )
             try:
                 self._client = docker.DockerClient(base_url=self.config.get('swarm_base_url'), tls=tls_config)
+                assert self._client is not None
             except docker.errors.DockerException as err:
                 pass
-
-        assert self._client is not None
 
         return self._client
 
